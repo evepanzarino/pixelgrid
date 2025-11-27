@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Users from './Users';
 import Items from './Items';
-import PixelGrid from './PixelGrid.js';
+import PixelGrid from './pixelgrid.js';
 import './App.css';
 
 function App() {
