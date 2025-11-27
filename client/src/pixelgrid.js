@@ -14,7 +14,7 @@ export default function PixelGrid() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showFileMenu, setShowFileMenu] = useState(false);
 
-  const cellVW = size.w / 100;
+  const cellVW = size.w / 10;
   const cols = Math.max(1, Math.floor(size.w / cellVW));
   const rows = size.h;
   const totalPixels = Math.floor(cols * rows);
