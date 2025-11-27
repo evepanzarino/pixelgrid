@@ -15,8 +15,8 @@ export default function PixelGrid() {
   const [showFileMenu, setShowFileMenu] = useState(false);
 
   const cellVW = size.w / 500;
-  const cols = Math.max(1, Math.floor(size.w / cellVW));
-  const rows = size.h > 4 * cellVW ? Math.max(1, Math.floor((size.h - 4 * cellVW) / cellVW)) : 1;
+  const cols = Math.max(.5, Math.floor(size.w / cellVW));
+  const rows = Math.max(.5, Math.floor(size.h / cellVW));
   const totalPixels = Math.floor(cols * rows);
   const [pixelColors, setPixelColors] = useState(() => Array(totalPixels).fill("#000000"));
 
@@ -357,8 +357,8 @@ const colors = ${data};
       <div style={{
         flex: 1,
         display: "grid",
-        gridTemplateColumns: `repeat(${cols}, 1vw)`,
-        gridTemplateRows: `repeat(${rows}, 1vw)`,
+        gridTemplateColumns: `repeat(${cols}, .5vw)`,
+        gridTemplateRows: `repeat(${rows}, .5vw)`,
         userSelect: "none",
         touchAction: "none"
       }}>
