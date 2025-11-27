@@ -357,7 +357,7 @@ const colors = ${data};
       <div style={{
         flex: 1,
         display: "grid",
-        gridTemplateColumns: `repeat(${rows}, 1vw)`,
+        gridTemplateColumns: `repeat(${col}, 1vw)`,
         gridTemplateRows: `repeat(${rows}, 1vw)`,
         userSelect: "none",
         touchAction: "none"
