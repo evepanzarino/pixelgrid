@@ -14,11 +14,10 @@ export default function PixelGrid() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showFileMenu, setShowFileMenu] = useState(false);
 
-  const cellVW = size.w / 500;
-  const cols = Math.floor(size.w / cellVW);
-  const rows = Math.floor(size.h / cellVW); 
+  const cols = size.w;
+  const rows = size.h;
   const totalPixels = Math.floor(cols * rows);
-  const [pixelColors, setPixelColors] = useState(() => Array(totalPixels).fill("#000000"));
+  const [pixelColors, setPixelColors] = useState(() => Array(totalPixels).fill("#ffffff"));
 
   const colorPickerRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -60,7 +59,7 @@ export default function PixelGrid() {
     const data = JSON.stringify(pixelColors);
     const html = `
 <body style="margin:0; overflow-x:hidden;">
-<div style="display:grid;grid-template-columns:repeat(${cols},.5vw);grid-template-rows: repeat(${rows}, .5vw);">
+<div style="display:grid;grid-template-columns:repeat(500,.5vw);grid-auto-rows:.5vw;">
 ${pixelColors.map(c => `<div style="width:.5vw;height:.5vw;background:${c}"></div>`).join("")}
 </div>
 <script>
@@ -284,8 +283,8 @@ const colors = ${data};
                   }
                 }}
                 style={{
-                  width: "100%",
-                  height: "100%",
+                  width: "100vw",
+                  height: "100vh",
                   border: "none",
                   padding: 0,
                   cursor: "pointer",
@@ -355,6 +354,7 @@ const colors = ${data};
 
       {/* GRID */}
       <div style={{
+        flex: 1,
         display: "grid",
         gridTemplateColumns: `repeat(${cols}, .5vw)`,
         gridTemplateRows: `repeat(${rows}, .5vw)`,
