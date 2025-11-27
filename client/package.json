@@ -2,6 +2,7 @@
   "name": "react-client",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://evepanzarino.github.io/Sidebar-Macro-React-Project",
   "proxy": "http://localhost:5000",
   "dependencies": {
     "react": "^18.2.0",
