@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Users from './Users';
 import Items from './Items';
+import PixelGrid from './PixelGrid.js';
 import './App.css';
 
 function App() {
@@ -11,6 +12,12 @@ function App() {
       <nav className="navbar">
         <h1 className="app-title">Full Stack App</h1>
         <div className="nav-buttons">
+          <button
+            onClick={() => setCurrentPage('pixelgrid')}
+            className={currentPage === 'pixelgrid' ? 'active' : ''}
+          >
+            PixelGrid
+          </button>
           <button
             onClick={() => setCurrentPage('users')}
             className={currentPage === 'users' ? 'active' : ''}
@@ -29,6 +36,11 @@ function App() {
       <main className="main-content">
         {currentPage === 'users' && <Users />}
         {currentPage === 'items' && <Items />}
+        {currentPage === 'pixelgrid' && (
+          <div style={{ margin: 0, padding: 0 }}>
+            <PixelGrid />
+          </div>
+        )}
       </main>
     </div>
   );
