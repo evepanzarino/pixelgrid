@@ -16,7 +16,8 @@ export default function PixelGrid() {
 
   const pixelSize = 0.5; // 0.5vw
   const cols = Math.floor(100 / pixelSize); // 100vw / 0.5vw = 200 columns
-  const rows = Math.ceil((size.h / size.w) * (100 / pixelSize)); // calculate rows: (vh/vw) * (100vw / pixelSize)
+  const vhToVwRatio = size.h / size.w; // convert vh to vw equivalent
+  const rows = Math.ceil(vhToVwRatio * 100 / pixelSize); // (100vh in vw terms) / 0.5vw
   const totalPixels = cols * rows;
   const [pixelColors, setPixelColors] = useState(() => Array(totalPixels).fill("#ffffff"));
 
