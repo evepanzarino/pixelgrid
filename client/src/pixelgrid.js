@@ -14,9 +14,9 @@ export default function PixelGrid() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showFileMenu, setShowFileMenu] = useState(false);
 
-
-  const cols = Math.floor(size.w / .5);
-  const rows = Math.floor(size.h / .5); 
+  const cellVW = Math.floor(size.w / 500);
+  const cols = Math.floor(size.w / cellVW);
+  const rows = Math.floor(size.h / cellVW ); 
   const totalPixels = Math.floor(cols * rows);
   const [pixelColors, setPixelColors] = useState(() => Array(totalPixels).fill("#ffffff"));
 
