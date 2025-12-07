@@ -14,7 +14,7 @@ export default function PixelGrid() {
   // Fixed 200 columns, 200 rows for consistent performance
   const cols = 200;
   // Calculate rows: viewport height in pixels / 0.5vw in pixels
-  const rows = Math.floor((size.h / 100));
+  const rows = Math.floor((size.h / 100) * 200);
   const totalPixels = cols * rows;
   const [pixelColors, setPixelColors] = useState(() => Array(totalPixels).fill("#ffffff"));
 
