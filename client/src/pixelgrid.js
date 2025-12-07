@@ -17,6 +17,9 @@ export default function PixelGrid() {
   // 0.5vw in pixels = (viewport width / 100) * 0.5
   const rows = Math.floor((size.h / (size.w * 0.005)) * 1.2);
   const totalPixels = cols * rows;
+  
+  console.log('Grid Debug:', { width: size.w, height: size.h, cols, rows, totalPixels });
+  
   const [pixelColors, setPixelColors] = useState(() => Array(totalPixels).fill("#ffffff"));
 
   const colorPickerRef = useRef(null);
