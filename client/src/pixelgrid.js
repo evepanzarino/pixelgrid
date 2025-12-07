@@ -27,11 +27,6 @@ export default function PixelGrid() {
   const fileInputRef = useRef(null);
   const activeToolRef = useRef(activeTool);
 
-  // Keep ref in sync with state
-  useEffect(() => {
-    activeToolRef.current = activeTool;
-  }, [activeTool]);
-
   // Resize pixelColors array when totalPixels changes
   useEffect(() => {
     setPixelColors((prev) => {
