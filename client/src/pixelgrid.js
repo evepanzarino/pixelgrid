@@ -111,7 +111,6 @@ const colors = ${data};
         top: 0,
         left: 0,
         width: "100vw",
-        height: "4vw",
         background: "#ffffff",
         borderBottom: "0.3vw solid #444",
         display: "grid",
