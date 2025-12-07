@@ -14,14 +14,11 @@ export default function PixelGrid() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showFileMenu, setShowFileMenu] = useState(false);
 
-  const pixelSize = 0.5; // 0.5vw
-  const cols = Math.floor(100 / pixelSize); // 100vw / 0.5vw = 200 columns
-  const vhToVwRatio = size.h / size.w; // convert vh to vw equivalent
-  const rows = Math.ceil(vhToVwRatio * 100 / pixelSize); // (100vh in vw terms) / 0.5vw
-  const totalPixels = cols * rows;
+  const cols = size.w;
+  const rows = size.h;
+  const totalPixels = Math.floor(cols * rows);
   const [pixelColors, setPixelColors] = useState(() => Array(totalPixels).fill("#ffffff"));
 
-  
   const colorPickerRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -55,15 +52,15 @@ export default function PixelGrid() {
 
   function handleSwatchClick(idx) {
     setSelectedIndex(idx);
-    setColor(swatches[idx] || "#000000");
+    setColor(swatches[idx] || "#ffffff");
   }
 
   function saveToHTML() {
     const data = JSON.stringify(pixelColors);
     const html = `
 <body style="margin:0; overflow-x:hidden;">
-<div style="display:grid;grid-template-columns:repeat(250,1vw);grid-auto-rows:1vw;">
-${pixelColors.map(c => `<div style="width:1vw;height:1vw;background:${c}"></div>`).join("")}
+<div style="display:grid;grid-template-columns:repeat(500,.5vw);grid-auto-rows:.5vw;">
+${pixelColors.map(c => `<div style="width:.5vw;height:.5vw;background:${c}"></div>`).join("")}
 </div>
 <script>
 const colors = ${data};
@@ -286,8 +283,8 @@ const colors = ${data};
                   }
                 }}
                 style={{
-                  width: "100%",
-                  height: "100%",
+                  width: "100vw",
+                  height: "100vh",
                   border: "none",
                   padding: 0,
                   cursor: "pointer",
@@ -357,10 +354,9 @@ const colors = ${data};
 
       {/* GRID */}
       <div style={{
-        flex: 1,
         display: "grid",
-        gridTemplateColumns: `repeat(${cols}, 0.5vw)`,
-        gridTemplateRows: `repeat(${rows}, 0.5vw)`,
+        gridTemplateColumns: `repeat(${cols}, .5vw)`,
+        gridTemplateRows: `repeat(${rows}, .5vw)`,
         userSelect: "none",
         touchAction: "none"
       }}>
@@ -381,4 +377,3 @@ const colors = ${data};
     </div>
   );
 }
-
