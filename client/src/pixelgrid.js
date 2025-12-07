@@ -352,7 +352,10 @@ const colors = ${data};
         gridTemplateColumns: `repeat(200, 0.5vw)`,
         gridTemplateRows: `repeat(${rows}, 0.5vw)`,
         userSelect: "none",
-        touchAction: "none"
+        touchAction: "none",
+        flex: 1,
+        overflow: "auto",
+        marginTop: "4vw"
       }}>
         {pixelColors.map((c, i) => (
           <div
