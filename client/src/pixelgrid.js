@@ -3,25 +3,19 @@ import { useEffect, useState, useRef } from "react";
 export default function PixelGrid() {
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [isDrawing, setIsDrawing] = useState(false);
-  const [color, setColor] = useState("#3498db");
-  const [swatches, setSwatches] = useState([
-    "#3498db",
-    "#e74c3c",
-    "#2ecc71",
-    "#ffffff",
-  ]);
+  const [primaryColor, setPrimaryColor] = useState("#000000");
+  const [secondaryColor, setSecondaryColor] = useState("#ffffff");
+  const [activeTool, setActiveTool] = useState("primary"); // "primary" or "secondary"
   const [showColorMenu, setShowColorMenu] = useState(true);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [showFileMenu, setShowFileMenu] = useState(false);
+  
+  const color = activeTool === "primary" ? primaryColor : secondaryColor;
 
-  const pixelSize = 0.5; // 0.5vw
-  const cols = Math.floor(100 / pixelSize); // 100vw / 0.5vw = 200 columns
-  const vhToVwRatio = size.h / size.w; // convert vh to vw equivalent
-  const rows = Math.ceil(vhToVwRatio * 100 / pixelSize); // (100vh in vw terms) / 0.5vw
-  const totalPixels = cols * rows;
+  const cols = size.w;
+  const rows = size.h;
+  const totalPixels = Math.floor(cols * rows);
   const [pixelColors, setPixelColors] = useState(() => Array(totalPixels).fill("#ffffff"));
 
-  
   const colorPickerRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -53,17 +47,12 @@ export default function PixelGrid() {
     return "#" + v.slice(0, 6);
   }
 
-  function handleSwatchClick(idx) {
-    setSelectedIndex(idx);
-    setColor(swatches[idx] || "#000000");
-  }
-
   function saveToHTML() {
     const data = JSON.stringify(pixelColors);
     const html = `
 <body style="margin:0; overflow-x:hidden;">
-<div style="display:grid;grid-template-columns:repeat(250,1vw);grid-auto-rows:1vw;">
-${pixelColors.map(c => `<div style="width:1vw;height:1vw;background:${c}"></div>`).join("")}
+<div style="display:grid;grid-template-columns:repeat(500,.5vw);grid-auto-rows:.5vw;">
+${pixelColors.map(c => `<div style="width:.5vw;height:.5vw;background:${c}"></div>`).join("")}
 </div>
 <script>
 const colors = ${data};
@@ -236,53 +225,94 @@ const colors = ${data};
             width: "100%",
             transition: "max-height 0.3s ease",
           }}>
-            {swatches.map((sw, i) => (
+            {/* PRIMARY COLOR */}
+            <div style={{ width: "100%", textAlign: "center" }}>
+              <div style={{ color: "white", fontSize: "1.2vw", marginBottom: "0.5vw" }}>Primary</div>
               <div
-                key={i}
-                onClick={() => handleSwatchClick(i)}
+                onClick={() => setActiveTool("primary")}
                 style={{
-                  background: sw,
-                  border: i === selectedIndex ? "0.4vw solid white" : "0.3vw solid #666",
+                  width: "7vw",
+                  height: "7vw",
+                  background: primaryColor,
+                  border: activeTool === "primary" ? "0.4vw solid white" : "0.3vw solid #666",
+                  borderRadius: "1vw",
+                  cursor: "pointer",
+                  margin: "0 auto",
+                  boxShadow: activeTool === "primary" ? "0 0 1vw rgba(255,255,255,0.5)" : "none",
                 }}
-                className="colored-label"
-              >
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSwatches(prev => prev.filter((_, idx) => idx !== i));
-                    if (selectedIndex === i) setSelectedIndex(null);
-                  }}
-                  className="swatch-remove"
-                  aria-label={`Remove swatch ${i + 1}`}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+              />
+              <input
+                type="text"
+                value={primaryColor}
+                onChange={(e) => setPrimaryColor(normalizeHexInput(e.target.value))}
+                maxLength={7}
+                style={{
+                  width: "7vw",
+                  marginTop: "0.5vw",
+                  background: "#111",
+                  border: "0.2vw solid #666",
+                  color: "white",
+                  textAlign: "center",
+                  borderRadius: "0.5vw",
+                  fontSize: "1.2vw",
+                  padding: "0.3vw",
+                }}
+              />
+            </div>
 
-            {/* MAIN COLOR PICKER */}
+            {/* SECONDARY COLOR */}
+            <div style={{ width: "100%", textAlign: "center" }}>
+              <div style={{ color: "white", fontSize: "1.2vw", marginBottom: "0.5vw" }}>Secondary</div>
+              <div
+                onClick={() => setActiveTool("secondary")}
+                style={{
+                  width: "7vw",
+                  height: "7vw",
+                  background: secondaryColor,
+                  border: activeTool === "secondary" ? "0.4vw solid white" : "0.3vw solid #666",
+                  borderRadius: "1vw",
+                  cursor: "pointer",
+                  margin: "0 auto",
+                  boxShadow: activeTool === "secondary" ? "0 0 1vw rgba(255,255,255,0.5)" : "none",
+                }}
+              />
+              <input
+                type="text"
+                value={secondaryColor}
+                onChange={(e) => setSecondaryColor(normalizeHexInput(e.target.value))}
+                maxLength={7}
+                style={{
+                  width: "7vw",
+                  marginTop: "0.5vw",
+                  background: "#111",
+                  border: "0.2vw solid #666",
+                  color: "white",
+                  textAlign: "center",
+                  borderRadius: "0.5vw",
+                  fontSize: "1.2vw",
+                  padding: "0.3vw",
+                }}
+              />
+            </div>
+
+            {/* COLOR PICKER */}
             <div style={{
-              width: "5vw",
-              height: "5vw",
+              width: "7vw",
+              height: "3vw",
               border: "0.3vw solid #888",
               borderRadius: "1vw",
-              cursor: "pointer",
               overflow: "hidden",
+              marginTop: "1vw",
             }}>
               <input
                 ref={colorPickerRef}
                 type="color"
                 value={color}
                 onChange={(e) => {
-                  const c = e.target.value;
-                  setColor(c);
-                  if (selectedIndex != null) {
-                    setSwatches(prev => {
-                      const copy = [...prev];
-                      copy[selectedIndex] = c;
-                      return copy;
-                    });
+                  if (activeTool === "primary") {
+                    setPrimaryColor(e.target.value);
+                  } else {
+                    setSecondaryColor(e.target.value);
                   }
                 }}
                 style={{
@@ -294,73 +324,15 @@ const colors = ${data};
                 }}
               />
             </div>
-<div className="selected-label">
-  Selected
-  </div>
-            {/* HEX INPUT */}
-            <input
-              type="text"
-              value={color}
-              onClick={() => colorPickerRef.current.click()} // open main color picker
-              onChange={(e) => {
-                const normalized = normalizeHexInput(e.target.value);
-                setColor(normalized);
-                if (selectedIndex != null) {
-                  setSwatches(prev => {
-                    const copy = [...prev];
-                    copy[selectedIndex] = normalized;
-                    return copy;
-                  });
-                }
-              }}
-              maxLength={7}
-              style={{
-                width: "7.5vw",
-                marginTop: "1vw",
-                background: "#111",
-                border: "0.3vw solid #666",
-                color: "white",
-                textAlign: "center",
-                borderRadius: "1vw",
-                fontSize: "1.5vw",
-              }}
-            />
-
-            <button
-              type="button"
-              onClick={() => {
-                if (swatches.length < 4) {
-                  setSwatches(prev => [...prev, "#ffffff"]);
-                  setSelectedIndex(swatches.length);
-                  setColor("#ffffff");
-                }
-              }}
-              style={{
-                marginTop: "1vw",
-                padding: "0.5vw 1vw",
-                background: "#333",
-                color: "#fff",
-                border: "0.3vw solid #666",
-                borderRadius: "1vw",
-                cursor: swatches.length >= 4 ? "not-allowed" : "pointer",
-                opacity: swatches.length >= 4 ? 0.5 : 1,
-                fontSize: "1.3vw",
-                width: "7vw",
-                textAlign: "center",
-              }}
-            >
-              + Add
-            </button>
           </div>
         )}
       </div>
 
       {/* GRID */}
       <div style={{
-        flex: 1,
         display: "grid",
-        gridTemplateColumns: `repeat(${cols}, 0.5vw)`,
-        gridTemplateRows: `repeat(${rows}, 0.5vw)`,
+        gridTemplateColumns: `repeat(${cols}, .5vw)`,
+        gridTemplateRows: `repeat(${rows}, .5vw)`,
         userSelect: "none",
         touchAction: "none"
       }}>
@@ -381,4 +353,3 @@ const colors = ${data};
     </div>
   );
 }
-
