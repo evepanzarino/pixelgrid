@@ -25,7 +25,6 @@ export default function PixelGrid() {
   const primaryColorPickerRef = useRef(null);
   const secondaryColorPickerRef = useRef(null);
   const fileInputRef = useRef(null);
-  const activeToolRef = useRef(activeTool);
 
   // Resize pixelColors array when totalPixels changes
   useEffect(() => {
@@ -249,16 +248,11 @@ const colors = ${data};
             <div style={{ width: "100%", textAlign: "center" }}>
               <div style={{ color: "white", fontSize: "1.2vw", marginBottom: "0.5vw" }}>Primary</div>
               <div
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  if (activeToolRef.current === "primary") {
+                onClick={() => {
+                  if (activeTool === "primary") {
                     primaryColorPickerRef.current?.click();
-                  } else {
-                    setActiveTool("primary");
-                    setTimeout(() => {
-                      activeToolRef.current = "primary";
-                    }, 0);
                   }
+                  setActiveTool("primary");
                 }}
                 style={{
                   width: "7vw",
@@ -301,16 +295,11 @@ const colors = ${data};
             <div style={{ width: "100%", textAlign: "center" }}>
               <div style={{ color: "white", fontSize: "1.2vw", marginBottom: "0.5vw" }}>Secondary</div>
               <div
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  if (activeToolRef.current === "secondary") {
+                onClick={() => {
+                  if (activeTool === "secondary") {
                     secondaryColorPickerRef.current?.click();
-                  } else {
-                    setActiveTool("secondary");
-                    setTimeout(() => {
-                      activeToolRef.current = "secondary";
-                    }, 0);
                   }
+                  setActiveTool("secondary");
                 }}
                 style={{
                   width: "7vw",
