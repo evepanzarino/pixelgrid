@@ -15,7 +15,7 @@ export default function PixelGrid() {
   const cols = 200;
   // For rows: calculate to fill viewport height, then multiply by 1.2 for some scrollable content
   // 0.5vw in pixels = (viewport width / 100) * 0.5
-  const rows = Math.floor(size.h / (size.w * size.h)) * 1.2;
+  const rows = Math.floor(size.h / (size.w * 0.005)) * 1.2;
   const totalPixels = cols * rows;
   const [pixelColors, setPixelColors] = useState(() => Array(totalPixels).fill("#ffffff"));
 
