@@ -381,3 +381,4 @@ const colors = ${data};
     </div>
   );
 }
+
