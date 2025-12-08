@@ -18,7 +18,7 @@ export default function PixelGrid() {
 
   const cols = 300;
 
-  const calculatedRows = Math.floor((size.h / 3) * 1.75);
+  const calculatedRows = Math.floor((size.h / 3) * 2.333);
   const rows = calculatedRows; // Fallback to 100 rows if calculation fails
   const totalPixels = cols * rows;
 
