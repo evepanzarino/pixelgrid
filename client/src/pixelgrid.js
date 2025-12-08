@@ -247,30 +247,25 @@ const colors = ${data};
             {/* PRIMARY COLOR */}
             <div style={{ width: "100%", textAlign: "center" }}>
               <div style={{ color: "white", fontSize: "1.2vw", marginBottom: "0.5vw" }}>Primary</div>
-              <div
-                onClick={() => {
-                  if (activeTool === "primary") {
-                    primaryColorPickerRef.current?.click();
-                  }
-                  setActiveTool("primary");
-                }}
-                style={{
-                  width: "7vw",
-                  height: "7vw",
-                  background: primaryColor,
-                  border: activeTool === "primary" ? "0.4vw solid white" : "0.3vw solid #666",
-                  borderRadius: "1vw",
-                  cursor: "pointer",
-                  margin: "0 auto",
-                  boxShadow: activeTool === "primary" ? "0 0 1vw rgba(255,255,255,0.5)" : "none",
-                }}
-              />
               <input
                 ref={primaryColorPickerRef}
                 type="color"
                 value={primaryColor}
-                onChange={(e) => setPrimaryColor(e.target.value)}
-                style={{ display: "none" }}
+                onChange={(e) => {
+                  setPrimaryColor(e.target.value);
+                  setActiveTool("primary");
+                }}
+                onClick={() => setActiveTool("primary")}
+                style={{
+                  width: "7vw",
+                  height: "7vw",
+                  border: activeTool === "primary" ? "0.4vw solid white" : "0.3vw solid #666",
+                  borderRadius: "1vw",
+                  cursor: "pointer",
+                  margin: "0 auto",
+                  display: "block",
+                  boxShadow: activeTool === "primary" ? "0 0 1vw rgba(255,255,255,0.5)" : "none",
+                }}
               />
               <input
                 type="text"
@@ -294,30 +289,25 @@ const colors = ${data};
             {/* SECONDARY COLOR */}
             <div style={{ width: "100%", textAlign: "center" }}>
               <div style={{ color: "white", fontSize: "1.2vw", marginBottom: "0.5vw" }}>Secondary</div>
-              <div
-                onClick={() => {
-                  if (activeTool === "secondary") {
-                    secondaryColorPickerRef.current?.click();
-                  }
-                  setActiveTool("secondary");
-                }}
-                style={{
-                  width: "7vw",
-                  height: "7vw",
-                  background: secondaryColor,
-                  border: activeTool === "secondary" ? "0.4vw solid white" : "0.3vw solid #666",
-                  borderRadius: "1vw",
-                  cursor: "pointer",
-                  margin: "0 auto",
-                  boxShadow: activeTool === "secondary" ? "0 0 1vw rgba(255,255,255,0.5)" : "none",
-                }}
-              />
               <input
                 ref={secondaryColorPickerRef}
                 type="color"
                 value={secondaryColor}
-                onChange={(e) => setSecondaryColor(e.target.value)}
-                style={{ display: "none" }}
+                onChange={(e) => {
+                  setSecondaryColor(e.target.value);
+                  setActiveTool("secondary");
+                }}
+                onClick={() => setActiveTool("secondary")}
+                style={{
+                  width: "7vw",
+                  height: "7vw",
+                  border: activeTool === "secondary" ? "0.4vw solid white" : "0.3vw solid #666",
+                  borderRadius: "1vw",
+                  cursor: "pointer",
+                  margin: "0 auto",
+                  display: "block",
+                  boxShadow: activeTool === "secondary" ? "0 0 1vw rgba(255,255,255,0.5)" : "none",
+                }}
               />
               <input
                 type="text"
