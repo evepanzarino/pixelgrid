@@ -25,14 +25,26 @@ export default function PixelGrid() {
   const totalPixels = cols * rows;
 
   const fileInputRef = useRef(null);
+  const initializedRef = useRef(false);
 
-  // Resize pixelColors array when totalPixels changes
+  // Initialize pixelColors array once on mount
   useEffect(() => {
+    if (!initializedRef.current && totalPixels > 0) {
+      setPixelColors(Array(totalPixels).fill("#ffffff"));
+      initializedRef.current = true;
+    }
+  }, [totalPixels]);
+
+  // Resize pixelColors array when totalPixels changes after initialization
+  useEffect(() => {
+    if (!initializedRef.current) return; // Skip until initialized
+    
     setPixelColors((prev) => {
       if (prev.length === totalPixels) return prev;
       const newArray = Array(totalPixels).fill("#ffffff");
       // Copy over existing colors if possible
-      for (let i = 0; i < Math.min(prev.length, totalPixels); i++) {
+      const copyLength = Math.min(prev.length, totalPixels);
+      for (let i = 0; i < copyLength; i++) {
         newArray[i] = prev[i];
       }
       return newArray;
