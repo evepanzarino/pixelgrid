@@ -20,7 +20,7 @@ export default function PixelGrid() {
   const cols = 250;
   // For rows: calculate to fill viewport height, then multiply by 1.2 for some scrollable content
   // 0.4vw in pixels = (viewport width / 100) * 0.4
-  const calculatedRows = Math.floor((size.h / 1000) * (size.h / 4) * 1.2);
+  const calculatedRows = Math.floor((size.w / 100) * (size.h / 4) * 1.2);
   const rows = calculatedRows > 0 ? calculatedRows : 100; // Fallback to 100 rows if calculation fails
   const totalPixels = cols * rows;
 
