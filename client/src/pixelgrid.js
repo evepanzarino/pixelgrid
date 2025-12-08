@@ -24,8 +24,6 @@ export default function PixelGrid() {
   const rows = calculatedRows > 0 ? calculatedRows : 100; // Fallback to 100 rows if calculation fails
   const totalPixels = cols * rows;
 
-  const primaryColorPickerRef = useRef(null);
-  const secondaryColorPickerRef = useRef(null);
   const fileInputRef = useRef(null);
 
   // Resize pixelColors array when totalPixels changes
