@@ -8,6 +8,8 @@ export default function PixelGrid() {
   const [activeTool, setActiveTool] = useState("primary"); // "primary" or "secondary"
   const [showColorMenu, setShowColorMenu] = useState(true);
   const [showFileMenu, setShowFileMenu] = useState(false);
+  const [showColorEditor, setShowColorEditor] = useState(false);
+  const [editingColor, setEditingColor] = useState(null); // "primary" or "secondary"
   
   const color = activeTool === "primary" ? primaryColor : secondaryColor;
 
@@ -247,23 +249,23 @@ const colors = ${data};
             {/* PRIMARY COLOR */}
             <div style={{ width: "100%", textAlign: "center" }}>
               <div style={{ color: "white", fontSize: "1.2vw", marginBottom: "0.5vw" }}>Primary</div>
-              <input
-                ref={primaryColorPickerRef}
-                type="color"
-                value={primaryColor}
-                onChange={(e) => {
-                  setPrimaryColor(e.target.value);
-                  setActiveTool("primary");
+              <div
+                onClick={() => {
+                  if (activeTool === "primary") {
+                    setEditingColor("primary");
+                    setShowColorEditor(true);
+                  } else {
+                    setActiveTool("primary");
+                  }
                 }}
-                onClick={() => setActiveTool("primary")}
                 style={{
                   width: "7vw",
                   height: "7vw",
+                  background: primaryColor,
                   border: activeTool === "primary" ? "0.4vw solid white" : "0.3vw solid #666",
                   borderRadius: "1vw",
                   cursor: "pointer",
                   margin: "0 auto",
-                  display: "block",
                   boxShadow: activeTool === "primary" ? "0 0 1vw rgba(255,255,255,0.5)" : "none",
                 }}
               />
@@ -289,23 +291,23 @@ const colors = ${data};
             {/* SECONDARY COLOR */}
             <div style={{ width: "100%", textAlign: "center" }}>
               <div style={{ color: "white", fontSize: "1.2vw", marginBottom: "0.5vw" }}>Secondary</div>
-              <input
-                ref={secondaryColorPickerRef}
-                type="color"
-                value={secondaryColor}
-                onChange={(e) => {
-                  setSecondaryColor(e.target.value);
-                  setActiveTool("secondary");
+              <div
+                onClick={() => {
+                  if (activeTool === "secondary") {
+                    setEditingColor("secondary");
+                    setShowColorEditor(true);
+                  } else {
+                    setActiveTool("secondary");
+                  }
                 }}
-                onClick={() => setActiveTool("secondary")}
                 style={{
                   width: "7vw",
                   height: "7vw",
+                  background: secondaryColor,
                   border: activeTool === "secondary" ? "0.4vw solid white" : "0.3vw solid #666",
                   borderRadius: "1vw",
                   cursor: "pointer",
                   margin: "0 auto",
-                  display: "block",
                   boxShadow: activeTool === "secondary" ? "0 0 1vw rgba(255,255,255,0.5)" : "none",
                 }}
               />
@@ -355,6 +357,103 @@ const colors = ${data};
           />
         ))}
       </div>
+
+      {/* COLOR EDITOR OVERLAY */}
+      {showColorEditor && (
+        <div
+          onClick={() => setShowColorEditor(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#222",
+              border: "0.3vw solid #666",
+              borderRadius: "1vw",
+              padding: "2vw",
+              minWidth: "30vw",
+              display: "flex",
+              flexDirection: "column",
+              gap: "1.5vw",
+            }}
+          >
+            <div style={{ color: "white", fontSize: "1.5vw", textAlign: "center" }}>
+              Edit {editingColor === "primary" ? "Primary" : "Secondary"} Color
+            </div>
+            
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <input
+                type="color"
+                value={editingColor === "primary" ? primaryColor : secondaryColor}
+                onChange={(e) => {
+                  if (editingColor === "primary") {
+                    setPrimaryColor(e.target.value);
+                  } else {
+                    setSecondaryColor(e.target.value);
+                  }
+                }}
+                style={{
+                  width: "15vw",
+                  height: "15vw",
+                  border: "0.3vw solid #666",
+                  borderRadius: "1vw",
+                  cursor: "pointer",
+                }}
+              />
+            </div>
+
+            <input
+              type="text"
+              value={editingColor === "primary" ? primaryColor : secondaryColor}
+              onChange={(e) => {
+                const val = normalizeHexInput(e.target.value);
+                if (editingColor === "primary") {
+                  setPrimaryColor(val);
+                } else {
+                  setSecondaryColor(val);
+                }
+              }}
+              maxLength={7}
+              style={{
+                width: "100%",
+                background: "#111",
+                border: "0.2vw solid #666",
+                color: "white",
+                textAlign: "center",
+                borderRadius: "0.5vw",
+                fontSize: "1.5vw",
+                padding: "1vw",
+              }}
+            />
+
+            <button
+              onClick={() => setShowColorEditor(false)}
+              style={{
+                background: "#444",
+                border: "0.2vw solid #666",
+                color: "white",
+                borderRadius: "0.5vw",
+                fontSize: "1.3vw",
+                padding: "1vw",
+                cursor: "pointer",
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
