@@ -17,11 +17,10 @@ export default function PixelGrid() {
   const [pixelColors, setPixelColors] = useState([]);
 
   // 200 columns of 0.5vw = 100vw width
-  const cols = 200;
+  const cols = 400;
   // For rows: calculate to fill viewport height, then multiply by 1.2 for some scrollable content
   // 0.5vw in pixels = (viewport width / 100) * 0.5
-  const calculatedRows = Math.floor((size.h / (size.w * 0.005)) * 1.2);
-  const rows = calculatedRows > 0 ? calculatedRows : 100; // Fallback to 100 rows if calculation fails
+  const rows = calculatedRows; // Fallback to 100 rows if calculation fails
   const totalPixels = cols * rows;
 
   const fileInputRef = useRef(null);
@@ -334,8 +333,8 @@ const colors = ${data};
       {/* GRID */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: `repeat(200, 0.5vw)`,
-        gridTemplateRows: `repeat(${rows}, 0.5vw)`,
+        gridTemplateColumns: `repeat(400, 0.25vw)`,
+        gridTemplateRows: `repeat(${rows}, 0.25vw)`,
         userSelect: "none",
         touchAction: "none",
         flex: 1,
@@ -398,10 +397,9 @@ const colors = ${data};
                   }
                 }}
                 style={{
-                  width: "15vw",
-                  height: "15vw",
-                  border: "0.3vw solid #666",
-                  borderRadius: "1vw",
+                  width: "2.5vw",
+                  height: "2.5vw",
+                  border: "0.3vw solid #000000",
                   cursor: "pointer",
                 }}
               />
@@ -434,8 +432,6 @@ const colors = ${data};
             <button
               onClick={() => setShowColorEditor(false)}
               style={{
-                background: "#444",
-                border: "0.2vw solid #666",
                 color: "white",
                 borderRadius: "0.5vw",
                 fontSize: "1.3vw",
