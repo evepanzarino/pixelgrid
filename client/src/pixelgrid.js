@@ -207,21 +207,21 @@ const colors = ${data};
 
       {/* SIDEBAR */}
       <div style={{
-        background: "#fdfdfd",
+        background: "#fefefe",
         padding: "1vw",
         position: "relative",
         display: "inline-flex",
         flexDirection: "column",
         gap: "1vw",
         alignItems: "center",
-        borderRight: "0.4vw solid #444",
+        borderRight: "0.2vw solid #000000",
       }}>
         {/* COLOR MENU HEADER */}
         <div style={{ width: "100%", position: "relative" }}>
           <button
             onClick={() => setShowColorMenu(prev => !prev)}
             style={{
-              width: "8vw",
+              width: "4vw",
               background: "#333",
               color: "white",
               border: "0.3vw solid #666",
