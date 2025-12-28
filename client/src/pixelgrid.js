@@ -132,8 +132,8 @@ const colors = ${data};
           width:`7vw`,
           height:`7vw`,
           position: "relative",
-          gridTemplateColumns: "1vw, 1vw, 1vw, 1vw, 1vw, 1vw, 1vw",
-          gridTemplateRows: "1vw, 1vw, 1vw, 1vw, 1vw, 1vw, 1vw",
+          gridTemplateColumns: "repeat(7, .75vw)",
+          gridTemplateRows: "repeat(7, .75vw)",
         }}>
           <div className="logo-pixels"></div>
              <div className="logo-pixels"></div>
