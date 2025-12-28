@@ -140,6 +140,13 @@ const colors = ${data};
                       <div className="logo-pixels"></div>
                          <div className="logo-pixels"></div>
                             <div className="logo-pixels"></div>
+                                      <div className="logo-pixels"></div>
+             <div className="logo-pixels"></div>
+                <div className="logo-pixels"></div>
+                   <div className="logo-pixels"></div>
+                      <div className="logo-pixels"></div>
+                         <div className="logo-pixels"></div>
+                            <div className="logo-pixels"></div>
           
         </div>
 
