@@ -266,6 +266,23 @@ const colors = ${data};
                   boxShadow: activeTool === "primary" ? "0 0 1vw rgba(255,255,255,0.5)" : "none",
                 }}
               />
+              <input
+                type="text"
+                value={primaryColor}
+                onChange={(e) => setPrimaryColor(normalizeHexInput(e.target.value))}
+                maxLength={7}
+                style={{
+                  width: "4vw",
+                  marginTop: "0.5vw",
+                  background: "#0000000",
+                  border: "0.2vw solid #000000",
+                  color: "white",
+                  textAlign: "center",
+                  fontSize: "1.2vw",
+                  padding: "0.3vw",
+                }}
+              />
+            </div>
 
             {/* SECONDARY COLOR */}
             <div style={{ width: "100%", textAlign: "center" }}>
@@ -289,22 +306,7 @@ const colors = ${data};
                   boxShadow: activeTool === "secondary" ? "0 0 1vw rgba(255,255,255,0.5)" : "none",
                 }}
               />
-              <input
-                type="text"
-                value={secondaryColor}
-                onChange={(e) => setSecondaryColor(normalizeHexInput(e.target.value))}
-                maxLength={7}
-                style={{
-                  width: "4vw",
-                  marginTop: ".5vw",
-                  background: "#000000",
-                  border: "0.2vw solid #000000",
-                  color: "white",
-                  textAlign: "center",
-                  fontSize: "1.2vw",
-                  padding: "0.3vw",
-                }}
-              />
+
             </div>
           </div>
         )}
@@ -385,7 +387,7 @@ const colors = ${data};
               />
             </div>
 
-
+            
 
             <button
               onClick={() => setShowColorEditor(false)}
