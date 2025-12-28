@@ -133,56 +133,55 @@ const colors = ${data};
           gridTemplateColumns: "repeat(7, .75vw)",
           gridTemplateRows: "repeat(7, .75vw)",
         }}>
-          <div className="logo-pixels"></div>
-             <div className="logo-pixels"></div>
-                <div className="logo-pixels"></div>
-                   <div className="logo-pixels"></div>
-                      <div className="logo-pixels"></div>
-                         <div className="logo-pixels"></div>
-                            <div className="logo-pixels"></div>
-          <div className="logo-pixels"></div>
-             <div className="logo-pixels"></div>
-                <div className="logo-pixels"></div>
-                   <div className="logo-pixels"></div>
-                      <div className="logo-pixels"></div>
-                         <div className="logo-pixels"></div>
-                            <div className="logo-pixels"></div>
-          <div className="logo-pixels"></div>
-             <div className="logo-pixels"></div>
-                <div className="logo-pixels"></div>
-                   <div className="logo-pixels"></div>
-                      <div className="logo-pixels"></div>
-                         <div className="logo-pixels"></div>
-                            <div className="logo-pixels"></div>
-                                      <div className="logo-pixels"></div>
-             <div className="logo-pixels"></div>
-                <div className="logo-pixels"></div>
-                   <div className="logo-pixels"></div>
-                      <div className="logo-pixels"></div>
-                         <div className="logo-pixels"></div>
-                            <div className="logo-pixels"></div>
-                                      <div className="logo-pixels"></div>
-             <div className="logo-pixels"></div>
-                <div className="logo-pixels"></div>
-                   <div className="logo-pixels"></div>
-                      <div className="logo-pixels"></div>
-                         <div className="logo-pixels"></div>
-                            <div className="logo-pixels"></div>
-                                      <div className="logo-pixels"></div>
-             <div className="logo-pixels"></div>
-                <div className="logo-pixels"></div>
-                   <div className="logo-pixels"></div>
-                      <div className="logo-pixels"></div>
-                         <div className="logo-pixels"></div>
-                            <div className="logo-pixels"></div>
-                                      <div className="logo-pixels"></div>
-             <div className="logo-pixels"></div>
-                <div className="logo-pixels"></div>
-                   <div className="logo-pixels"></div>
-                      <div className="logo-pixels"></div>
-                         <div className="logo-pixels"></div>
-                            <div className="logo-pixels"></div>
-                    
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
           
         </div>
 
