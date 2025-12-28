@@ -268,6 +268,9 @@ const colors = ${data};
       </div>
 
       {/* SIDEBAR */}
+
+<div>
+
       <div style={{
         background: "#fefefe",
         position: "relative",
@@ -388,7 +391,7 @@ const colors = ${data};
           />
         ))}
       </div>
-
+</div>
       {/* COLOR EDITOR OVERLAY */}
       {showColorEditor && (
         <div
