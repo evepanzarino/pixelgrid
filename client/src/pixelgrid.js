@@ -124,7 +124,7 @@ const colors = ${data};
         borderBottom: "0.3vw solid #000000",
         display: "grid",
         alignItems: "center",
-        gridTemplateColumns: "repeat(2, auto)",
+        gridTemplateColumns: "repeat(10, 5.2vw)",
         zIndex: 20
       }}>
         <div className="logo" style={{
