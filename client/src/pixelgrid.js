@@ -129,8 +129,6 @@ const colors = ${data};
       }}>
         <div className="logo" style={{
           display: "grid",
-          width:`7vw`,
-          height:`7vw`,
           position: "relative",
           gridTemplateColumns: "repeat(7, .75vw)",
           gridTemplateRows: "repeat(7, .75vw)",
