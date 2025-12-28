@@ -5,7 +5,7 @@ import PixelGrid from './pixelgrid.js';
 import './App.css';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('users');
+  const [currentPage, setCurrentPage] = useState('pixelgrid');
 
   return (
     <div className="App">
