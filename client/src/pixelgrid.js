@@ -391,7 +391,8 @@ const colors = ${data};
           />
         ))}
       </div>
-</div>
+      </div>
+      
       {/* COLOR EDITOR OVERLAY */}
       {showColorEditor && (
         <div
@@ -418,7 +419,7 @@ const colors = ${data};
               gap: "1vw",
             }}
           >
-            <div style={{ color: "white", fontSize: "1.5vw", textAlign: "center" }}>
+            <div style={{ color: "black", fontSize: "1vw", textAlign: "center" }}>
               Edit {editingColor === "primary" ? "Primary" : "Secondary"} Color
             </div>
             
