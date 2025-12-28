@@ -9,29 +9,31 @@ function App() {
 
   return (
     <div className="App">
-      <nav className="navbar">
-        <h1 className="app-title">Full Stack App</h1>
-        <div className="nav-buttons">
-          <button
-            onClick={() => setCurrentPage('pixelgrid')}
-            className={currentPage === 'pixelgrid' ? 'active' : ''}
-          >
-            PixelGrid
-          </button>
-          <button
-            onClick={() => setCurrentPage('users')}
-            className={currentPage === 'users' ? 'active' : ''}
-          >
-            Users
-          </button>
-          <button
-            onClick={() => setCurrentPage('items')}
-            className={currentPage === 'items' ? 'active' : ''}
-          >
-            Items
-          </button>
-        </div>
-      </nav>
+      {currentPage !== 'pixelgrid' && (
+        <nav className="navbar">
+          <h1 className="app-title">Full Stack App</h1>
+          <div className="nav-buttons">
+            <button
+              onClick={() => setCurrentPage('pixelgrid')}
+              className={currentPage === 'pixelgrid' ? 'active' : ''}
+            >
+              PixelGrid
+            </button>
+            <button
+              onClick={() => setCurrentPage('users')}
+              className={currentPage === 'users' ? 'active' : ''}
+            >
+              Users
+            </button>
+            <button
+              onClick={() => setCurrentPage('items')}
+              className={currentPage === 'items' ? 'active' : ''}
+            >
+              Items
+            </button>
+          </div>
+        </nav>
+      )}
 
       <main className="main-content">
         {currentPage === 'users' && <Users />}
