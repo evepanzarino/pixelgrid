@@ -209,7 +209,6 @@ const colors = ${data};
               left: 0,
               background: "#222",
               border: "0.25vw solid #555",
-              borderRadius: "0.5vw",
               display: "grid",
               padding: "0.5vw 0",
               marginTop: "0.6vw",
