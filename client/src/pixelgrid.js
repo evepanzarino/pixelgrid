@@ -46,7 +46,10 @@ export default function PixelGrid() {
     function handleResize() {
       setSize({ w: window.innerWidth, h: window.innerHeight });
     }
-    const stopDrawing = () => setIsDrawing(false);
+    const stopDrawing = () => {
+      setIsDrawing(false);
+      setHoveredPixel(null);
+    };
 
     window.addEventListener("resize", handleResize);
     window.addEventListener("pointerup", stopDrawing);
