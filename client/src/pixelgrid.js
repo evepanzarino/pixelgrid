@@ -362,20 +362,20 @@ const colors = ${data};
 <div className="title-l"></div>
 <div className="title-l"></div>
 <div className="title-l"></div>
+<div className="title-l" style={{backgroundColor: "#000000"}}></div>
 <div className="title-l"></div>
 <div className="title-l"></div>
+<div className="title-l" style={{backgroundColor: "#000000"}}></div>
 <div className="title-l"></div>
 <div className="title-l"></div>
+<div className="title-l" style={{backgroundColor: "#000000"}}></div>
 <div className="title-l"></div>
 <div className="title-l"></div>
+<div className="title-l" style={{backgroundColor: "#000000"}}></div>
 <div className="title-l"></div>
 <div className="title-l"></div>
-<div className="title-l"></div>
-<div className="title-l"></div>
-<div className="title-l"></div>
-<div className="title-l"></div>
-<div className="title-l"></div>
-<div className="title-l"></div>
+<div className="title-l" style={{backgroundColor: "#000000"}}></div>
+<div className="title-l" style={{backgroundColor: "#000000"}}></div>
 <div className="title-l"></div>
 <div className="title-l"></div>
 <div className="title-l"></div>
