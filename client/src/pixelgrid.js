@@ -131,7 +131,7 @@ const colors = ${data};
         borderBottomColor: "rgb(0, 0, 0)",
         display: "grid",
         alignItems: "center",
-        gridTemplateColumns: "5.25vw 3vw 1.5vw 4.5vw 3vw 2.25vw 3.75vw 3vw 1.5vw 3vw .75vw auto auto auto auto",
+        gridTemplateColumns: "5.25vw 3vw 1.5vw 3vw 3vw 2.25vw 3.75vw 3vw 1.5vw 3vw .75vw auto auto auto auto",
         zIndex: 20
       }}>
         <div className="logo" style={{
@@ -270,9 +270,9 @@ const colors = ${data};
                 <div className="title-letter-3" style={{
           display: "grid",
           position: "relative",
-          gridTemplateColumns: "repeat(6, .75vw)",
+          gridTemplateColumns: "repeat(4, .75vw)",
           gridTemplateRows: "repeat(7, .75vw)",
-          width: "4.5vw"
+          width: "3vw"
         }}>
 <div className="title-x"></div>
 <div className="title-x"></div>
@@ -281,35 +281,21 @@ const colors = ${data};
 <div className="title-x"></div>
 <div className="title-x"></div>
 <div className="title-x"></div>
-<div className="title-x" style={{backgroundColor: "#000000"}}></div>
-<div className="title-x"></div>
-<div className="title-x"></div>
-<div className="title-x"></div>
-<div className="title-x" style={{backgroundColor: "#000000"}}></div>
-<div className="title-x"></div>
-<div className="title-x"></div>
-<div className="title-x" style={{backgroundColor: "#000000"}}></div>
-<div className="title-x"></div>
-<div className="title-x" style={{backgroundColor: "#000000"}}></div>
 <div className="title-x"></div>
 <div className="title-x"></div>
 <div className="title-x"></div>
 <div className="title-x"></div>
-<div className="title-x" style={{backgroundColor: "#000000"}}></div>
 <div className="title-x"></div>
 <div className="title-x"></div>
 <div className="title-x"></div>
 <div className="title-x"></div>
-<div className="title-x" style={{backgroundColor: "#000000"}}></div>
-<div className="title-x"></div>
-<div className="title-x" style={{backgroundColor: "#000000"}}></div>
-<div className="title-x"></div>
-<div className="title-x"></div>
-<div className="title-x" style={{backgroundColor: "#000000"}}></div>
 <div className="title-x"></div>
 <div className="title-x"></div>
 <div className="title-x"></div>
-<div className="title-x" style={{backgroundColor: "#000000"}}></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
 <div className="title-x"></div>
 <div className="title-x"></div>
 <div className="title-x"></div>
