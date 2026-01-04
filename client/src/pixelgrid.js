@@ -127,7 +127,7 @@ const colors = ${data};
         borderBottomColor: "rgb(0, 0, 0)",
         display: "grid",
         alignItems: "center",
-        gridTemplateColumns: "5.25vw 3vw 1.5vw auto",
+        gridTemplateColumns: "5.25vw 3vw 1.5vw 4.5vw auto",
         zIndex: 20
       }}>
         <div className="logo" style={{
