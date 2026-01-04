@@ -246,21 +246,7 @@ const colors = ${data};
 <div className="title-i"></div>
 <div className="title-i" style={{backgroundColor: "#000000"}}></div>
 <div className="title-i"></div>
-<div className="title-i"></div>
-<div className="title-i"></div>
-<div className="title-i"></div>
 <div className="title-i" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
-<div className="title-i"></div>
-<div className="title-i"></div>
-<div className="title-i"></div>
-<div className="title-i"></div>
-<div className="title-i"></div>
-<div className="title-i"></div>
-<div className="title-i"></div>
-<div className="title-i"></div>
-<div className="title-i"></div>
-<div className="title-i"></div>
-<div className="title-i"></div>
         </div>
 
         {/* FILE BUTTON */}
