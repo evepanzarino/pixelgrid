@@ -197,20 +197,20 @@ const colors = ${data};
 <div className="title-p"></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
-<div className="title-p" style={{color: "#000000"}}></div>
-<div className="title-p" style={{color: "#000000"}}></div>
-<div className="title-p" style={{color: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
 <div className="title-p"></div>
 <div className="title-p" ></div>
-<div className="title-p" style={{color: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
 <div className="title-p"></div>
-<div className="title-p" style={{color: "#000000"}}></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p" style={{color: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
-<div className="title-p" style={{color: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
