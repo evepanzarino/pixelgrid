@@ -398,30 +398,30 @@ const colors = ${data};
 <div className="title-g"></div>
 <div className="title-g"></div>
 <div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
 <div className="title-g"></div>
 <div className="title-g"></div>
 <div className="title-g"></div>
 <div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
 <div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
 <div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
-<div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
 <div className="title-g"></div>
 <div className="title-g"></div>
 <div className="title-g"></div>
