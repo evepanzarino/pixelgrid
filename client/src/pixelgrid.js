@@ -567,8 +567,8 @@ const colors = ${data};
       }}>
         {(pixelColors || []).map((c, i) => (
           <div
-            key={i}
-            style={{ background: c }}
+            key={`${i}-${c}`}
+            style={{ background: c, boxSizing: 'border-box' }}
             className={`pixel ${isLightColor(c) ? 'pixel-light' : 'pixel-dark'}`}
             onPointerDown={(e) => {
               setIsDrawing(true);
