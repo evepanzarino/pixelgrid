@@ -191,6 +191,7 @@ const colors = ${data};
           position: "relative",
           gridTemplateColumns: "repeat(4, .75vw)",
           gridTemplateRows: "repeat(7, .75vw)",
+          padding: 0,
           width: "3vw"
         }}>
 <div className="title-p"></div>
@@ -198,23 +199,23 @@ const colors = ${data};
 <div className="title-p"></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
-<div className="title-p" style={{backgroundColor: "#000000"}}></div>
-<div className="title-p" style={{backgroundColor: "#000000"}}></div>
-<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
 <div className="title-p"></div>
-<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
 <div className="title-p"></div>
-<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
 <div className="title-p"></div>
-<div className="title-p" style={{backgroundColor: "#000000"}}></div>
-<div className="title-p" style={{backgroundColor: "#000000"}}></div>
-<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
 <div className="title-p"></div>
-<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
-<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
