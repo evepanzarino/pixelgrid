@@ -326,25 +326,25 @@ const colors = ${data};
 <div className="title-e"></div>
 <div className="title-e"></div>
 <div className="title-e"></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e"></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e"></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e"></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e"></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
 <div className="title-e"></div>
 <div className="title-e"></div>
 <div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
-<div className="title-e"></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
 <div className="title-e"></div>
 <div className="title-e"></div>
 <div className="title-e"></div>
