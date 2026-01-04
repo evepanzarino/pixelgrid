@@ -186,41 +186,78 @@ const colors = ${data};
           
         </div>
 
-        <div className="title" style={{
+        <div className="title-letter-1" style={{
           display: "grid",
           position: "relative",
           gridTemplateColumns: "repeat(4, .75vw)",
           gridTemplateRows: "repeat(7, .75vw)",
+          width: "3vw"
         }}>
 <div className="title-p"></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "#000000"}}></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
 <div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-<div className="title-p"></div>
-          
+          </div>
+
+        <div className="title-letter-2" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: "repeat(3, .75vw)",
+          gridTemplateRows: "repeat(7, .75vw)",
+          width: "2.25vw"
+        }}>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
         </div>
 
         {/* FILE BUTTON */}
