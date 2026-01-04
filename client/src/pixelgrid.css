@@ -5,9 +5,9 @@
 }
 
 .pixel-light:hover {
-  border: 0.1vw solid #484848;
+  border: 0.1vw solid #000000;
 }
 
 .pixel-dark:hover {
-  border: 0.1vw solid #fefefe;
+  border: 0.1vw solid #ffffff;
 }
