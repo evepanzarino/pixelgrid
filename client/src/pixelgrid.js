@@ -127,7 +127,7 @@ const colors = ${data};
         borderBottomColor: "rgb(0, 0, 0)",
         display: "grid",
         alignItems: "center",
-        gridTemplateColumns: "5.25vw 3vw 1.5vw 4.5vw 3vw auto",
+        gridTemplateColumns: "5.25vw 3vw 1.5vw 4.5vw 3vw 2.25vw auto",
         zIndex: 20
       }}>
         <div className="logo" style={{
@@ -351,6 +351,35 @@ const colors = ${data};
 <div className="title-e"></div>
         </div>
 
+ <div className="title-letter-5" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: "repeat(3, .75vw)",
+          gridTemplateRows: "repeat(7, .75vw)",
+          width: "2.25vw"
+        }}>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+        </div>
         {/* FILE BUTTON */}
         <div style={{ position: "relative" }}>
           <button
