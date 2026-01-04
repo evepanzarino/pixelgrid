@@ -131,7 +131,7 @@ const colors = ${data};
         borderBottomColor: "rgb(0, 0, 0)",
         display: "grid",
         alignItems: "center",
-        gridTemplateColumns: "5.25vw 3vw 1.5vw 4.5vw 3vw 2.25vw 3.75vw 3vw auto",
+        gridTemplateColumns: "5.25vw 3vw 1.5vw 4.5vw 3vw 2.25vw 3.75vw 3vw 1.5vw auto",
         zIndex: 20
       }}>
         <div className="logo" style={{
@@ -444,19 +444,19 @@ const colors = ${data};
 <div className="title-r"></div>
 <div className="title-r"></div>
 <div className="title-r"></div>
+<div className="title-r" style={{backgroundColor:"#000000"}}></div>
+<div className="title-r" style={{backgroundColor:"#000000"}}></div>
+<div className="title-r" style={{backgroundColor:"#000000"}}></div>
+<div className="title-r"></div>
+<div className="title-r" style={{backgroundColor:"#000000"}}></div>
 <div className="title-r"></div>
 <div className="title-r"></div>
 <div className="title-r"></div>
+<div className="title-r" style={{backgroundColor:"#000000"}}></div>
 <div className="title-r"></div>
 <div className="title-r"></div>
 <div className="title-r"></div>
-<div className="title-r"></div>
-<div className="title-r"></div>
-<div className="title-r"></div>
-<div className="title-r"></div>
-<div className="title-r"></div>
-<div className="title-r"></div>
-<div className="title-r"></div>
+<div className="title-r" style={{backgroundColor: "#000000"}}></div>
 <div className="title-r"></div>
 <div className="title-r"></div>
 <div className="title-r"></div>
@@ -464,7 +464,42 @@ const colors = ${data};
 <div className="title-r"></div>
 <div className="title-r"></div>
         </div>
-
+<div className="title-letter-8" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: "repeat(2, .75vw)",
+          gridTemplateRows: "repeat(7, .75vw)",
+          width: "1.5vw"
+        }}>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "#000000"}}></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "#000000"}}></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "#000000"}}></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+        </div>
 
          
         {/* FILE BUTTON */}
