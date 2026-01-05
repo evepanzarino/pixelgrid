@@ -1,12 +1,12 @@
 // Service Worker for PixelGrid PWA
-const CACHE_NAME = 'pixelgrid-v1';
+const CACHE_NAME = 'pixelgrid-v2';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/static/css/main.519761d6.css',
-  '/static/js/main.04c61261.js',
-  '/manifest.json',
-  '/pixelgrid-title.png'
+  '/pixelgrid/',
+  '/pixelgrid/index.html',
+  '/pixelgrid/static/css/main.e12a7f6a.css',
+  '/pixelgrid/static/js/main.3e22bdfd.js',
+  '/pixelgrid/manifest.json',
+  '/pixelgrid-logo.png'
 ];
 
 // Install event - cache resources
