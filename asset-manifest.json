@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/pixelgrid/static/css/main.519761d6.css",
-    "main.js": "/pixelgrid/static/js/main.04c61261.js",
+    "main.css": "/pixelgrid/static/css/main.e12a7f6a.css",
+    "main.js": "/pixelgrid/static/js/main.16760f6c.js",
     "index.html": "/pixelgrid/index.html",
-    "main.519761d6.css.map": "/pixelgrid/static/css/main.519761d6.css.map",
-    "main.04c61261.js.map": "/pixelgrid/static/js/main.04c61261.js.map"
+    "main.e12a7f6a.css.map": "/pixelgrid/static/css/main.e12a7f6a.css.map",
+    "main.16760f6c.js.map": "/pixelgrid/static/js/main.16760f6c.js.map"
   },
   "entrypoints": [
-    "static/css/main.519761d6.css",
-    "static/js/main.04c61261.js"
+    "static/css/main.e12a7f6a.css",
+    "static/js/main.16760f6c.js"
   ]
 }
