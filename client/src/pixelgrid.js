@@ -20,10 +20,10 @@ export default function PixelGrid() {
 
   // Zoom factor for drawing area based on screen size
   const getZoomFactor = () => {
-    if (size.w <= 768) return 2.25; // Mobile
-    if (size.w <= 1024) return 1.5; // Tablet
-    if (size.w <= 1750) return 1.25;
-    return 1.0; // Desktop
+    if (size.w <= 768) return 2.0; // Mobile
+    if (size.w <= 1024) return 1.75; // Tablet
+    if (size.w <= 1750) return 1.35;
+    return 1.25; // Desktop
   };
 
   const zoomFactor = getZoomFactor();
