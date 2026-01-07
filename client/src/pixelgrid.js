@@ -31,7 +31,7 @@ export default function PixelGrid() {
   const zoomFactor = getZoomFactor();
   const cols = 200;
   // For rows: calculate to fill viewport height with zoom
-  const basePixelSize = 0.5; // Always save at 0.5vw
+  const basePixelSize = 0.75; // Desktop pixel size
   const displayPixelSize = basePixelSize * zoomFactor;
   const calculatedRows = Math.floor(size.h / (size.w * (displayPixelSize / 100)));
   const rows = calculatedRows > 0 ? calculatedRows : 100;
@@ -97,8 +97,8 @@ export default function PixelGrid() {
     const data = JSON.stringify(pixelColors);
     const html = `
 <body style="margin:0; overflow-x:hidden;">
-<div style="display:grid;grid-template-columns:repeat(200,0.5vw);grid-auto-rows:0.5vw;">
-${pixelColors.map(c => `<div style="width:0.5vw;height:0.5vw;background:${c}"></div>`).join("")}}
+<div style="display:grid;grid-template-columns:repeat(200,0.75vw);grid-auto-rows:0.75vw;">
+${pixelColors.map(c => `<div style="width:0.75vw;height:0.75vw;background:${c}"></div>`).join("")}}
 </div>
 <script>
 const colors = ${data};
