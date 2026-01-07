@@ -18,33 +18,35 @@ export default function PixelGrid() {
   const color = activeTool === "primary" ? primaryColor : secondaryColor;
   const gridRef = useRef(null);
 
-  // Initialize with empty array, will be populated by useEffect
-  const [pixelColors, setPixelColors] = useState([]);
-
   // Zoom factor for drawing area based on screen size
   const getZoomFactor = () => {
-    if (size.w <= 768) return 1.75; // Mobile: 2.5x zoom
-    if (size.w <= 1024) return 1.5; // Tablet: 2x zoom
-    if (size.w <= 1750) return 1.325; // Tablet: 2x zoom
-    return 1.2; // Desktop: 1.2x zoom
+    if (size.w <= 768) return 1.75; // Mobile
+    if (size.w <= 1024) return 1.5; // Tablet
+    if (size.w <= 1750) return 1.325;
+    return 1.2; // Desktop
   };
 
   const zoomFactor = getZoomFactor();
-  const cols = 200;
-  // For rows: use a fixed maximum to prevent data loss on resize
-  const maxRows = 200; // Fixed maximum rows to ensure consistent grid size
-  const basePixelSize = 0.75; // Desktop pixel size
+  const cols = 200; // Fixed 200 columns
+  const basePixelSize = 0.75; // Base pixel size in vw
   const displayPixelSize = basePixelSize * zoomFactor;
-  const totalPixels = cols * maxRows;
+  
+  // Calculate rows needed to fill the screen height
+  const pixelSizeInPx = (displayPixelSize / 100) * size.w; // Convert vw to px
+  const rows = Math.ceil(size.h / pixelSizeInPx);
+  const totalPixels = cols * rows;
+
+  // Initialize pixelColors with current total, preserving existing data
+  const [pixelColors, setPixelColors] = useState(() => Array(totalPixels).fill("#ffffff"));
 
   const fileInputRef = useRef(null);
 
-  // Initialize pixelColors array once with fixed size
+  // Update pixel array when totalPixels changes, preserving existing data
   useEffect(() => {
     setPixelColors((prev) => {
       if (prev.length === totalPixels) return prev;
       const newArray = Array(totalPixels).fill("#ffffff");
-      // Copy over existing colors if possible
+      // Copy over existing colors
       const copyLength = Math.min(prev.length, totalPixels);
       for (let i = 0; i < copyLength; i++) {
         newArray[i] = prev[i];
@@ -722,7 +724,7 @@ const colors = ${data};
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(200, ${displayPixelSize}vw)`,
-          gridTemplateRows: `repeat(${maxRows}, ${displayPixelSize}vw)`,
+          gridTemplateRows: `repeat(${rows}, ${displayPixelSize}vw)`,
           userSelect: "none",
           touchAction: "none",
           flex: 1,
