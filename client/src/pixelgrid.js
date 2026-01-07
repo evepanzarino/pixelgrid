@@ -849,9 +849,8 @@ const colors = ${data};
               {/* Slider thumb */}
               <div style={{
                 position: "absolute",
-                left: `${gridRef.current ? (scrollPosition / (gridRef.current.scrollWidth - gridRef.current.clientWidth)) * 100 : 0}%`,
+                left: `${gridRef.current ? Math.min(100 - (8 / (parseFloat(getComputedStyle(document.documentElement).width) * 0.01 * (100 - 4))) * 100, Math.max(0, (scrollPosition / (gridRef.current.scrollWidth - gridRef.current.clientWidth)) * 100)) : 0}%`,
                 top: "0",
-                transform: "translateX(-50%)",
                 width: "8vw",
                 height: "11vw",
                 background: "#000000",
