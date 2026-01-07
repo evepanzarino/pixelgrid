@@ -774,7 +774,6 @@ const colors = ${data};
           display: "grid",
           gridTemplateColumns: "15vw 1fr 15vw",
           background: "#ffffff",
-          borderTop: "0.3vw solid #000000",
           zIndex: 100
         }}>
           {/* Left scroll button */}
@@ -848,7 +847,7 @@ const colors = ${data};
                 left: `${gridRef.current ? (scrollPosition / (gridRef.current.scrollWidth - gridRef.current.clientWidth)) * 100 : 0}%`,
                 bottom: "0",
             
-                transform: "translate(-30%, -30%)",
+                transform: "translate(-50%, -50%)",
                 width: "8vw",
                 height: "8w",
                 background: "#000000",
