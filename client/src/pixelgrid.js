@@ -16,8 +16,8 @@ export default function PixelGrid() {
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
   const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil", "line", "curve", or future tools like "bucket"
   const [lineStartPixel, setLineStartPixel] = useState(null); // For line/curve tool: first click position
-  const [lineEndPixel, setLineEndPixel] = useState(null); // For line tool adjustment mode
-  const [lineCurveAmount, setLineCurveAmount] = useState(0); // Line curve adjustment: -100 to 100%
+  const [curveEndPixel, setCurveEndPixel] = useState(null); // For curve tool adjustment mode
+  const [curveCurveAmount, setCurveCurveAmount] = useState(0); // Curve adjustment: -100 to 100%
   
   const color = activeTool === "primary" ? primaryColor : secondaryColor;
   const gridRef = useRef(null);
@@ -206,17 +206,6 @@ export default function PixelGrid() {
     setPixelColors((prev) => {
       const copy = [...prev];
       linePixels.forEach(i => {
-        copy[i] = color;
-      });
-      return copy;
-    });
-  }
-
-  function drawCurve(startIndex, endIndex) {
-    const curvePixels = getQuadraticBezierPixels(startIndex, endIndex, 50);
-    setPixelColors((prev) => {
-      const copy = [...prev];
-      curvePixels.forEach(i => {
         copy[i] = color;
       });
       return copy;
@@ -784,8 +773,6 @@ const colors = ${data};
               onClick={() => {
                 setActiveDrawingTool("line");
                 setLineStartPixel(null);
-                setLineEndPixel(null);
-                setLineCurveAmount(0);
               }}
               style={{
                 width: size.w <= 1024 ? "8vw" : "6vw",
@@ -807,6 +794,8 @@ const colors = ${data};
               onClick={() => {
                 setActiveDrawingTool("curve");
                 setLineStartPixel(null);
+                setCurveEndPixel(null);
+                setCurveCurveAmount(0);
               }}
               style={{
                 width: size.w <= 1024 ? "8vw" : "6vw",
@@ -935,24 +924,25 @@ const colors = ${data};
         {(pixelColors || []).map((c, i) => {
           const isHovered = !isDrawing && hoveredPixel === i;
           const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
-          const isLineEnd = activeDrawingTool === "line" && lineEndPixel === i;
+          const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
           
           // Show straight line preview or curve preview
           let isInLinePreview = false;
-          if (activeDrawingTool === "line" && lineStartPixel !== null && lineEndPixel === null && hoveredPixel !== null) {
-            // First click done, showing preview to hover
+          if (activeDrawingTool === "line" && lineStartPixel !== null && hoveredPixel !== null) {
+            // Line tool: show straight line preview
             isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
-          } else if (activeDrawingTool === "line" && lineStartPixel !== null && lineEndPixel !== null) {
-            // Second click done, showing adjustable curve
-            isInLinePreview = getQuadraticBezierPixels(lineStartPixel, lineEndPixel, lineCurveAmount).includes(i);
-          } else if (activeDrawingTool === "curve" && lineStartPixel !== null && hoveredPixel !== null) {
-            isInLinePreview = getQuadraticBezierPixels(lineStartPixel, hoveredPixel, 50).includes(i);
+          } else if (activeDrawingTool === "curve" && lineStartPixel !== null && curveEndPixel === null && hoveredPixel !== null) {
+            // Curve tool first click done, showing preview to hover
+            isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
+          } else if (activeDrawingTool === "curve" && lineStartPixel !== null && curveEndPixel !== null) {
+            // Curve tool second click done, showing adjustable curve
+            isInLinePreview = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount).includes(i);
           }
           
           let borderColor = 'transparent';
           let borderWidth = `${0.1 * zoomFactor}vw`;
           
-          if (isLineEnd) {
+          if (isCurveEnd) {
             borderColor = getContrastBorderColor(c);
             borderWidth = `${0.3 * zoomFactor}vw`;
           } else if (isLineStart || isInLinePreview) {
@@ -983,21 +973,20 @@ const colors = ${data};
                     // Clicking same pixel - cancel
                     setLineStartPixel(null);
                   } else {
-                    // Second click: enter adjustment mode
-                    setLineEndPixel(i);
+                    // Second click: draw straight line immediately
+                    drawLine(lineStartPixel, i);
+                    setLineStartPixel(null);
                   }
                 } else if (activeDrawingTool === "curve") {
                   if (lineStartPixel === null) {
                     // First click: set start point
                     setLineStartPixel(i);
                   } else if (lineStartPixel === i) {
-                    // Clicking same pixel - ignore
-                    return;
-                  } else {
-                    // Second click: draw curve
-                    drawCurve(lineStartPixel, i);
+                    // Clicking same pixel - cancel
                     setLineStartPixel(null);
-                    setHoveredPixel(null);
+                  } else {
+                    // Second click: enter adjustment mode
+                    setCurveEndPixel(i);
                   }
                 }
               }}
@@ -1239,8 +1228,8 @@ const colors = ${data};
         </div>
       )}
 
-      {/* LINE CURVE ADJUSTMENT OVERLAY */}
-      {activeDrawingTool === "line" && lineStartPixel !== null && lineEndPixel !== null && (
+      {/* CURVE ADJUSTMENT OVERLAY */}
+      {activeDrawingTool === "curve" && lineStartPixel !== null && curveEndPixel !== null && (
         <div
           style={{
             position: "fixed",
@@ -1261,8 +1250,8 @@ const colors = ${data};
             type="number"
             min="-100"
             max="100"
-            value={lineCurveAmount}
-            onChange={(e) => setLineCurveAmount(Math.min(100, Math.max(-100, Number(e.target.value))))}
+            value={curveCurveAmount}
+            onChange={(e) => setCurveCurveAmount(Math.min(100, Math.max(-100, Number(e.target.value))))}
             autoFocus
             style={{
               width: "12vw",
@@ -1277,8 +1266,8 @@ const colors = ${data};
             type="range"
             min="-100"
             max="100"
-            value={lineCurveAmount}
-            onChange={(e) => setLineCurveAmount(Number(e.target.value))}
+            value={curveCurveAmount}
+            onChange={(e) => setCurveCurveAmount(Number(e.target.value))}
             style={{ width: "80%" }}
           />
           
@@ -1286,8 +1275,8 @@ const colors = ${data};
             <button
               onClick={() => {
                 setLineStartPixel(null);
-                setLineEndPixel(null);
-                setLineCurveAmount(0);
+                setCurveEndPixel(null);
+                setCurveCurveAmount(0);
                 setHoveredPixel(null);
               }}
               style={{
@@ -1305,10 +1294,10 @@ const colors = ${data};
             
             <button
               onClick={() => {
-                if (lineCurveAmount === 0) {
-                  drawLine(lineStartPixel, lineEndPixel);
+                if (curveCurveAmount === 0) {
+                  drawLine(lineStartPixel, curveEndPixel);
                 } else {
-                  const curvePixels = getQuadraticBezierPixels(lineStartPixel, lineEndPixel, lineCurveAmount);
+                  const curvePixels = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount);
                   setPixelColors((prev) => {
                     const copy = [...prev];
                     curvePixels.forEach(idx => {
@@ -1318,8 +1307,8 @@ const colors = ${data};
                   });
                 }
                 setLineStartPixel(null);
-                setLineEndPixel(null);
-                setLineCurveAmount(0);
+                setCurveEndPixel(null);
+                setCurveCurveAmount(0);
                 setHoveredPixel(null);
               }}
               style={{
