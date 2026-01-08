@@ -27,7 +27,7 @@ export default function PixelGrid() {
   const [hoveredPixel, setHoveredPixel] = useState(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
-  const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil", "line", "curve", "bucket", "select"
+  const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil", "line", "curve", "bucket", "select", "movegroup"
   const [lineStartPixel, setLineStartPixel] = useState(null); // For line/curve tool: first click position
   const [curveEndPixel, setCurveEndPixel] = useState(null); // For curve tool adjustment mode
   const [curveCurveAmount, setCurveCurveAmount] = useState(0); // Curve adjustment: -100 to 100%
@@ -1321,6 +1321,34 @@ const savedData = ${dataString};
                 <i className="fas fa-vector-square"></i>
               </button>
             )}
+            {viewMode === "layers" && (
+              <button
+                onClick={() => {
+                  setActiveDrawingTool("movegroup");
+                  setLineStartPixel(null);
+                  setSelectionStart(null);
+                  setSelectionEnd(null);
+                  setActiveGroup(null);
+                  setGroupDragStart(null);
+                }}
+                style={{
+                  width: size.w <= 1024 ? "8vw" : "6vw",
+                  height: size.w <= 1024 ? "8vw" : "6vw",
+                  background: activeDrawingTool === "movegroup" ? "#333" : "#fefefe",
+                  color: activeDrawingTool === "movegroup" ? "#fff" : "#000",
+                  border: "0.3vw solid #000000",
+                  cursor: "pointer",
+                  fontSize: size.w <= 1024 ? "3vw" : "2vw",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: activeDrawingTool === "movegroup" ? "0px 0px .2vw .2vw #000000" : "none",
+                }}
+                title="Click and drag to move a group"
+              >
+                ☩
+              </button>
+            )}
           </div>
         </div>
 
@@ -1461,6 +1489,7 @@ const savedData = ${dataString};
           const isSelected = viewMode === "layers" ? selectedPixels.includes(i) : false;
           const isInSelectionRect = viewMode === "layers" && activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && isDrawing && getSelectionRectangle(selectionStart, selectionEnd).includes(i);
           const isInActiveGroup = viewMode === "layers" && pixelGroup && pixelGroup.group === activeGroup;
+          const isMoveGroupHover = viewMode === "layers" && activeDrawingTool === "movegroup" && pixelGroup && hoveredPixel === i;
           
           // Show straight line preview or curve preview (only in drawing mode for performance)
           let isInLinePreview = false;
@@ -1478,7 +1507,11 @@ const savedData = ${dataString};
           let borderWidth = `${0.1 * zoomFactor}vw`;
           let boxShadow = 'none';
           
-          if (isInActiveGroup) {
+          if (isMoveGroupHover) {
+            borderColor = '#9C27B0';
+            borderWidth = `${0.3 * zoomFactor}vw`;
+            boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
+          } else if (isInActiveGroup) {
             borderColor = '#2196F3';
             borderWidth = `${0.3 * zoomFactor}vw`;
             boxShadow = '0 0 0.5vw #2196F3';
@@ -1508,8 +1541,11 @@ const savedData = ${dataString};
                 zIndex: pixelGroup ? pixelGroup.zIndex : 0
               }}
               onPointerDown={(e) => {
-                // Check if clicking on a grouped pixel first (only in layers mode)
-                if (viewMode === "layers" && pixelGroup && !activeDrawingTool.match(/select/)) {
+                // Check if clicking on a grouped pixel with movegroup tool
+                if (viewMode === "layers" && activeDrawingTool === "movegroup" && pixelGroup) {
+                  setActiveGroup(pixelGroup.group);
+                  setGroupDragStart({ pixelIndex: i, offsetRow: 0, offsetCol: 0 });
+                } else if (viewMode === "layers" && pixelGroup && !activeDrawingTool.match(/select|movegroup/)) {
                   setActiveGroup(pixelGroup.group);
                   setGroupDragStart({ pixelIndex: i, offsetRow: 0, offsetCol: 0 });
                 } else if (activeDrawingTool === "pencil") {
@@ -1571,14 +1607,21 @@ const savedData = ${dataString};
                 } else if (isDrawing && activeDrawingTool === "select") {
                   setSelectionEnd(i);
                 }
-                // Only update hover in drawing mode for performance
+                // Update hover in drawing mode for performance, or in layers mode for movegroup tool
                 if (viewMode === "drawing") {
+                  setHoveredPixel(i);
+                } else if (viewMode === "layers" && activeDrawingTool === "movegroup") {
                   setHoveredPixel(i);
                 }
               }}
               onPointerMove={(e) => {
                 // Update hovered pixel for line preview only when needed
                 if (viewMode === "drawing" && (activeDrawingTool === "line" || activeDrawingTool === "curve")) {
+                  setHoveredPixel(i);
+                }
+                
+                // Update hover for movegroup tool in layers mode
+                if (viewMode === "layers" && activeDrawingTool === "movegroup") {
                   setHoveredPixel(i);
                 }
                 
