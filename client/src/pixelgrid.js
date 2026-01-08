@@ -1010,12 +1010,15 @@ const colors = ${data};
                 } else if (activeDrawingTool === "line") {
                   if (lineStartPixel === null) {
                     // First click: set start point
+                    console.log("Line tool: First click at", i);
                     setLineStartPixel(i);
                   } else if (lineStartPixel === i) {
                     // Clicking same pixel - ignore
+                    console.log("Line tool: Same pixel clicked, ignoring");
                     return;
                   } else if (lineEndPixel === null) {
                     // Second click: set end point and enter adjustment mode
+                    console.log("Line tool: Second click at", i, "- entering adjustment mode");
                     setLineEndPixel(i);
                     setLineCurveAmount(0); // Start with straight line
                   }
