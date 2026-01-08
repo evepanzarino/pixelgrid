@@ -2263,7 +2263,7 @@ const savedData = ${dataString};
           flexDirection: "column",
           gap: "1.5vw",
           borderTop: "0.3vw solid #ffffff",
-          maxHeight: "40vh",
+          maxHeight: "25vw",
           overflowY: "auto"
         }}>
           
