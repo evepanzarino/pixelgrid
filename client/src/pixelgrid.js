@@ -1017,6 +1017,7 @@ const colors = ${data};
                 setLineStartPixel(null);
                 setSelectionStart(null);
                 setSelectionEnd(null);
+                setShowGroupDialog(true);
               }}
               style={{
                 width: size.w <= 1024 ? "8vw" : "6vw",
@@ -1624,8 +1625,8 @@ const colors = ${data};
         </div>
       )}
 
-      {/* GROUP DIALOG */}
-      {showGroupDialog && (
+      {/* GROUP DIALOG AND LAYERS PANEL IN BOTTOM BAR */}
+      {(showGroupDialog || activeGroup) && (
         <div style={{
           position: "fixed",
           bottom: "5vh",
@@ -1642,190 +1643,212 @@ const colors = ${data};
           justifyContent: "center",
           borderTop: "0.3vw solid #ffffff"
         }}>
-          <div style={{ fontSize: "1.3vw", fontWeight: "bold" }}>
-            {selectedPixels.length} pixels selected
-          </div>
-          <input
-            type="text"
-            placeholder="Group name"
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && e.target.value.trim()) {
-                createGroup(e.target.value.trim());
-              }
-            }}
-            style={{
-              padding: "1vw",
-              fontSize: "1.5vw",
-              width: "15vw",
-              border: "0.2vw solid #000000",
-              textAlign: "center"
-            }}
-          />
-          <div style={{ display: "flex", gap: "1vw" }}>
-            <button
-              onClick={() => {
-                setShowGroupDialog(false);
-                setSelectedPixels([]);
-              }}
-              style={{
-                background: "#f44336",
-                color: "white",
-                border: "0.2vw solid #000",
-                padding: "1vw 3vw",
-                cursor: "pointer",
-                fontSize: "1.3vw",
-                fontWeight: "bold"
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                const input = document.querySelector('input[placeholder="Group name"]');
-                if (input && input.value.trim()) {
-                  createGroup(input.value.trim());
-                }
-              }}
-              style={{
-                background: "#4CAF50",
-                color: "white",
-                border: "0.2vw solid #000",
-                padding: "1vw 3vw",
-                cursor: "pointer",
-                fontSize: "1.3vw",
-                fontWeight: "bold"
-              }}
-            >
-              Create Group
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* LAYERS PANEL IN BOTTOM BAR */}
-      {activeGroup && (
-        <div style={{
-          position: "fixed",
-          bottom: "5vh",
-          left: size.w <= 1024 ? "10vw" : "7vw",
-          right: 0,
-          background: "rgba(0,0,0,0.9)",
-          color: "white",
-          padding: "2vw",
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "row",
-          gap: "2vw",
-          alignItems: "center",
-          justifyContent: "center",
-          borderTop: "0.3vw solid #ffffff"
-        }}>
-          <div style={{ fontSize: "1.3vw", fontWeight: "bold" }}>
-            Editing Layer:
-          </div>
-          <input
-            type="text"
-            value={groups.find(g => g.name === activeGroup)?.name || activeGroup}
-            onChange={(e) => {
-              if (e.target.value.trim()) {
-                const newGroups = groups.map(g => 
-                  g.name === activeGroup ? { ...g, name: e.target.value.trim() } : g
-                );
-                setGroups(newGroups);
-                
-                const newPixelGroups = {};
-                Object.keys(pixelGroups).forEach(idx => {
-                  const pg = pixelGroups[idx];
-                  newPixelGroups[idx] = pg.group === activeGroup 
-                    ? { ...pg, group: e.target.value.trim() }
-                    : pg;
-                });
-                setPixelGroups(newPixelGroups);
-                setActiveGroup(e.target.value.trim());
-              }
-            }}
-            style={{
-              padding: "1vw",
-              fontSize: "1.5vw",
-              width: "15vw",
-              border: "0.2vw solid #000000",
-              textAlign: "center"
-            }}
-          />
-          <div style={{ display: "flex", gap: "1vw", alignItems: "center" }}>
-            <span style={{ fontSize: "1.2vw" }}>Z-Index:</span>
-            <button
-              onClick={() => {
-                const newGroups = groups.map(g => 
-                  g.name === activeGroup ? { ...g, zIndex: g.zIndex - 1 } : g
-                );
-                setGroups(newGroups);
-                const newPixelGroups = {};
-                Object.keys(pixelGroups).forEach(idx => {
-                  const pg = pixelGroups[idx];
-                  newPixelGroups[idx] = pg.group === activeGroup 
-                    ? { ...pg, zIndex: pg.zIndex - 1 }
-                    : pg;
-                });
-                setPixelGroups(newPixelGroups);
-              }}
-              style={{
-                background: "#444",
-                color: "white",
-                border: "0.2vw solid #000",
-                padding: "0.5vw 1vw",
-                cursor: "pointer",
-                fontSize: "1.3vw",
-                fontWeight: "bold"
-              }}
-            >
-              ▼
-            </button>
-            <span style={{ fontSize: "1.5vw", fontWeight: "bold", minWidth: "3vw", textAlign: "center" }}>
-              {groups.find(g => g.name === activeGroup)?.zIndex || 0}
-            </span>
-            <button
-              onClick={() => {
-                const newGroups = groups.map(g => 
-                  g.name === activeGroup ? { ...g, zIndex: g.zIndex + 1 } : g
-                );
-                setGroups(newGroups);
-                const newPixelGroups = {};
-                Object.keys(pixelGroups).forEach(idx => {
-                  const pg = pixelGroups[idx];
-                  newPixelGroups[idx] = pg.group === activeGroup 
-                    ? { ...pg, zIndex: pg.zIndex + 1 }
-                    : pg;
-                });
-                setPixelGroups(newPixelGroups);
-              }}
-              style={{
-                background: "#444",
-                color: "white",
-                border: "0.2vw solid #000",
-                padding: "0.5vw 1vw",
-                cursor: "pointer",
-                fontSize: "1.3vw",
-                fontWeight: "bold"
-              }}
-            >
-              ▲
-            </button>
-          </div>
+          
+          {/* Group Creation Section */}
+          {selectedPixels.length > 0 && (
+            <>
+              <div style={{ fontSize: "1.3vw", fontWeight: "bold" }}>
+                {selectedPixels.length} pixels selected
+              </div>
+              <input
+                type="text"
+                placeholder="Group name"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.target.value.trim()) {
+                    createGroup(e.target.value.trim());
+                  }
+                }}
+                style={{
+                  padding: "1vw",
+                  fontSize: "1.5vw",
+                  width: "15vw",
+                  border: "0.2vw solid #000000",
+                  textAlign: "center"
+                }}
+              />
+              <button
+                onClick={() => {
+                  const input = document.querySelector('input[placeholder="Group name"]');
+                  if (input && input.value.trim()) {
+                    createGroup(input.value.trim());
+                  }
+                }}
+                style={{
+                  background: "#4CAF50",
+                  color: "white",
+                  border: "0.2vw solid #000",
+                  padding: "1vw 3vw",
+                  cursor: "pointer",
+                  fontSize: "1.3vw",
+                  fontWeight: "bold"
+                }}
+              >
+                Create Group
+              </button>
+              <div style={{ borderLeft: "0.2vw solid #666", height: "4vw", margin: "0 1vw" }} />
+            </>
+          )}
+          
+          {/* Layer Editor Section */}
+          {activeGroup && (
+            <>
+              <div style={{ fontSize: "1.3vw", fontWeight: "bold" }}>
+                Editing:
+              </div>
+              <input
+                type="text"
+                value={groups.find(g => g.name === activeGroup)?.name || activeGroup}
+                onChange={(e) => {
+                  if (e.target.value.trim()) {
+                    const newGroups = groups.map(g => 
+                      g.name === activeGroup ? { ...g, name: e.target.value.trim() } : g
+                    );
+                    setGroups(newGroups);
+                    
+                    const newPixelGroups = {};
+                    Object.keys(pixelGroups).forEach(idx => {
+                      const pg = pixelGroups[idx];
+                      newPixelGroups[idx] = pg.group === activeGroup 
+                        ? { ...pg, group: e.target.value.trim() }
+                        : pg;
+                    });
+                    setPixelGroups(newPixelGroups);
+                    setActiveGroup(e.target.value.trim());
+                  }
+                }}
+                style={{
+                  padding: "1vw",
+                  fontSize: "1.5vw",
+                  width: "15vw",
+                  border: "0.2vw solid #000000",
+                  textAlign: "center"
+                }}
+              />
+              <div style={{ display: "flex", gap: "1vw", alignItems: "center" }}>
+                <span style={{ fontSize: "1.2vw" }}>Z:</span>
+                <button
+                  onClick={() => {
+                    const newGroups = groups.map(g => 
+                      g.name === activeGroup ? { ...g, zIndex: g.zIndex - 1 } : g
+                    );
+                    setGroups(newGroups);
+                    const newPixelGroups = {};
+                    Object.keys(pixelGroups).forEach(idx => {
+                      const pg = pixelGroups[idx];
+                      newPixelGroups[idx] = pg.group === activeGroup 
+                        ? { ...pg, zIndex: pg.zIndex - 1 }
+                        : pg;
+                    });
+                    setPixelGroups(newPixelGroups);
+                  }}
+                  style={{
+                    background: "#444",
+                    color: "white",
+                    border: "0.2vw solid #000",
+                    padding: "0.5vw 1vw",
+                    cursor: "pointer",
+                    fontSize: "1.3vw",
+                    fontWeight: "bold"
+                  }}
+                >
+                  ▼
+                </button>
+                <span style={{ fontSize: "1.5vw", fontWeight: "bold", minWidth: "3vw", textAlign: "center" }}>
+                  {groups.find(g => g.name === activeGroup)?.zIndex || 0}
+                </span>
+                <button
+                  onClick={() => {
+                    const newGroups = groups.map(g => 
+                      g.name === activeGroup ? { ...g, zIndex: g.zIndex + 1 } : g
+                    );
+                    setGroups(newGroups);
+                    const newPixelGroups = {};
+                    Object.keys(pixelGroups).forEach(idx => {
+                      const pg = pixelGroups[idx];
+                      newPixelGroups[idx] = pg.group === activeGroup 
+                        ? { ...pg, zIndex: pg.zIndex + 1 }
+                        : pg;
+                    });
+                    setPixelGroups(newPixelGroups);
+                  }}
+                  style={{
+                    background: "#444",
+                    color: "white",
+                    border: "0.2vw solid #000",
+                    padding: "0.5vw 1vw",
+                    cursor: "pointer",
+                    fontSize: "1.3vw",
+                    fontWeight: "bold"
+                  }}
+                >
+                  ▲
+                </button>
+              </div>
+              <button
+                onClick={() => setActiveGroup(null)}
+                style={{
+                  background: "#f44336",
+                  color: "white",
+                  border: "0.2vw solid #000",
+                  padding: "1vw 2vw",
+                  cursor: "pointer",
+                  fontSize: "1.3vw",
+                  fontWeight: "bold"
+                }}
+              >
+                Done
+              </button>
+              <div style={{ borderLeft: "0.2vw solid #666", height: "4vw", margin: "0 1vw" }} />
+            </>
+          )}
+          
+          {/* All Groups List */}
+          {groups.length > 0 && (
+            <>
+              <div style={{ fontSize: "1.2vw", fontWeight: "bold" }}>
+                All Layers: {groups.length}
+              </div>
+              <select
+                value={activeGroup || ""}
+                onChange={(e) => e.target.value && setActiveGroup(e.target.value)}
+                style={{
+                  padding: "0.8vw",
+                  fontSize: "1.2vw",
+                  background: "#333",
+                  color: "white",
+                  border: "0.2vw solid #000",
+                  cursor: "pointer"
+                }}
+              >
+                <option value="">Select layer...</option>
+                {groups.sort((a, b) => b.zIndex - a.zIndex).map(g => (
+                  <option key={g.name} value={g.name}>
+                    {g.name} (z: {g.zIndex})
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+          
+          {/* Close button */}
           <button
-            onClick={() => setActiveGroup(null)}
+            onClick={() => {
+              setShowGroupDialog(false);
+              setActiveGroup(null);
+              setActiveDrawingTool("pencil");
+            }}
             style={{
-              background: "#f44336",
+              background: "#666",
               color: "white",
               border: "0.2vw solid #000",
-              padding: "1vw 3vw",
+              padding: "1vw 2vw",
               cursor: "pointer",
               fontSize: "1.3vw",
               fontWeight: "bold"
             }}
           >
-            Done
+            ✕
           </button>
         </div>
       )}
