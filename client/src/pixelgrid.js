@@ -16,6 +16,8 @@ export default function PixelGrid() {
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
   const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil", "line", "curve", or future tools like "bucket"
   const [lineStartPixel, setLineStartPixel] = useState(null); // For line/curve tool: first click position
+  const [lineEndPixel, setLineEndPixel] = useState(null); // For line tool: second click position (before finalizing)
+  const [lineCurveAmount, setLineCurveAmount] = useState(0); // Curve amount for line tool when in adjustment mode
   const [curveAmount, setCurveAmount] = useState(50); // Curve intensity: 0-100%
   
   const color = activeTool === "primary" ? primaryColor : secondaryColor;
@@ -79,8 +81,8 @@ export default function PixelGrid() {
     const stopDrawing = () => {
       setIsDrawing(false);
       
-      // Don't clear hoveredPixel if we're in line/curve mode waiting for second click
-      if (!((activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel !== null)) {
+      // Don't clear hoveredPixel if we're in line/curve mode waiting for second click or adjusting
+      if (!((activeDrawingTool === "line" || activeDrawingTool === "curve") && (lineStartPixel !== null || lineEndPixel !== null))) {
         setHoveredPixel(null);
       }
     };
@@ -783,6 +785,8 @@ const colors = ${data};
               onClick={() => {
                 setActiveDrawingTool("line");
                 setLineStartPixel(null);
+                setLineEndPixel(null);
+                setLineCurveAmount(0);
               }}
               style={{
                 width: size.w <= 1024 ? "8vw" : "6vw",
@@ -963,11 +967,16 @@ const colors = ${data};
         {(pixelColors || []).map((c, i) => {
           const isHovered = !isDrawing && hoveredPixel === i;
           const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
+          const isLineEnd = activeDrawingTool === "line" && lineEndPixel === i;
           
           // Show straight line preview or curve preview
           let isInLinePreview = false;
-          if (activeDrawingTool === "line" && lineStartPixel !== null && hoveredPixel !== null) {
+          if (activeDrawingTool === "line" && lineStartPixel !== null && lineEndPixel === null && hoveredPixel !== null) {
+            // First click done, showing preview to hover
             isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
+          } else if (activeDrawingTool === "line" && lineStartPixel !== null && lineEndPixel !== null) {
+            // Second click done, showing adjustable curve
+            isInLinePreview = getQuadraticBezierPixels(lineStartPixel, lineEndPixel, lineCurveAmount).includes(i);
           } else if (activeDrawingTool === "curve" && lineStartPixel !== null && hoveredPixel !== null) {
             isInLinePreview = getQuadraticBezierPixels(lineStartPixel, hoveredPixel, curveAmount).includes(i);
           }
@@ -975,7 +984,10 @@ const colors = ${data};
           let borderColor = 'transparent';
           let borderWidth = `${0.1 * zoomFactor}vw`;
           
-          if (isLineStart || isInLinePreview) {
+          if (isLineEnd) {
+            borderColor = getContrastBorderColor(c);
+            borderWidth = `${0.3 * zoomFactor}vw`;
+          } else if (isLineStart || isInLinePreview) {
             borderColor = getContrastBorderColor(c);
             borderWidth = `${0.2 * zoomFactor}vw`;
           } else if (isHovered) {
@@ -1002,11 +1014,10 @@ const colors = ${data};
                   } else if (lineStartPixel === i) {
                     // Clicking same pixel - ignore
                     return;
-                  } else {
-                    // Second click: draw straight line
-                    drawLine(lineStartPixel, i);
-                    setLineStartPixel(null);
-                    setHoveredPixel(null);
+                  } else if (lineEndPixel === null) {
+                    // Second click: set end point and enter adjustment mode
+                    setLineEndPixel(i);
+                    setLineCurveAmount(0); // Start with straight line
                   }
                 } else if (activeDrawingTool === "curve") {
                   if (lineStartPixel === null) {
@@ -1256,6 +1267,139 @@ const colors = ${data};
               }}
             >
               Done
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* LINE CURVE ADJUSTMENT OVERLAY */}
+      {activeDrawingTool === "line" && lineStartPixel !== null && lineEndPixel !== null && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: size.w <= 1024 ? "10vw" : "0",
+            left: 0,
+            width: "100%",
+            background: "#333",
+            padding: "1.5vw",
+            borderTop: "0.3vw solid #000000",
+            zIndex: 1000,
+            display: "flex",
+            flexDirection: "column",
+            gap: "1vw",
+            alignItems: "center"
+          }}
+        >
+          <div style={{ color: "white", fontSize: "1.5vw", fontWeight: "bold" }}>
+            Adjust Curve: {lineCurveAmount}%
+          </div>
+          
+          <div style={{ width: "80%", display: "flex", gap: "1vw", alignItems: "center" }}>
+            <button
+              onClick={() => setLineCurveAmount(Math.max(-100, lineCurveAmount - 10))}
+              style={{
+                background: "#555",
+                color: "white",
+                border: "0.2vw solid #000",
+                padding: "1vw 2vw",
+                cursor: "pointer",
+                fontSize: "1.5vw"
+              }}
+            >
+              −
+            </button>
+            
+            <input
+              type="range"
+              min="-100"
+              max="100"
+              value={lineCurveAmount}
+              onChange={(e) => setLineCurveAmount(Number(e.target.value))}
+              style={{ flex: 1 }}
+            />
+            
+            <button
+              onClick={() => setLineCurveAmount(Math.min(100, lineCurveAmount + 10))}
+              style={{
+                background: "#555",
+                color: "white",
+                border: "0.2vw solid #000",
+                padding: "1vw 2vw",
+                cursor: "pointer",
+                fontSize: "1.5vw"
+              }}
+            >
+              +
+            </button>
+            
+            <input
+              type="number"
+              min="-100"
+              max="100"
+              value={lineCurveAmount}
+              onChange={(e) => setLineCurveAmount(Math.min(100, Math.max(-100, Number(e.target.value))))}
+              style={{
+                width: "8vw",
+                padding: "0.5vw",
+                fontSize: "1.2vw",
+                border: "0.2vw solid #000000",
+                textAlign: "center"
+              }}
+            />
+          </div>
+          
+          <div style={{ display: "flex", gap: "1vw" }}>
+            <button
+              onClick={() => {
+                // Finalize and draw the line
+                if (lineCurveAmount === 0) {
+                  drawLine(lineStartPixel, lineEndPixel);
+                } else {
+                  const curvePixels = getQuadraticBezierPixels(lineStartPixel, lineEndPixel, lineCurveAmount);
+                  setPixelColors((prev) => {
+                    const copy = [...prev];
+                    curvePixels.forEach(idx => {
+                      copy[idx] = color;
+                    });
+                    return copy;
+                  });
+                }
+                setLineStartPixel(null);
+                setLineEndPixel(null);
+                setLineCurveAmount(0);
+                setHoveredPixel(null);
+              }}
+              style={{
+                background: "#4CAF50",
+                color: "white",
+                border: "0.2vw solid #000",
+                padding: "1vw 3vw",
+                cursor: "pointer",
+                fontSize: "1.3vw",
+                fontWeight: "bold"
+              }}
+            >
+              Apply
+            </button>
+            
+            <button
+              onClick={() => {
+                setLineStartPixel(null);
+                setLineEndPixel(null);
+                setLineCurveAmount(0);
+                setHoveredPixel(null);
+              }}
+              style={{
+                background: "#f44336",
+                color: "white",
+                border: "0.2vw solid #000",
+                padding: "1vw 3vw",
+                cursor: "pointer",
+                fontSize: "1.3vw",
+                fontWeight: "bold"
+              }}
+            >
+              Cancel
             </button>
           </div>
         </div>
