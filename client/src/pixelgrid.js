@@ -1395,6 +1395,36 @@ const savedData = ${dataString};
                 >
                   <i className="fas fa-fill-drip"></i>
                 </button>
+                <button
+                  onClick={async () => {
+                    await loadTool("select");
+                    setActiveDrawingTool("select");
+                    setLineStartPixel(null);
+                    setSelectionStart(null);
+                    setSelectionEnd(null);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: activeDrawingTool === "select" ? "#333" : "#fefefe",
+                    color: activeDrawingTool === "select" ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: activeDrawingTool === "select" ? "0px 0px .2vw .2vw #000000" : "none",
+                    position: "relative",
+                  }}
+                >
+                  <i className="fas fa-arrows-alt" style={{
+                    position: "absolute",
+                    fontSize: size.w <= 1024 ? "3vw" : "2vw",
+                    opacity: 0.3,
+                  }}></i>
+                  <i className="fas fa-vector-square"></i>
+                </button>
               </>
             )}
             {viewMode === "layers" && (
