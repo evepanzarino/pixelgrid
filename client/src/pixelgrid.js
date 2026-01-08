@@ -224,6 +224,44 @@ export default function PixelGrid() {
       const stack = [startIndex];
       const visited = new Set();
       
+      // Helper function to check if a pixel is a boundary
+      const isBoundary = (index) => {
+        if (index < 0 || index >= copy.length) return true;
+        const pixelColor = copy[index];
+        
+        // A pixel is a boundary if it's not the target color
+        if (pixelColor !== targetColor) {
+          // But also check if there are enough similar colored pixels nearby
+          // to form a "wall" - this helps detect lines even with small gaps
+          const row = Math.floor(index / 200);
+          const col = index % 200;
+          let boundaryCount = 0;
+          
+          // Check all 8 surrounding pixels
+          const neighbors = [
+            row > 0 ? index - 200 : -1, // up
+            row < Math.floor(copy.length / 200) - 1 ? index + 200 : -1, // down
+            col > 0 ? index - 1 : -1, // left
+            col < 199 ? index + 1 : -1, // right
+            (row > 0 && col > 0) ? index - 200 - 1 : -1, // up-left
+            (row > 0 && col < 199) ? index - 200 + 1 : -1, // up-right
+            (row < Math.floor(copy.length / 200) - 1 && col > 0) ? index + 200 - 1 : -1, // down-left
+            (row < Math.floor(copy.length / 200) - 1 && col < 199) ? index + 200 + 1 : -1, // down-right
+          ];
+          
+          for (const neighbor of neighbors) {
+            if (neighbor >= 0 && neighbor < copy.length && copy[neighbor] === pixelColor) {
+              boundaryCount++;
+            }
+          }
+          
+          // If this pixel has at least 2 neighbors of the same color, treat it as a solid boundary
+          return boundaryCount >= 2;
+        }
+        
+        return false;
+      };
+      
       while (stack.length > 0) {
         const index = stack.pop();
         
@@ -240,15 +278,23 @@ export default function PixelGrid() {
         const row = Math.floor(index / 200);
         const col = index % 200;
         
-        // Add all 8 adjacent pixels (including diagonals)
-        if (row > 0) stack.push(index - 200); // up
-        if (row < Math.floor(copy.length / 200) - 1) stack.push(index + 200); // down
-        if (col > 0) stack.push(index - 1); // left
-        if (col < 199) stack.push(index + 1); // right
-        if (row > 0 && col > 0) stack.push(index - 200 - 1); // up-left
-        if (row > 0 && col < 199) stack.push(index - 200 + 1); // up-right
-        if (row < Math.floor(copy.length / 200) - 1 && col > 0) stack.push(index + 200 - 1); // down-left
-        if (row < Math.floor(copy.length / 200) - 1 && col < 199) stack.push(index + 200 + 1); // down-right
+        // Check each direction and only add if not a boundary
+        const directions = [
+          { check: row > 0, index: index - 200 }, // up
+          { check: row < Math.floor(copy.length / 200) - 1, index: index + 200 }, // down
+          { check: col > 0, index: index - 1 }, // left
+          { check: col < 199, index: index + 1 }, // right
+          { check: row > 0 && col > 0, index: index - 200 - 1 }, // up-left
+          { check: row > 0 && col < 199, index: index - 200 + 1 }, // up-right
+          { check: row < Math.floor(copy.length / 200) - 1 && col > 0, index: index + 200 - 1 }, // down-left
+          { check: row < Math.floor(copy.length / 200) - 1 && col < 199, index: index + 200 + 1 }, // down-right
+        ];
+        
+        for (const dir of directions) {
+          if (dir.check && !isBoundary(dir.index)) {
+            stack.push(dir.index);
+          }
+        }
       }
       
       return copy;
