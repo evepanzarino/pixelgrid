@@ -650,7 +650,7 @@ const colors = ${data};
               color: "white",
               width: "100%",
               cursor: "pointer",
-              fontSize: "1vw",
+              fontSize: "1.75vw",
             }}
           >
             {showColorMenu ? "▼ Color" : "► Color"}
@@ -669,7 +669,7 @@ const colors = ${data};
           }}>
             {/* PRIMARY COLOR */}
             <div style={{ width: "100%", textAlign: "center" }}>
-              <div style={{ color: "black", fontSize: "2vw", marginBottom: "0.5vw" }}>Primary</div>
+              <div style={{ color: "black", fontSize: "1.25vw", marginBottom: "0.5vw" }}><b>Primary</b></div>
               <div
                 onClick={() => {
                   if (activeTool === "primary") {
@@ -697,7 +697,7 @@ const colors = ${data};
 
             {/* SECONDARY COLOR */}
             <div style={{ width: "100%", textAlign: "center" }}>
-              <div style={{ color: "black", fontSize: "2vw", marginBottom: "0.5vw" }}>Secondary</div>
+              <div style={{ color: "black", fontSize: "1.25vw", marginBottom: "0.5vw" }}><b>Secondary</b></div>
               <div
                 onClick={() => {
                   if (activeTool === "secondary") {
