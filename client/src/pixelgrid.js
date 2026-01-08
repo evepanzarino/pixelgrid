@@ -865,7 +865,7 @@ const colors = ${data};
                 position: "absolute",
                 left: `calc(${gridRef.current ? Math.min(88, Math.max(0, (scrollPosition / (gridRef.current.scrollWidth - gridRef.current.clientWidth)) * 100)) : 0}% - 0px)`,
                 top: "0",
-                width: "6vw",
+                width: "20vw",
                 height: "8vw",
                 background: "#000000",
                 pointerEvents: "none"
