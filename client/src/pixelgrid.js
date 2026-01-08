@@ -29,13 +29,13 @@ export default function PixelGrid() {
   // Logo and title pixel size based on screen size
   const getLogoPixelSize = () => {
     if (size.w > 1650) return 0.75; // Desktop: smaller
-    if (size.w <= 1024) return 2.14; // Mobile/Tablet: 15vw / 7 = 2.14vw
+    if (size.w <= 1024) return 1.07; // Mobile/Tablet: 7.5vw / 7 = 1.07vw
     return 1; // Mid-range
   };
 
   const getTitlePixelSize = () => {
     if (size.w > 1650) return 0.75; // Desktop: smaller
-    if (size.w <= 1024) return 1.43; // Mobile/Tablet: medium size
+    if (size.w <= 1024) return 1.07; // Mobile/Tablet: scaled down to match
     return 1; // Mid-range
   };
 
@@ -787,9 +787,9 @@ const colors = ${data};
           bottom: 0,
           left: 0,
           width: "100%",
-          height: "15vw",
+          height: "7.5vw",
           display: "grid",
-          gridTemplateColumns: "15vw 1fr 15vw",
+          gridTemplateColumns: "7.5vw 1fr 7.5vw",
           background: "#fefefe",
           borderTop: "0.2vw solid #000000",
           zIndex: 100
@@ -802,15 +802,15 @@ const colors = ${data};
               }
             }}
             style={{
-              width: "15vw",
-              height: "15vw",
+              width: "7.5vw",
+              height: "7.5vw",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               background: "#fefefe",
               borderRight: "0.2vw solid #000000",
               cursor: "pointer",
-              fontSize: "8vw",
+              fontSize: "4vw",
               userSelect: "none"
             }}
           >
@@ -821,10 +821,10 @@ const colors = ${data};
           <div 
             style={{
               width: "100%",
-              height: "15vw",
+              height: "7.5vw",
               background: "#fefefe",
               position: "relative",
-              padding: "2vw",
+              padding: "1vw",
               display: "flex",
               alignItems: "center"
             }}
@@ -853,7 +853,7 @@ const colors = ${data};
               onPointerLeave={() => setIsDraggingSlider(false)}
               style={{
                 width: "100%",
-                height: "11vw",
+                height: "5.5vw",
                 background: "#ffffff",
                 border: "0.2vw solid #000000",
                 position: "relative",
@@ -866,8 +866,8 @@ const colors = ${data};
                 position: "absolute",
                 left: `calc(${gridRef.current ? Math.min(88, Math.max(0, (scrollPosition / (gridRef.current.scrollWidth - gridRef.current.clientWidth)) * 100)) : 0}% - 0px)`,
                 top: "0",
-                width: "8vw",
-                height: "11vw",
+                width: "4vw",
+                height: "5.5vw",
                 background: "#000000",
                 pointerEvents: "none"
               }} />
@@ -882,15 +882,15 @@ const colors = ${data};
               }
             }}
             style={{
-              width: "15vw",
-              height: "15vw",
+              width: "7.5vw",
+              height: "7.5vw",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               background: "#fefefe",
               borderLeft: "0.2vw solid #000000",
               cursor: "pointer",
-              fontSize: "8vw",
+              fontSize: "4vw",
               userSelect: "none"
             }}
           >
