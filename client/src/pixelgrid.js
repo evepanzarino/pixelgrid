@@ -1668,7 +1668,7 @@ const savedData = ${dataString};
           const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && isDrawing && getSelectionRectangle(selectionStart, selectionEnd).includes(i);
           const isInActiveGroup = (pixelGroup && pixelGroup.group === activeGroup) || (activeGroup === "__selected__" && selectedPixels.includes(i));
           const isMoveGroupHover = activeDrawingTool === "movegroup" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i;
-          const isSelectGroupHover = activeDrawingTool === "select" && pixelGroup && hoveredPixel === i && !isDrawing;
+          const isSelectGroupHover = activeDrawingTool === "select" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i && !isDrawing;
           
           // Calculate preview position during group drag
           let isInDragPreview = false;
@@ -1770,6 +1770,11 @@ const savedData = ${dataString};
                 } else if (activeDrawingTool === "select" && pixelGroup) {
                   // Select tool: clicking on grouped pixel enables drag-to-move
                   setActiveGroup(pixelGroup.group);
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
+                  setIsDrawing(true);
+                } else if (activeDrawingTool === "select" && selectedPixels.includes(i)) {
+                  // Select tool: clicking on a selected pixel enables drag-to-move
+                  setActiveGroup("__selected__");
                   setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
                   setIsDrawing(true);
                 } else if (pixelGroup && !activeDrawingTool.match(/select|movegroup/)) {
