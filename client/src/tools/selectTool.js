@@ -10,7 +10,7 @@ export const selectTool = {
   },
   
   onPointerDown: (context, pixelIndex) => {
-    const { pixelGroups, setActiveGroup, setGroupDragStart, activeGroup } = context;
+    const { pixelGroups, activeGroup } = context;
     
     // Check if clicking on a grouped pixel
     const clickedPixelGroup = pixelGroups[pixelIndex];
@@ -56,7 +56,7 @@ export const selectTool = {
   },
   
   onPointerUp: (context) => {
-    const { selectionStart, selectionEnd, setSelectedPixels } = context;
+    const { selectionStart, selectionEnd } = context;
     
     // Finalize selection
     if (selectionStart !== null && selectionEnd !== null) {
