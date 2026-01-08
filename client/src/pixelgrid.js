@@ -8,35 +8,70 @@ const DrawingPixel = memo(({
   isHovered, 
   isLineStart, 
   isCurveEnd, 
-  isInLinePreview, 
+  isInLinePreview,
+  isSelected,
+  isInSelectionRect,
+  isInDragPreview,
   isDrawing,
   zoomFactor,
   activeDrawingTool,
   onPointerDown,
+  onPointerUp,
   onPointerEnter,
   onPointerMove,
   onPointerLeave
 }) => {
-  // Simplified border logic
+  // Border and visual feedback logic
   let borderStyle = '';
-  if (isCurveEnd || isLineStart || isInLinePreview) {
-    borderStyle = `${0.3 * zoomFactor}vw solid ${color === '#ffffff' ? '#000000' : '#ffffff'}`;
+  let borderColor = 'transparent';
+  let borderWidth = `${0.1 * zoomFactor}vw`;
+  let opacity = 1;
+  let boxShadow = 'none';
+  
+  // Dim original position during drag preview
+  if (isSelected && isDrawing && activeDrawingTool === "select" && isInDragPreview === false) {
+    opacity = 0.3;
+  }
+  
+  // Show preview at new position
+  if (isInDragPreview) {
+    borderColor = '#9C27B0';
+    borderWidth = `${0.3 * zoomFactor}vw`;
+    boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
+  } else if (isInSelectionRect) {
+    borderColor = '#2196F3';
+    borderWidth = `${0.2 * zoomFactor}vw`;
+  } else if (isSelected) {
+    borderColor = '#4CAF50';
+    borderWidth = `${0.3 * zoomFactor}vw`;
+  } else if (isCurveEnd || isLineStart || isInLinePreview) {
+    borderColor = color === '#ffffff' ? '#000000' : '#ffffff';
+    borderWidth = `${0.3 * zoomFactor}vw`;
   } else if (isHovered && !isDrawing) {
-    borderStyle = `${0.2 * zoomFactor}vw solid ${color === '#ffffff' ? '#000000' : '#ffffff'}`;
-  } else {
-    borderStyle = `${0.1 * zoomFactor}vw solid transparent`;
+    borderColor = color === '#ffffff' ? '#000000' : '#ffffff';
+    borderWidth = `${0.2 * zoomFactor}vw`;
+  }
+  
+  borderStyle = `${borderWidth} solid ${borderColor}`;
+  
+  // Get the display color (either current pixel or preview from dragged selection)
+  let displayColor = color;
+  if (isInDragPreview) {
+    displayColor = color; // The color is already at this position in the preview calculation
   }
   
   return (
     <div
       style={{ 
-        background: color, 
+        background: displayColor, 
         boxSizing: 'border-box',
         border: borderStyle,
+        boxShadow,
+        opacity,
         position: 'relative'
       }}
       onPointerDown={onPointerDown}
-      onPointerUp={() => {}}
+      onPointerUp={onPointerUp}
       onClick={() => {}}
       onPointerEnter={onPointerEnter}
       onPointerMove={onPointerMove}
@@ -1596,6 +1631,8 @@ const savedData = ${dataString};
             const isHovered = hoveredPixel === i;
             const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
             const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
+            const isSelected = selectedPixels.includes(i);
+            const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && isDrawing && getSelectionRectangle(selectionStart, selectionEnd).includes(i);
             
             // Line preview calculations - only when actively drawing lines/curves
             let isInLinePreview = false;
@@ -1609,6 +1646,19 @@ const savedData = ${dataString};
               }
             }
             
+            // Calculate preview position during selected pixels drag
+            let isInDragPreview = false;
+            if (groupDragStart !== null && groupDragCurrent !== null && activeGroup === "__selected__" && isDrawing) {
+              const deltaRow = groupDragCurrent.row - groupDragStart.startRow;
+              const deltaCol = groupDragCurrent.col - groupDragStart.startCol;
+              const currentRow = Math.floor(i / 200);
+              const currentCol = i % 200;
+              const sourceRow = currentRow - deltaRow;
+              const sourceCol = currentCol - deltaCol;
+              const sourceIndex = sourceRow * 200 + sourceCol;
+              isInDragPreview = selectedPixels.includes(sourceIndex);
+            }
+            
             return (
               <DrawingPixel
                 key={i}
@@ -1618,11 +1668,24 @@ const savedData = ${dataString};
                 isLineStart={isLineStart}
                 isCurveEnd={isCurveEnd}
                 isInLinePreview={isInLinePreview}
+                isSelected={isSelected}
+                isInSelectionRect={isInSelectionRect}
+                isInDragPreview={isInDragPreview}
                 isDrawing={isDrawing}
                 zoomFactor={zoomFactor}
                 activeDrawingTool={activeDrawingTool}
                 onPointerDown={(e) => {
-                  if (activeDrawingTool === "pencil") {
+                  if (activeDrawingTool === "select" && selectedPixels.includes(i)) {
+                    // Select tool: clicking on a selected pixel enables drag-to-move
+                    setActiveGroup("__selected__");
+                    setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
+                    setIsDrawing(true);
+                  } else if (activeDrawingTool === "select") {
+                    // Start rectangle selection
+                    setSelectionStart(i);
+                    setSelectionEnd(i);
+                    setIsDrawing(true);
+                  } else if (activeDrawingTool === "pencil") {
                     setIsDrawing(true);
                     paintPixel(e, i);
                   } else if (activeDrawingTool === "bucket") {
@@ -1646,15 +1709,49 @@ const savedData = ${dataString};
                     }
                   }
                 }}
+                onPointerUp={() => {
+                  if (activeDrawingTool === "select" && selectionStart !== null) {
+                    // Finalize selection
+                    const selected = getSelectionPixels(selectionStart, selectionEnd || selectionStart);
+                    setSelectedPixels(selected);
+                    setSelectionStart(null);
+                    setSelectionEnd(null);
+                    setIsDrawing(false);
+                  } else if (groupDragStart !== null && activeGroup === "__selected__") {
+                    // Finalize selected pixels move
+                    const currentRow = Math.floor(i / 200);
+                    const currentCol = i % 200;
+                    const deltaRow = currentRow - groupDragStart.startRow;
+                    const deltaCol = currentCol - groupDragStart.startCol;
+                    
+                    if (deltaRow !== 0 || deltaCol !== 0) {
+                      moveSelectedPixels(deltaRow, deltaCol);
+                    }
+                    
+                    setGroupDragStart(null);
+                    setGroupDragCurrent(null);
+                    setActiveGroup(null);
+                    setIsDrawing(false);
+                  }
+                }}
                 onPointerEnter={() => {
                   if (isDrawing && activeDrawingTool === "pencil") {
                     paintPixel(null, i);
+                  } else if (isDrawing && activeDrawingTool === "select") {
+                    setSelectionEnd(i);
                   }
                   setHoveredPixel(i);
                 }}
                 onPointerMove={() => {
                   if (hoveredPixel !== i) {
                     setHoveredPixel(i);
+                  }
+                  
+                  // Track current drag position for visual feedback
+                  if (groupDragStart !== null && activeGroup === "__selected__" && isDrawing) {
+                    const currentRow = Math.floor(i / 200);
+                    const currentCol = i % 200;
+                    setGroupDragCurrent({ row: currentRow, col: currentCol });
                   }
                 }}
                 onPointerLeave={() => {
