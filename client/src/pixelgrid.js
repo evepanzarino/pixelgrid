@@ -18,7 +18,6 @@ export default function PixelGrid() {
   const [lineStartPixel, setLineStartPixel] = useState(null); // For line tool: first click position
   const [lineControlPoint, setLineControlPoint] = useState(null); // For bezier curve control point
   const [isDraggingControlPoint, setIsDraggingControlPoint] = useState(false);
-  const [hasDrawnCurve, setHasDrawnCurve] = useState(false); // Flag to prevent click after curve draw
   
   const color = activeTool === "primary" ? primaryColor : secondaryColor;
   const gridRef = useRef(null);
@@ -87,9 +86,6 @@ export default function PixelGrid() {
         drawCurve(lineStartPixel, hoveredPixel, lineControlPoint);
         setLineStartPixel(null);
         setLineControlPoint(null);
-        setHasDrawnCurve(true);
-        // Reset flag after a short delay to allow click event to be blocked
-        setTimeout(() => setHasDrawnCurve(false), 100);
       }
       setIsDraggingControlPoint(false);
     };
@@ -217,23 +213,6 @@ export default function PixelGrid() {
       });
       return copy;
     });
-  }
-
-  function handlePixelClick(e, index) {
-    if (activeDrawingTool === "line") {
-      if (lineStartPixel === null) {
-        // First click: set start point
-        setLineStartPixel(index);
-      } else if (!isDraggingControlPoint && !hasDrawnCurve) {
-        // Second click without dragging: draw straight line and reset
-        drawLine(lineStartPixel, index);
-        setLineStartPixel(null);
-        setLineControlPoint(null);
-      }
-      // If dragging, the curve will be drawn on pointerup
-    } else if (activeDrawingTool === "pencil") {
-      paintPixel(e, index);
-    }
   }
 
   function saveToHTML() {
@@ -965,12 +944,30 @@ const colors = ${data};
                 if (activeDrawingTool === "pencil") {
                   setIsDrawing(true);
                   paintPixel(e, i);
-                } else if (activeDrawingTool === "line" && lineStartPixel !== null) {
-                  setIsDraggingControlPoint(true);
+                } else if (activeDrawingTool === "line") {
+                  if (lineStartPixel === null) {
+                    // First click: set start point
+                    setLineStartPixel(i);
+                  } else {
+                    // Second pointerdown: start dragging for curve
+                    e.preventDefault();
+                    setIsDraggingControlPoint(true);
+                    setLineControlPoint(i);
+                  }
+                }
+              }}
+              onPointerUp={(e) => {
+                if (activeDrawingTool === "line" && lineStartPixel !== null && !isDraggingControlPoint) {
+                  // Simple click without drag: draw straight line
+                  drawLine(lineStartPixel, i);
+                  setLineStartPixel(null);
+                  setLineControlPoint(null);
                 }
               }}
               onClick={(e) => {
-                handlePixelClick(e, i);
+                if (activeDrawingTool === "pencil") {
+                  // Pencil tool handled by onPointerDown
+                }
               }}
               onPointerEnter={() => {
                 if (isDrawing && activeDrawingTool === "pencil") {
