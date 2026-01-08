@@ -14,7 +14,8 @@ export default function PixelGrid() {
   const [hoveredPixel, setHoveredPixel] = useState(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
-  const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil" or future tools like "bucket"
+  const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil", "line", or future tools like "bucket"
+  const [lineStartPixel, setLineStartPixel] = useState(null); // For line tool: first click position
   
   const color = activeTool === "primary" ? primaryColor : secondaryColor;
   const gridRef = useRef(null);
@@ -108,6 +109,75 @@ export default function PixelGrid() {
     const b = parseInt(hex.substring(5, 7), 16);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     return luminance > 0.5;
+  }
+
+  function getContrastBorderColor(bgColor) {
+    return isLightColor(bgColor) ? "#000000" : "#ffffff";
+  }
+
+  function getLinePixels(start, end) {
+    // Bresenham's line algorithm
+    const x0 = start % cols;
+    const y0 = Math.floor(start / cols);
+    const x1 = end % cols;
+    const y1 = Math.floor(end / cols);
+    
+    const pixels = [];
+    const dx = Math.abs(x1 - x0);
+    const dy = Math.abs(y1 - y0);
+    const sx = x0 < x1 ? 1 : -1;
+    const sy = y0 < y1 ? 1 : -1;
+    let err = dx - dy;
+    
+    let x = x0;
+    let y = y0;
+    
+    while (true) {
+      const index = y * cols + x;
+      if (index >= 0 && index < pixelColors.length) {
+        pixels.push(index);
+      }
+      
+      if (x === x1 && y === y1) break;
+      
+      const e2 = 2 * err;
+      if (e2 > -dy) {
+        err -= dy;
+        x += sx;
+      }
+      if (e2 < dx) {
+        err += dx;
+        y += sy;
+      }
+    }
+    
+    return pixels;
+  }
+
+  function drawLine(startIndex, endIndex) {
+    const linePixels = getLinePixels(startIndex, endIndex);
+    setPixelColors((prev) => {
+      const copy = [...prev];
+      linePixels.forEach(i => {
+        copy[i] = color;
+      });
+      return copy;
+    });
+  }
+
+  function handlePixelClick(e, index) {
+    if (activeDrawingTool === "line") {
+      if (lineStartPixel === null) {
+        // First click: set start point
+        setLineStartPixel(index);
+      } else {
+        // Second click: draw line and reset
+        drawLine(lineStartPixel, index);
+        setLineStartPixel(null);
+      }
+    } else if (activeDrawingTool === "pencil") {
+      paintPixel(e, index);
+    }
   }
 
   function saveToHTML() {
@@ -645,25 +715,50 @@ const colors = ${data};
         {/* TOOLS SECTION */}
         <div style={{ width: "100%", textAlign: "center", paddingTop: "1vw" }}>
           <div style={{ color: "#000000", fontSize: "1.5vw", marginBottom: "0.5vw" }}><b>Tools</b></div>
-          <button
-            onClick={() => setActiveDrawingTool("pencil")}
-            style={{
-              width: size.w <= 1024 ? "8vw" : "6vw",
-              height: size.w <= 1024 ? "8vw" : "6vw",
-              background: activeDrawingTool === "pencil" ? "#333" : "#fefefe",
-              color: activeDrawingTool === "pencil" ? "#fff" : "#000",
-              border: "0.3vw solid #000000",
-              cursor: "pointer",
-              fontSize: size.w <= 1024 ? "4vw" : "3vw",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto",
-              boxShadow: activeDrawingTool === "pencil" ? "0px 0px .2vw .2vw #000000" : "none",
-            }}
-          >
-            <i className="fas fa-paintbrush"></i>
-          </button>
+          <div style={{ display: "flex", gap: "0.5vw", justifyContent: "center", flexWrap: "wrap", padding: "0 0.5vw" }}>
+            <button
+              onClick={() => {
+                setActiveDrawingTool("pencil");
+                setLineStartPixel(null);
+              }}
+              style={{
+                width: size.w <= 1024 ? "8vw" : "6vw",
+                height: size.w <= 1024 ? "8vw" : "6vw",
+                background: activeDrawingTool === "pencil" ? "#333" : "#fefefe",
+                color: activeDrawingTool === "pencil" ? "#fff" : "#000",
+                border: "0.3vw solid #000000",
+                cursor: "pointer",
+                fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: activeDrawingTool === "pencil" ? "0px 0px .2vw .2vw #000000" : "none",
+              }}
+            >
+              <i className="fas fa-paintbrush"></i>
+            </button>
+            <button
+              onClick={() => {
+                setActiveDrawingTool("line");
+                setLineStartPixel(null);
+              }}
+              style={{
+                width: size.w <= 1024 ? "8vw" : "6vw",
+                height: size.w <= 1024 ? "8vw" : "6vw",
+                background: activeDrawingTool === "line" ? "#333" : "#fefefe",
+                color: activeDrawingTool === "line" ? "#fff" : "#000",
+                border: "0.3vw solid #000000",
+                cursor: "pointer",
+                fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: activeDrawingTool === "line" ? "0px 0px .2vw .2vw #000000" : "none",
+              }}
+            >
+              <i className="fas fa-slash"></i>
+            </button>
+          </div>
         </div>
 
         {/* COLOR MENU HEADER */}
@@ -772,9 +867,21 @@ const colors = ${data};
           overflow: "auto"
         }}>
         {(pixelColors || []).map((c, i) => {
-          const isLight = isLightColor(c);
           const isHovered = !isDrawing && hoveredPixel === i;
-          const borderColor = isHovered ? (isLight ? '#000000' : '#fefefe') : 'transparent';
+          const isLineStart = activeDrawingTool === "line" && lineStartPixel === i;
+          const isInLinePreview = activeDrawingTool === "line" && lineStartPixel !== null && hoveredPixel !== null && 
+                                  getLinePixels(lineStartPixel, hoveredPixel).includes(i);
+          
+          let borderColor = 'transparent';
+          let borderWidth = `${0.1 * zoomFactor}vw`;
+          
+          if (isLineStart || isInLinePreview) {
+            borderColor = getContrastBorderColor(c);
+            borderWidth = `${0.2 * zoomFactor}vw`;
+          } else if (isHovered) {
+            borderColor = getContrastBorderColor(c);
+            borderWidth = `${0.2 * zoomFactor}vw`;
+          }
           
           return (
             <div
@@ -782,14 +889,19 @@ const colors = ${data};
               style={{ 
                 background: c, 
                 boxSizing: 'border-box',
-                border: `${0.1 * zoomFactor}vw solid ${borderColor}`
+                border: `${borderWidth} solid ${borderColor}`
               }}
               onPointerDown={(e) => {
-                setIsDrawing(true);
-                paintPixel(e, i);
+                if (activeDrawingTool === "pencil") {
+                  setIsDrawing(true);
+                  paintPixel(e, i);
+                }
+              }}
+              onClick={(e) => {
+                handlePixelClick(e, i);
               }}
               onPointerEnter={() => {
-                if (isDrawing) {
+                if (isDrawing && activeDrawingTool === "pencil") {
                   paintPixel(null, i);
                 } else {
                   setHoveredPixel(i);
