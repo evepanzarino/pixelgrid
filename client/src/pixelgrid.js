@@ -1528,33 +1528,30 @@ const savedData = ${dataString};
           // Completely isolate drawing mode from layer calculations for performance
           if (viewMode === "drawing") {
             // DRAWING MODE - Minimal calculations for maximum performance
-            const isHovered = !isDrawing && hoveredPixel === i;
+            const isHovered = hoveredPixel === i;
             const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
             const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
             
-            // Line preview calculations
+            // Line preview calculations - only when actively drawing lines/curves
             let isInLinePreview = false;
-            if (activeDrawingTool === "line" && lineStartPixel !== null && hoveredPixel !== null) {
-              isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
-            } else if (activeDrawingTool === "curve" && lineStartPixel !== null && curveEndPixel === null && hoveredPixel !== null) {
-              isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
-            } else if (activeDrawingTool === "curve" && lineStartPixel !== null && curveEndPixel !== null) {
-              isInLinePreview = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount).includes(i);
+            if (lineStartPixel !== null && hoveredPixel !== null && hoveredPixel !== lineStartPixel) {
+              if (activeDrawingTool === "line") {
+                isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
+              } else if (activeDrawingTool === "curve" && curveEndPixel === null) {
+                isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
+              } else if (activeDrawingTool === "curve" && curveEndPixel !== null) {
+                isInLinePreview = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount).includes(i);
+              }
             }
             
-            let borderColor = 'transparent';
-            let borderWidth = `${0.1 * zoomFactor}vw`;
-            let boxShadow = 'none';
-            
-            if (isCurveEnd) {
-              borderColor = getContrastBorderColor(c);
-              borderWidth = `${0.3 * zoomFactor}vw`;
-            } else if (isLineStart || isInLinePreview) {
-              borderColor = getContrastBorderColor(c);
-              borderWidth = `${0.2 * zoomFactor}vw`;
-            } else if (isHovered) {
-              borderColor = getContrastBorderColor(c);
-              borderWidth = `${0.2 * zoomFactor}vw`;
+            // Simplified border logic - avoid expensive color calculations
+            let borderStyle = '';
+            if (isCurveEnd || isLineStart || isInLinePreview) {
+              borderStyle = `${0.3 * zoomFactor}vw solid ${c === '#ffffff' ? '#000000' : '#ffffff'}`;
+            } else if (isHovered && !isDrawing) {
+              borderStyle = `${0.2 * zoomFactor}vw solid ${c === '#ffffff' ? '#000000' : '#ffffff'}`;
+            } else {
+              borderStyle = `${0.1 * zoomFactor}vw solid transparent`;
             }
             
             return (
@@ -1563,10 +1560,8 @@ const savedData = ${dataString};
                 style={{ 
                   background: c, 
                   boxSizing: 'border-box',
-                  border: `${borderWidth} solid ${borderColor}`,
-                  boxShadow,
-                  position: 'relative',
-                  zIndex: 0
+                  border: borderStyle,
+                  position: 'relative'
                 }}
                 onPointerDown={(e) => {
                   if (activeDrawingTool === "pencil") {
@@ -1593,9 +1588,7 @@ const savedData = ${dataString};
                     }
                   }
                 }}
-                onPointerUp={() => {
-                  // No complex logic needed in drawing mode
-                }}
+                onPointerUp={() => {}}
                 onClick={() => {}}
                 onPointerEnter={() => {
                   if (isDrawing && activeDrawingTool === "pencil") {
@@ -1604,7 +1597,10 @@ const savedData = ${dataString};
                   setHoveredPixel(i);
                 }}
                 onPointerMove={() => {
-                  setHoveredPixel(i);
+                  // Only update hover if it's actually different
+                  if (hoveredPixel !== i) {
+                    setHoveredPixel(i);
+                  }
                 }}
                 onPointerLeave={() => {
                   setHoveredPixel(null);
