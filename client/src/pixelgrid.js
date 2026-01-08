@@ -1419,39 +1419,15 @@ const savedData = ${dataString};
                   alignItems: "center",
                   justifyContent: "center",
                   boxShadow: activeDrawingTool === "select" ? "0px 0px .2vw .2vw #000000" : "none",
-                }}
-              >
-                <i className="fas fa-vector-square"></i>
-              </button>
-            )}
-            {viewMode === "layers" && (
-              <button
-                onClick={() => {
-                  setActiveDrawingTool("movegroup");
-                  setLineStartPixel(null);
-                  setSelectionStart(null);
-                  setSelectionEnd(null);
-                  setGroupDragStart(null);
-                }}
-                style={{
-                  width: size.w <= 1024 ? "8vw" : "6vw",
-                  height: size.w <= 1024 ? "8vw" : "6vw",
-                  background: activeDrawingTool === "movegroup" ? "#333" : "#fefefe",
-                  color: activeDrawingTool === "movegroup" ? "#fff" : "#000",
-                  border: "0.3vw solid #000000",
-                  cursor: "pointer",
-                  fontSize: size.w <= 1024 ? "5vw" : "3.5vw",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: activeDrawingTool === "movegroup" ? "0px 0px .2vw .2vw #000000" : "none",
                   position: "relative",
-                  zIndex: 10,
-                  pointerEvents: "auto",
                 }}
-                title="Click and drag to move a group"
               >
-                ☩
+                <i className="fas fa-arrows-alt" style={{
+                  position: "absolute",
+                  fontSize: size.w <= 1024 ? "3vw" : "2vw",
+                  opacity: 0.3,
+                }}></i>
+                <i className="fas fa-vector-square"></i>
               </button>
             )}
           </div>
