@@ -2257,7 +2257,7 @@ const savedData = ${dataString};
           right: 0,
           background: "rgba(0,0,0,0.95)",
           color: "white",
-          padding: "0.8vw",
+        padding: "0.8vw",
           zIndex: 1000,
           display: "flex",
           flexDirection: "column",
