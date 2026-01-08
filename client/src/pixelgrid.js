@@ -965,18 +965,29 @@ const colors = ${data};
                   paintPixel(e, i);
                 } else if (activeDrawingTool === "line") {
                   if (lineStartPixel === null) {
-                    // First click: set start point and start timer
+                    // First click: set start point and start hold timer
                     setLineStartPixel(i);
                     const timer = setTimeout(() => {
                       // After 1 second, enter curve mode
                       setIsCurveMode(true);
                     }, 1000);
                     setLineHoldTimer(timer);
-                  } else if (isCurveMode) {
+                  } else if (isCurveMode && lineControlPoint === null) {
                     // In curve mode: clicking sets the control point
                     setLineControlPoint(i);
-                  } else {
-                    // Normal second click: this will be handled in onPointerUp
+                  } else if (isCurveMode && lineControlPoint !== null) {
+                    // Third click in curve mode: draw curve to end point
+                    drawCurve(lineStartPixel, i, lineControlPoint);
+                    setLineStartPixel(null);
+                    setLineControlPoint(null);
+                    setIsCurveMode(false);
+                    setHoveredPixel(null);
+                  } else if (!isCurveMode && lineStartPixel !== null) {
+                    // Second click in normal mode: draw straight line
+                    drawLine(lineStartPixel, i);
+                    setLineStartPixel(null);
+                    setLineControlPoint(null);
+                    setHoveredPixel(null);
                   }
                 }
               }}
@@ -985,22 +996,6 @@ const colors = ${data};
                 if (lineHoldTimer) {
                   clearTimeout(lineHoldTimer);
                   setLineHoldTimer(null);
-                }
-                
-                if (activeDrawingTool === "line" && lineStartPixel !== null) {
-                  if (isCurveMode && lineControlPoint !== null) {
-                    // Curve mode with control point set: draw curve to end point
-                    drawCurve(lineStartPixel, i, lineControlPoint);
-                    setLineStartPixel(null);
-                    setLineControlPoint(null);
-                    setIsCurveMode(false);
-                  } else if (!isCurveMode) {
-                    // Normal click: draw straight line
-                    drawLine(lineStartPixel, i);
-                    setLineStartPixel(null);
-                    setLineControlPoint(null);
-                  }
-                  // If in curve mode but no control point yet, keep waiting for control point
                 }
               }}
               onClick={(e) => {
