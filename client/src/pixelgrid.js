@@ -788,7 +788,7 @@ const colors = ${data};
           width: "100%",
           height: "7vw",
           display: "grid",
-          gridTemplateColumns: "7.5vw 1fr 7.5vw",
+          gridTemplateColumns: "7vw 1fr 7vw",
           background: "#fefefe",
           borderTop: "0.2vw solid #000000",
           zIndex: 100
