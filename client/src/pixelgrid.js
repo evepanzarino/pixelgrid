@@ -1008,15 +1008,16 @@ const colors = ${data};
               onPointerEnter={() => {
                 if (isDrawing && activeDrawingTool === "pencil") {
                   paintPixel(null, i);
-                } else {
-                  setHoveredPixel(i);
                 }
+                setHoveredPixel(i);
               }}
               onPointerMove={(e) => {
-                // Not used for line tool in this implementation
+                // Update hovered pixel for smoother line preview
+                setHoveredPixel(i);
               }}
               onPointerLeave={() => {
-                if (!isDrawing) {
+                // Don't clear hoveredPixel if we're in line mode with a start point
+                if (!isDrawing && !(activeDrawingTool === "line" && lineStartPixel !== null)) {
                   setHoveredPixel(null);
                 }
               }}
