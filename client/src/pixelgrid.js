@@ -237,11 +237,15 @@ export default function PixelGrid() {
         const row = Math.floor(index / 200);
         const col = index % 200;
         
-        // Add adjacent pixels (up, down, left, right)
+        // Add all 8 adjacent pixels (including diagonals)
         if (row > 0) stack.push(index - 200); // up
         if (row < Math.floor(copy.length / 200) - 1) stack.push(index + 200); // down
         if (col > 0) stack.push(index - 1); // left
         if (col < 199) stack.push(index + 1); // right
+        if (row > 0 && col > 0) stack.push(index - 200 - 1); // up-left
+        if (row > 0 && col < 199) stack.push(index - 200 + 1); // up-right
+        if (row < Math.floor(copy.length / 200) - 1 && col > 0) stack.push(index + 200 - 1); // down-left
+        if (row < Math.floor(copy.length / 200) - 1 && col < 199) stack.push(index + 200 + 1); // down-right
       }
       
       return copy;
