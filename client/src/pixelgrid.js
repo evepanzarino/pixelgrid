@@ -29,14 +29,14 @@ export default function PixelGrid() {
   // Logo and title pixel size based on screen size
   const getLogoPixelSize = () => {
     if (size.w > 1650) return 1.07; // Desktop: scaled up to match mobile
-    if (size.w <= 1024) return 1.07; // Mobile/Tablet: 7.5vw / 7 = 1.07vw
+    if (size.w <= 1024) return 1.075; // Mobile/Tablet: 7.5vw / 7 = 1.07vw
     return 1; // Mid-range
   };
 
   const getTitlePixelSize = () => {
     if (size.w > 1650) return 0.75; // Desktop: smaller
-    if (size.w <= 1024) return 1.07; // Mobile/Tablet: scaled down to match
-    return 1; // Mid-range
+    if (size.w <= 1024) return 1.075; // Mobile/Tablet: scaled down to match
+    return 1.07; // Mid-range
   };
 
   const zoomFactor = getZoomFactor();
