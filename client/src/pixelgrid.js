@@ -14,8 +14,9 @@ export default function PixelGrid() {
   const [hoveredPixel, setHoveredPixel] = useState(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
-  const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil", "line", or future tools like "bucket"
-  const [lineStartPixel, setLineStartPixel] = useState(null); // For line tool: first click position
+  const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil", "line", "curve", or future tools like "bucket"
+  const [lineStartPixel, setLineStartPixel] = useState(null); // For line/curve tool: first click position
+  const [curveAmount, setCurveAmount] = useState(50); // Curve intensity: 0-100%
   
   const color = activeTool === "primary" ? primaryColor : secondaryColor;
   const gridRef = useRef(null);
@@ -78,8 +79,8 @@ export default function PixelGrid() {
     const stopDrawing = () => {
       setIsDrawing(false);
       
-      // Don't clear hoveredPixel if we're in line mode waiting for second click
-      if (!(activeDrawingTool === "line" && lineStartPixel !== null)) {
+      // Don't clear hoveredPixel if we're in line/curve mode waiting for second click
+      if (!((activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel !== null)) {
         setHoveredPixel(null);
       }
     };
@@ -159,11 +160,62 @@ export default function PixelGrid() {
     return pixels;
   }
 
+  function getQuadraticBezierPixels(startIndex, endIndex, curvePercent) {
+    const x0 = startIndex % cols;
+    const y0 = Math.floor(startIndex / cols);
+    const x2 = endIndex % cols;
+    const y2 = Math.floor(endIndex / cols);
+    
+    // Calculate control point based on midpoint and curve percentage
+    const midX = (x0 + x2) / 2;
+    const midY = (y0 + y2) / 2;
+    
+    // Perpendicular offset based on curve amount
+    const dx = x2 - x0;
+    const dy = y2 - y0;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const offset = (distance * curvePercent) / 100;
+    
+    // Control point perpendicular to the line
+    const x1 = midX - (dy / distance) * offset;
+    const y1 = midY + (dx / distance) * offset;
+    
+    const pixels = [];
+    const steps = 100;
+    
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const u = 1 - t;
+      
+      // Quadratic bezier formula: B(t) = (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
+      const x = Math.round(u * u * x0 + 2 * u * t * x1 + t * t * x2);
+      const y = Math.round(u * u * y0 + 2 * u * t * y1 + t * t * y2);
+      
+      const index = y * cols + x;
+      if (!pixels.includes(index)) {
+        pixels.push(index);
+      }
+    }
+    
+    return pixels;
+  }
+
   function drawLine(startIndex, endIndex) {
     const linePixels = getLinePixels(startIndex, endIndex);
     setPixelColors((prev) => {
       const copy = [...prev];
       linePixels.forEach(i => {
+        copy[i] = color;
+      });
+      return copy;
+    });
+  }
+
+  function drawCurve(startIndex, endIndex) {
+    const curvePixels = getQuadraticBezierPixels(startIndex, endIndex, curveAmount);
+    setPixelColors((prev) => {
+      const copy = [...prev];
+      curvePixels.forEach(i => {
         copy[i] = color;
       });
       return copy;
@@ -748,7 +800,59 @@ const colors = ${data};
             >
               <i className="fas fa-slash"></i>
             </button>
+            <button
+              onClick={() => {
+                setActiveDrawingTool("curve");
+                setLineStartPixel(null);
+              }}
+              style={{
+                width: size.w <= 1024 ? "8vw" : "6vw",
+                height: size.w <= 1024 ? "8vw" : "6vw",
+                background: activeDrawingTool === "curve" ? "#333" : "#fefefe",
+                color: activeDrawingTool === "curve" ? "#fff" : "#000",
+                border: "0.3vw solid #000000",
+                cursor: "pointer",
+                fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: activeDrawingTool === "curve" ? "0px 0px .2vw .2vw #000000" : "none",
+              }}
+            >
+              <i className="fas fa-bezier-curve"></i>
+            </button>
           </div>
+          
+          {/* CURVE AMOUNT CONTROL - Only show when curve tool is active */}
+          {activeDrawingTool === "curve" && (
+            <div style={{ width: "100%", padding: "1vw", borderTop: "0.2vw solid #000000" }}>
+              <div style={{ color: "#000000", fontSize: "1.2vw", marginBottom: "0.5vw", textAlign: "center" }}>
+                <b>Curve: {curveAmount}%</b>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={curveAmount}
+                onChange={(e) => setCurveAmount(Number(e.target.value))}
+                style={{ width: "100%", marginBottom: "0.5vw" }}
+              />
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={curveAmount}
+                onChange={(e) => setCurveAmount(Math.min(100, Math.max(0, Number(e.target.value))))}
+                style={{
+                  width: "100%",
+                  padding: "0.5vw",
+                  fontSize: "1.2vw",
+                  border: "0.2vw solid #000000",
+                  textAlign: "center"
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* COLOR MENU HEADER */}
@@ -858,12 +962,14 @@ const colors = ${data};
         }}>
         {(pixelColors || []).map((c, i) => {
           const isHovered = !isDrawing && hoveredPixel === i;
-          const isLineStart = activeDrawingTool === "line" && lineStartPixel === i;
+          const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
           
-          // Show straight line preview
+          // Show straight line preview or curve preview
           let isInLinePreview = false;
           if (activeDrawingTool === "line" && lineStartPixel !== null && hoveredPixel !== null) {
             isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
+          } else if (activeDrawingTool === "curve" && lineStartPixel !== null && hoveredPixel !== null) {
+            isInLinePreview = getQuadraticBezierPixels(lineStartPixel, hoveredPixel, curveAmount).includes(i);
           }
           
           let borderColor = 'transparent';
@@ -899,6 +1005,19 @@ const colors = ${data};
                   } else {
                     // Second click: draw straight line
                     drawLine(lineStartPixel, i);
+                    setLineStartPixel(null);
+                    setHoveredPixel(null);
+                  }
+                } else if (activeDrawingTool === "curve") {
+                  if (lineStartPixel === null) {
+                    // First click: set start point
+                    setLineStartPixel(i);
+                  } else if (lineStartPixel === i) {
+                    // Clicking same pixel - ignore
+                    return;
+                  } else {
+                    // Second click: draw curve
+                    drawCurve(lineStartPixel, i);
                     setLineStartPixel(null);
                     setHoveredPixel(null);
                   }
