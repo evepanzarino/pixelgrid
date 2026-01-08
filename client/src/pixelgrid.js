@@ -18,6 +18,8 @@ export default function PixelGrid() {
   const [lineStartPixel, setLineStartPixel] = useState(null); // For line tool: first click position
   const [lineControlPoint, setLineControlPoint] = useState(null); // For bezier curve control point
   const [isDraggingControlPoint, setIsDraggingControlPoint] = useState(false);
+  const [lineHoldTimer, setLineHoldTimer] = useState(null); // Timer for 1-second hold detection
+  const [isCurveMode, setIsCurveMode] = useState(false); // Whether we're in curve selection mode
   
   const color = activeTool === "primary" ? primaryColor : secondaryColor;
   const gridRef = useRef(null);
@@ -81,11 +83,18 @@ export default function PixelGrid() {
       setIsDrawing(false);
       setHoveredPixel(null);
       
+      // Clear hold timer if exists
+      if (lineHoldTimer) {
+        clearTimeout(lineHoldTimer);
+        setLineHoldTimer(null);
+      }
+      
       // Handle curve drawing on release
-      if (isDraggingControlPoint && lineStartPixel !== null && hoveredPixel !== null && lineControlPoint !== null) {
+      if (isCurveMode && lineControlPoint !== null && lineStartPixel !== null && hoveredPixel !== null) {
         drawCurve(lineStartPixel, hoveredPixel, lineControlPoint);
         setLineStartPixel(null);
         setLineControlPoint(null);
+        setIsCurveMode(false);
       }
       setIsDraggingControlPoint(false);
     };
@@ -97,7 +106,7 @@ export default function PixelGrid() {
       window.removeEventListener("pointerup", stopDrawing);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeDrawingTool, isDraggingControlPoint, lineStartPixel, hoveredPixel, lineControlPoint]);
+  }, [activeDrawingTool, isDraggingControlPoint, lineStartPixel, hoveredPixel, lineControlPoint, lineHoldTimer, isCurveMode]);
 
   function paintPixel(e, index) {
     setPixelColors((prev) => {
@@ -908,15 +917,16 @@ const colors = ${data};
         {(pixelColors || []).map((c, i) => {
           const isHovered = !isDrawing && hoveredPixel === i;
           const isLineStart = activeDrawingTool === "line" && lineStartPixel === i;
+          const isControlPoint = activeDrawingTool === "line" && isCurveMode && lineControlPoint === i;
           
           // Check if showing straight line preview or curve preview
           let isInLinePreview = false;
           if (activeDrawingTool === "line" && lineStartPixel !== null && hoveredPixel !== null) {
-            if (isDraggingControlPoint && lineControlPoint !== null) {
+            if (isCurveMode && lineControlPoint !== null) {
               // Show curve preview
               isInLinePreview = getQuadraticBezierPixels(lineStartPixel, hoveredPixel, lineControlPoint).includes(i);
-            } else {
-              // Show straight line preview
+            } else if (!isCurveMode) {
+              // Show straight line preview (only when not in curve mode)
               isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
             }
           }
@@ -924,7 +934,10 @@ const colors = ${data};
           let borderColor = 'transparent';
           let borderWidth = `${0.1 * zoomFactor}vw`;
           
-          if (isLineStart || isInLinePreview) {
+          if (isControlPoint) {
+            borderColor = getContrastBorderColor(c);
+            borderWidth = `${0.3 * zoomFactor}vw`;
+          } else if (isLineStart || isInLinePreview) {
             borderColor = getContrastBorderColor(c);
             borderWidth = `${0.2 * zoomFactor}vw`;
           } else if (isHovered) {
@@ -946,22 +959,42 @@ const colors = ${data};
                   paintPixel(e, i);
                 } else if (activeDrawingTool === "line") {
                   if (lineStartPixel === null) {
-                    // First click: set start point
+                    // First click: set start point and start timer
                     setLineStartPixel(i);
-                  } else {
-                    // Second pointerdown: start dragging for curve
-                    e.preventDefault();
-                    setIsDraggingControlPoint(true);
+                    const timer = setTimeout(() => {
+                      // After 1 second, enter curve mode
+                      setIsCurveMode(true);
+                    }, 1000);
+                    setLineHoldTimer(timer);
+                  } else if (isCurveMode) {
+                    // In curve mode: clicking sets the control point
                     setLineControlPoint(i);
+                  } else {
+                    // Normal second click: this will be handled in onPointerUp
                   }
                 }
               }}
               onPointerUp={(e) => {
-                if (activeDrawingTool === "line" && lineStartPixel !== null && !isDraggingControlPoint) {
-                  // Simple click without drag: draw straight line
-                  drawLine(lineStartPixel, i);
-                  setLineStartPixel(null);
-                  setLineControlPoint(null);
+                // Clear timer on pointer up
+                if (lineHoldTimer) {
+                  clearTimeout(lineHoldTimer);
+                  setLineHoldTimer(null);
+                }
+                
+                if (activeDrawingTool === "line" && lineStartPixel !== null) {
+                  if (isCurveMode && lineControlPoint !== null) {
+                    // Curve mode with control point set: draw curve to end point
+                    drawCurve(lineStartPixel, i, lineControlPoint);
+                    setLineStartPixel(null);
+                    setLineControlPoint(null);
+                    setIsCurveMode(false);
+                  } else if (!isCurveMode) {
+                    // Normal click: draw straight line
+                    drawLine(lineStartPixel, i);
+                    setLineStartPixel(null);
+                    setLineControlPoint(null);
+                  }
+                  // If in curve mode but no control point yet, keep waiting for control point
                 }
               }}
               onClick={(e) => {
@@ -975,15 +1008,9 @@ const colors = ${data};
                 } else {
                   setHoveredPixel(i);
                 }
-                // Update control point when dragging
-                if (isDraggingControlPoint && lineStartPixel !== null) {
-                  setLineControlPoint(i);
-                }
               }}
               onPointerMove={(e) => {
-                if (isDraggingControlPoint && lineStartPixel !== null) {
-                  setLineControlPoint(i);
-                }
+                // Not used for line tool in this implementation
               }}
               onPointerLeave={() => {
                 if (!isDrawing) {
