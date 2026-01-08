@@ -212,6 +212,42 @@ export default function PixelGrid() {
     });
   }
 
+  function paintBucket(startIndex) {
+    setPixelColors((prev) => {
+      const targetColor = prev[startIndex];
+      const fillColor = color;
+      
+      // Don't fill if already the same color
+      if (targetColor === fillColor) return prev;
+      
+      const copy = [...prev];
+      const stack = [startIndex];
+      const visited = new Set();
+      
+      while (stack.length > 0) {
+        const index = stack.pop();
+        
+        if (visited.has(index)) continue;
+        if (index < 0 || index >= copy.length) continue;
+        if (copy[index] !== targetColor) continue;
+        
+        visited.add(index);
+        copy[index] = fillColor;
+        
+        const row = Math.floor(index / 200);
+        const col = index % 200;
+        
+        // Add adjacent pixels (up, down, left, right)
+        if (row > 0) stack.push(index - 200); // up
+        if (row < Math.floor(copy.length / 200) - 1) stack.push(index + 200); // down
+        if (col > 0) stack.push(index - 1); // left
+        if (col < 199) stack.push(index + 1); // right
+      }
+      
+      return copy;
+    });
+  }
+
   function saveToHTML() {
     const data = JSON.stringify(pixelColors);
     const html = `
@@ -813,6 +849,27 @@ const colors = ${data};
             >
               <i className="fas fa-bezier-curve"></i>
             </button>
+            <button
+              onClick={() => {
+                setActiveDrawingTool("bucket");
+                setLineStartPixel(null);
+              }}
+              style={{
+                width: size.w <= 1024 ? "8vw" : "6vw",
+                height: size.w <= 1024 ? "8vw" : "6vw",
+                background: activeDrawingTool === "bucket" ? "#333" : "#fefefe",
+                color: activeDrawingTool === "bucket" ? "#fff" : "#000",
+                border: "0.3vw solid #000000",
+                cursor: "pointer",
+                fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: activeDrawingTool === "bucket" ? "0px 0px .2vw .2vw #000000" : "none",
+              }}
+            >
+              <i className="fas fa-fill-drip"></i>
+            </button>
           </div>
         </div>
 
@@ -965,6 +1022,8 @@ const colors = ${data};
                 if (activeDrawingTool === "pencil") {
                   setIsDrawing(true);
                   paintPixel(e, i);
+                } else if (activeDrawingTool === "bucket") {
+                  paintBucket(i);
                 } else if (activeDrawingTool === "line") {
                   if (lineStartPixel === null) {
                     // First click: set start point
