@@ -536,9 +536,9 @@ export default function PixelGrid() {
       for (let col = minCol; col <= maxCol; col++) {
         const pixelIndex = row * 200 + col;
         // Include pixels that:
-        // 1. Are not white (have been painted with a color)
-        // 2. OR are already part of a group (even if white)
-        if (pixelColors[pixelIndex] !== "#ffffff" || pixelGroups[pixelIndex]) {
+        // 1. Are not null/empty (have been painted with a color)
+        // 2. OR are already part of a group (even if empty)
+        if ((pixelColors[pixelIndex] !== null && pixelColors[pixelIndex] !== "#ffffff") || pixelGroups[pixelIndex]) {
           pixels.push(pixelIndex);
         }
       }
