@@ -34,7 +34,7 @@ export default function PixelGrid() {
   };
 
   const getTitlePixelSize = () => {
-    if (size.w > 1650) return 1; // Desktop: 7vw / 7 = 1vw per cell
+    if (size.w > 1650) return 0.75; // Desktop: scaled down
     return 0.75; // Same size on all screen sizes
   };
 
