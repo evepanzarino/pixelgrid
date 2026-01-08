@@ -974,6 +974,10 @@ const colors = ${data};
                 } else {
                   setHoveredPixel(i);
                 }
+                // Update control point when dragging
+                if (isDraggingControlPoint && lineStartPixel !== null) {
+                  setLineControlPoint(i);
+                }
               }}
               onPointerMove={(e) => {
                 if (isDraggingControlPoint && lineStartPixel !== null) {
