@@ -14,10 +14,19 @@ export default function PixelGrid() {
   const [hoveredPixel, setHoveredPixel] = useState(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
-  const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil", "line", "curve", or future tools like "bucket"
+  const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil", "line", "curve", "bucket", "select"
   const [lineStartPixel, setLineStartPixel] = useState(null); // For line/curve tool: first click position
   const [curveEndPixel, setCurveEndPixel] = useState(null); // For curve tool adjustment mode
   const [curveCurveAmount, setCurveCurveAmount] = useState(0); // Curve adjustment: -100 to 100%
+  const [selectionStart, setSelectionStart] = useState(null); // Rectangle selection start
+  const [selectionEnd, setSelectionEnd] = useState(null); // Rectangle selection end (during drag)
+  const [selectedPixels, setSelectedPixels] = useState([]); // Array of selected pixel indices
+  const [showGroupDialog, setShowGroupDialog] = useState(false); // Show group assignment dialog
+  const [pixelGroups, setPixelGroups] = useState({}); // { pixelIndex: { group: 'group-1', zIndex: 0 } }
+  const [groups, setGroups] = useState([]); // [{ name: 'group-1', zIndex: 0 }]
+  const [activeGroup, setActiveGroup] = useState(null); // Currently selected group for moving
+  const [groupDragStart, setGroupDragStart] = useState(null); // { pixelIndex, offsetRow, offsetCol }
+  const [showLayersPanel, setShowLayersPanel] = useState(false);
   
   const color = activeTool === "primary" ? primaryColor : secondaryColor;
   const gridRef = useRef(null);
@@ -279,6 +288,100 @@ export default function PixelGrid() {
       
       return copy;
     });
+  }
+
+  // Get pixels in selection rectangle
+  function getSelectionPixels(start, end) {
+    if (start === null || end === null) return [];
+    
+    const startRow = Math.floor(start / 200);
+    const startCol = start % 200;
+    const endRow = Math.floor(end / 200);
+    const endCol = end % 200;
+    
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    const minCol = Math.min(startCol, endCol);
+    const maxCol = Math.max(startCol, endCol);
+    
+    const pixels = [];
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        pixels.push(row * 200 + col);
+      }
+    }
+    return pixels;
+  }
+
+  // Create group from selected pixels
+  function createGroup(groupName) {
+    if (selectedPixels.length === 0) return;
+    
+    const newGroups = [...groups];
+    const existingGroup = newGroups.find(g => g.name === groupName);
+    const zIndex = existingGroup ? existingGroup.zIndex : groups.length;
+    
+    if (!existingGroup) {
+      newGroups.push({ name: groupName, zIndex });
+      setGroups(newGroups);
+    }
+    
+    const newPixelGroups = { ...pixelGroups };
+    selectedPixels.forEach(pixelIndex => {
+      newPixelGroups[pixelIndex] = { group: groupName, zIndex };
+    });
+    setPixelGroups(newPixelGroups);
+    
+    setSelectedPixels([]);
+    setShowGroupDialog(false);
+  }
+
+  // Move group pixels
+  function moveGroup(groupName, deltaRow, deltaCol) {
+    const groupPixels = Object.keys(pixelGroups)
+      .filter(idx => pixelGroups[idx].group === groupName)
+      .map(idx => parseInt(idx));
+    
+    if (groupPixels.length === 0) return;
+    
+    // Get colors and clear old positions
+    const pixelData = groupPixels.map(idx => ({
+      oldIndex: idx,
+      color: pixelColors[idx],
+      row: Math.floor(idx / 200),
+      col: idx % 200
+    }));
+    
+    setPixelColors(prev => {
+      const copy = [...prev];
+      // Clear old positions
+      pixelData.forEach(p => {
+        copy[p.oldIndex] = "#ffffff";
+      });
+      // Set new positions
+      pixelData.forEach(p => {
+        const newRow = p.row + deltaRow;
+        const newCol = p.col + deltaCol;
+        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
+          const newIndex = newRow * 200 + newCol;
+          copy[newIndex] = p.color;
+        }
+      });
+      return copy;
+    });
+    
+    // Update pixel groups mapping
+    const newPixelGroups = { ...pixelGroups };
+    pixelData.forEach(p => {
+      delete newPixelGroups[p.oldIndex];
+      const newRow = p.row + deltaRow;
+      const newCol = p.col + deltaCol;
+      if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
+        const newIndex = newRow * 200 + newCol;
+        newPixelGroups[newIndex] = pixelGroups[p.oldIndex] || { group: groupName, zIndex: 0 };
+      }
+    });
+    setPixelGroups(newPixelGroups);
   }
 
   function saveToHTML() {
@@ -903,8 +1006,73 @@ const colors = ${data};
             >
               <i className="fas fa-fill-drip"></i>
             </button>
+            <button
+              onClick={() => {
+                setActiveDrawingTool("select");
+                setLineStartPixel(null);
+                setSelectionStart(null);
+                setSelectionEnd(null);
+              }}
+              style={{
+                width: size.w <= 1024 ? "8vw" : "6vw",
+                height: size.w <= 1024 ? "8vw" : "6vw",
+                background: activeDrawingTool === "select" ? "#333" : "#fefefe",
+                color: activeDrawingTool === "select" ? "#fff" : "#000",
+                border: "0.3vw solid #000000",
+                cursor: "pointer",
+                fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: activeDrawingTool === "select" ? "0px 0px .2vw .2vw #000000" : "none",
+              }}
+            >
+              <i className="fas fa-vector-square"></i>
+            </button>
           </div>
         </div>
+
+        {/* GROUP SELECTED PIXELS BUTTON */}
+        {selectedPixels.length > 0 && (
+          <div style={{ width: "100%", padding: "1vw" }}>
+            <button
+              onClick={() => setShowGroupDialog(true)}
+              style={{
+                width: "100%",
+                background: "#4CAF50",
+                color: "white",
+                border: "0.2vw solid #000",
+                cursor: "pointer",
+                padding: "1vw",
+                fontSize: "1.2vw",
+                fontWeight: "bold"
+              }}
+            >
+              Create Group ({selectedPixels.length} pixels)
+            </button>
+          </div>
+        )}
+
+        {/* LAYERS PANEL BUTTON */}
+        {groups.length > 0 && (
+          <div style={{ width: "100%", padding: "1vw" }}>
+            <button
+              onClick={() => setShowLayersPanel(prev => !prev)}
+              style={{
+                width: "100%",
+                background: "#2196F3",
+                color: "white",
+                border: "0.2vw solid #000",
+                cursor: "pointer",
+                padding: "1vw",
+                fontSize: "1.2vw",
+                fontWeight: "bold"
+              }}
+            >
+              {showLayersPanel ? "▼" : "►"} Layers ({groups.length})
+            </button>
+          </div>
+        )}
 
         {/* COLOR MENU HEADER */}
         <div style={{ width: "100%", position: "relative" }}>
@@ -1015,6 +1183,10 @@ const colors = ${data};
           const isHovered = !isDrawing && hoveredPixel === i;
           const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
           const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
+          const isSelected = selectedPixels.includes(i);
+          const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && getSelectionPixels(selectionStart, selectionEnd).includes(i);
+          const pixelGroup = pixelGroups[i];
+          const isInActiveGroup = pixelGroup && pixelGroup.group === activeGroup;
           
           // Show straight line preview or curve preview
           let isInLinePreview = false;
@@ -1031,8 +1203,16 @@ const colors = ${data};
           
           let borderColor = 'transparent';
           let borderWidth = `${0.1 * zoomFactor}vw`;
+          let boxShadow = 'none';
           
-          if (isCurveEnd) {
+          if (isInActiveGroup) {
+            borderColor = '#2196F3';
+            borderWidth = `${0.3 * zoomFactor}vw`;
+            boxShadow = '0 0 0.5vw #2196F3';
+          } else if (isSelected || isInSelectionRect) {
+            borderColor = '#4CAF50';
+            borderWidth = `${0.3 * zoomFactor}vw`;
+          } else if (isCurveEnd) {
             borderColor = getContrastBorderColor(c);
             borderWidth = `${0.3 * zoomFactor}vw`;
           } else if (isLineStart || isInLinePreview) {
@@ -1046,10 +1226,14 @@ const colors = ${data};
           return (
             <div
               key={`${i}-${c}`}
+              className={pixelGroup ? pixelGroup.group : ''}
               style={{ 
                 background: c, 
                 boxSizing: 'border-box',
-                border: `${borderWidth} solid ${borderColor}`
+                border: `${borderWidth} solid ${borderColor}`,
+                boxShadow,
+                position: 'relative',
+                zIndex: pixelGroup ? pixelGroup.zIndex : 0
               }}
               onPointerDown={(e) => {
                 if (activeDrawingTool === "pencil") {
@@ -1057,6 +1241,15 @@ const colors = ${data};
                   paintPixel(e, i);
                 } else if (activeDrawingTool === "bucket") {
                   paintBucket(i);
+                } else if (activeDrawingTool === "select") {
+                  // Start rectangle selection
+                  setSelectionStart(i);
+                  setSelectionEnd(i);
+                  setIsDrawing(true);
+                } else if (pixelGroup && activeDrawingTool === "pencil") {
+                  // Clicking on a grouped pixel - select the group
+                  setActiveGroup(pixelGroup.group);
+                  setGroupDragStart({ pixelIndex: i, offsetRow: 0, offsetCol: 0 });
                 } else if (activeDrawingTool === "line") {
                   if (lineStartPixel === null) {
                     // First click: set start point
@@ -1083,7 +1276,17 @@ const colors = ${data};
                 }
               }}
               onPointerUp={(e) => {
-                // Nothing needed here for line tool
+                if (activeDrawingTool === "select" && selectionStart !== null) {
+                  // Finalize selection
+                  const selected = getSelectionPixels(selectionStart, selectionEnd || selectionStart);
+                  setSelectedPixels(selected);
+                  setSelectionStart(null);
+                  setSelectionEnd(null);
+                  setIsDrawing(false);
+                } else if (groupDragStart !== null) {
+                  // Stop dragging group
+                  setGroupDragStart(null);
+                }
               }}
               onClick={(e) => {
                 if (activeDrawingTool === "pencil") {
@@ -1093,12 +1296,30 @@ const colors = ${data};
               onPointerEnter={() => {
                 if (isDrawing && activeDrawingTool === "pencil") {
                   paintPixel(null, i);
+                } else if (isDrawing && activeDrawingTool === "select") {
+                  // Update selection rectangle end point
+                  setSelectionEnd(i);
                 }
                 setHoveredPixel(i);
               }}
               onPointerMove={(e) => {
                 // Update hovered pixel for smoother line preview
                 setHoveredPixel(i);
+                
+                // Handle group dragging
+                if (groupDragStart !== null && activeGroup !== null) {
+                  const startRow = Math.floor(groupDragStart.pixelIndex / 200);
+                  const startCol = groupDragStart.pixelIndex % 200;
+                  const currentRow = Math.floor(i / 200);
+                  const currentCol = i % 200;
+                  const deltaRow = currentRow - startRow;
+                  const deltaCol = currentCol - startCol;
+                  
+                  if (deltaRow !== 0 || deltaCol !== 0) {
+                    moveGroup(activeGroup, deltaRow, deltaCol);
+                    setGroupDragStart({ pixelIndex: i, offsetRow: 0, offsetCol: 0 });
+                  }
+                }
               }}
               onPointerLeave={() => {
                 // Don't clear hoveredPixel if we're in line mode with a start point
@@ -1416,6 +1637,204 @@ const colors = ${data};
               Apply
             </button>
           </div>
+        </div>
+      )}
+
+      {/* GROUP DIALOG */}
+      {showGroupDialog && (
+        <div style={{
+          position: "fixed",
+          bottom: "5vh",
+          left: size.w <= 1024 ? "10vw" : "7vw",
+          right: 0,
+          background: "rgba(0,0,0,0.9)",
+          color: "white",
+          padding: "2vw",
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+          gap: "1vw",
+          alignItems: "center",
+          borderTop: "0.3vw solid #4CAF50"
+        }}>
+          <div style={{ fontSize: "1.5vw", fontWeight: "bold" }}>Create Group</div>
+          <div style={{ fontSize: "1.2vw" }}>{selectedPixels.length} pixels selected</div>
+          <input
+            type="text"
+            placeholder="Group name (e.g., group-1)"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && e.target.value.trim()) {
+                createGroup(e.target.value.trim());
+              }
+            }}
+            style={{
+              padding: "0.8vw",
+              fontSize: "1.2vw",
+              width: "20vw",
+              border: "0.2vw solid #4CAF50",
+              background: "#222",
+              color: "white"
+            }}
+          />
+          <div style={{ display: "flex", gap: "1vw" }}>
+            <button
+              onClick={() => {
+                const input = document.querySelector('input[placeholder*="Group name"]');
+                if (input && input.value.trim()) {
+                  createGroup(input.value.trim());
+                }
+              }}
+              style={{
+                background: "#4CAF50",
+                color: "white",
+                border: "0.2vw solid #000",
+                padding: "1vw 3vw",
+                cursor: "pointer",
+                fontSize: "1.3vw",
+                fontWeight: "bold"
+              }}
+            >
+              Create
+            </button>
+            <button
+              onClick={() => {
+                setShowGroupDialog(false);
+                setSelectedPixels([]);
+              }}
+              style={{
+                background: "#f44336",
+                color: "white",
+                border: "0.2vw solid #000",
+                padding: "1vw 3vw",
+                cursor: "pointer",
+                fontSize: "1.3vw",
+                fontWeight: "bold"
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* LAYERS PANEL */}
+      {showLayersPanel && (
+        <div style={{
+          position: "fixed",
+          top: "10vh",
+          right: "2vw",
+          background: "rgba(0,0,0,0.95)",
+          color: "white",
+          padding: "1.5vw",
+          zIndex: 1000,
+          minWidth: "15vw",
+          maxHeight: "60vh",
+          overflow: "auto",
+          border: "0.3vw solid #2196F3",
+          borderRadius: "0.5vw"
+        }}>
+          <div style={{ fontSize: "1.5vw", fontWeight: "bold", marginBottom: "1vw", textAlign: "center" }}>Layers</div>
+          {groups.sort((a, b) => b.zIndex - a.zIndex).map((group, idx) => (
+            <div key={group.name} style={{
+              background: activeGroup === group.name ? "#2196F3" : "#333",
+              padding: "1vw",
+              marginBottom: "0.5vw",
+              border: "0.2vw solid #666",
+              borderRadius: "0.3vw",
+              cursor: "pointer"
+            }}
+            onClick={() => setActiveGroup(group.name)}
+            >
+              <input
+                type="text"
+                defaultValue={group.name}
+                onBlur={(e) => {
+                  if (e.target.value.trim() && e.target.value !== group.name) {
+                    const newGroups = groups.map(g => 
+                      g.name === group.name ? { ...g, name: e.target.value.trim() } : g
+                    );
+                    setGroups(newGroups);
+                    
+                    const newPixelGroups = {};
+                    Object.keys(pixelGroups).forEach(idx => {
+                      const pg = pixelGroups[idx];
+                      newPixelGroups[idx] = pg.group === group.name 
+                        ? { ...pg, group: e.target.value.trim() }
+                        : pg;
+                    });
+                    setPixelGroups(newPixelGroups);
+                  }
+                }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  background: "transparent",
+                  color: "white",
+                  border: "none",
+                  fontSize: "1.1vw",
+                  width: "100%",
+                  marginBottom: "0.5vw"
+                }}
+              />
+              <div style={{ display: "flex", gap: "0.5vw", fontSize: "0.9vw" }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newGroups = groups.map(g => 
+                      g.name === group.name ? { ...g, zIndex: g.zIndex + 1 } : g
+                    );
+                    setGroups(newGroups);
+                    const newPixelGroups = {};
+                    Object.keys(pixelGroups).forEach(idx => {
+                      const pg = pixelGroups[idx];
+                      newPixelGroups[idx] = pg.group === group.name 
+                        ? { ...pg, zIndex: pg.zIndex + 1 }
+                        : pg;
+                    });
+                    setPixelGroups(newPixelGroups);
+                  }}
+                  style={{
+                    background: "#444",
+                    color: "white",
+                    border: "0.1vw solid #666",
+                    padding: "0.3vw 0.6vw",
+                    cursor: "pointer",
+                    fontSize: "0.9vw"
+                  }}
+                >
+                  ▲
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newGroups = groups.map(g => 
+                      g.name === group.name ? { ...g, zIndex: g.zIndex - 1 } : g
+                    );
+                    setGroups(newGroups);
+                    const newPixelGroups = {};
+                    Object.keys(pixelGroups).forEach(idx => {
+                      const pg = pixelGroups[idx];
+                      newPixelGroups[idx] = pg.group === group.name 
+                        ? { ...pg, zIndex: pg.zIndex - 1 }
+                        : pg;
+                    });
+                    setPixelGroups(newPixelGroups);
+                  }}
+                  style={{
+                    background: "#444",
+                    color: "white",
+                    border: "0.1vw solid #666",
+                    padding: "0.3vw 0.6vw",
+                    cursor: "pointer",
+                    fontSize: "0.9vw"
+                  }}
+                >
+                  ▼
+                </button>
+                <span style={{ flex: 1, textAlign: "right" }}>z: {group.zIndex}</span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
