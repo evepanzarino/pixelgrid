@@ -1414,7 +1414,7 @@ const savedData = ${dataString};
                   color: activeDrawingTool === "select" ? "#fff" : "#000",
                   border: "0.3vw solid #000000",
                   cursor: "pointer",
-                  fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                  fontSize: size.w <= 1024 ? "4vw" : "4vw",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1424,7 +1424,7 @@ const savedData = ${dataString};
               >
                 <i className="fas fa-arrows-alt" style={{
                   position: "absolute",
-                  fontSize: size.w <= 1024 ? "3vw" : "2vw",
+                  fontSize: size.w <= 1024 ? "1.5vw" : "1.5vw",
                   opacity: 0.3,
                 }}></i>
                 <i className="fas fa-vector-square"></i>
