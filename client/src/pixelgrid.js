@@ -289,6 +289,29 @@ export default function PixelGrid() {
     });
   }
 
+  // Get all pixels in selection rectangle (for preview)
+  function getSelectionRectangle(start, end) {
+    if (start === null || end === null) return [];
+    
+    const startRow = Math.floor(start / 200);
+    const startCol = start % 200;
+    const endRow = Math.floor(end / 200);
+    const endCol = end % 200;
+    
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    const minCol = Math.min(startCol, endCol);
+    const maxCol = Math.max(startCol, endCol);
+    
+    const pixels = [];
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        pixels.push(row * 200 + col);
+      }
+    }
+    return pixels;
+  }
+
   // Get pixels in selection rectangle (only colored pixels or grouped pixels)
   function getSelectionPixels(start, end) {
     if (start === null || end === null) return [];
@@ -1169,7 +1192,8 @@ const colors = ${data};
           const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
           const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
           const isSelected = selectedPixels.includes(i);
-          const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && getSelectionPixels(selectionStart, selectionEnd).includes(i);
+          // Show rectangle preview during drag, but final selection is only colored pixels
+          const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && isDrawing && getSelectionRectangle(selectionStart, selectionEnd).includes(i);
           const pixelGroup = pixelGroups[i];
           const isInActiveGroup = pixelGroup && pixelGroup.group === activeGroup;
           
