@@ -233,7 +233,6 @@ export default function PixelGrid() {
       // Second pass: flood fill but respect boundaries
       const queue = [startIndex];
       const visited = new Set([startIndex]);
-      const maxDistance = 200; // Limit fill spread as safety
       let fillCount = 0;
       const maxFill = 10000; // Safety limit
       
