@@ -1,11 +1,22 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import "./pixelgrid.css";
 
 export default function PixelGrid() {
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [isDrawing, setIsDrawing] = useState(false);
-  const [primaryColor, setPrimaryColor] = useState("#000000");
-  const [secondaryColor, setSecondaryColor] = useState("#ffffff");
+  
+  // Load saved data from localStorage or use defaults
+  const [primaryColor, setPrimaryColor] = useState(() => {
+    try {
+      return localStorage.getItem("pixelgrid_primaryColor") || "#000000";
+    } catch { return "#000000"; }
+  });
+  const [secondaryColor, setSecondaryColor] = useState(() => {
+    try {
+      return localStorage.getItem("pixelgrid_secondaryColor") || "#ffffff";
+    } catch { return "#ffffff"; }
+  });
+  
   const [activeTool, setActiveTool] = useState("primary"); // "primary" or "secondary"
   const [showColorMenu, setShowColorMenu] = useState(true);
   const [showFileMenu, setShowFileMenu] = useState(false);
@@ -22,13 +33,53 @@ export default function PixelGrid() {
   const [selectionEnd, setSelectionEnd] = useState(null); // Rectangle selection end (during drag)
   const [selectedPixels, setSelectedPixels] = useState([]); // Array of selected pixel indices
   const [showGroupDialog, setShowGroupDialog] = useState(false); // Show group assignment dialog
-  const [pixelGroups, setPixelGroups] = useState({}); // { pixelIndex: { group: 'group-1', zIndex: 0 } }
-  const [groups, setGroups] = useState([]); // [{ name: 'group-1', zIndex: 0 }]
+  
+  const [pixelGroups, setPixelGroups] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pixelgrid_pixelGroups");
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+  
+  const [groups, setGroups] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pixelgrid_groups");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  
   const [activeGroup, setActiveGroup] = useState(null); // Currently selected group for moving
   const [groupDragStart, setGroupDragStart] = useState(null); // { pixelIndex, offsetRow, offsetCol }
   
+  // Lazy-loaded tool modules
+  const [loadedTools, setLoadedTools] = useState({});
+  const [toolsLoading, setToolsLoading] = useState({});
+  
   const color = activeTool === "primary" ? primaryColor : secondaryColor;
   const gridRef = useRef(null);
+  
+  // Lazy load tool module when needed
+  const loadTool = useCallback(async (toolName) => {
+    if (loadedTools[toolName] || toolsLoading[toolName]) return;
+    
+    setToolsLoading(prev => ({ ...prev, [toolName]: true }));
+    
+    try {
+      const module = await import(`./tools/${toolName}Tool.js`);
+      setLoadedTools(prev => ({ ...prev, [toolName]: module[`${toolName}Tool`] }));
+    } catch (error) {
+      console.error(`Failed to load ${toolName} tool:`, error);
+    } finally {
+      setToolsLoading(prev => ({ ...prev, [toolName]: false }));
+    }
+  }, [loadedTools, toolsLoading]);
+  
+  // Load tool when drawing tool changes
+  useEffect(() => {
+    if (activeDrawingTool && activeDrawingTool !== 'pencil') {
+      loadTool(activeDrawingTool);
+    }
+  }, [activeDrawingTool, loadTool]);
 
   // Zoom factor for drawing area based on screen size
   const getZoomFactor = () => {
@@ -62,10 +113,69 @@ export default function PixelGrid() {
   const rows = Math.ceil(size.h / pixelSizeInPx);
   const totalPixels = cols * rows;
 
-  // Initialize pixelColors with current total, preserving existing data
-  const [pixelColors, setPixelColors] = useState(() => Array(totalPixels).fill("#ffffff"));
+  // Initialize pixelColors with saved data or defaults
+  const [pixelColors, setPixelColors] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pixelgrid_pixelColors");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.length === totalPixels) return parsed;
+        // If size changed, extend or trim array
+        const newArray = Array(totalPixels).fill("#ffffff");
+        const copyLength = Math.min(parsed.length, totalPixels);
+        for (let i = 0; i < copyLength; i++) {
+          newArray[i] = parsed[i];
+        }
+        return newArray;
+      }
+    } catch { }
+    return Array(totalPixels).fill("#ffffff");
+  });
 
   const fileInputRef = useRef(null);
+  
+  // Save pixelColors to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_pixelColors", JSON.stringify(pixelColors));
+    } catch (error) {
+      console.error("Failed to save pixel colors:", error);
+    }
+  }, [pixelColors]);
+  
+  // Save groups and pixelGroups to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_groups", JSON.stringify(groups));
+    } catch (error) {
+      console.error("Failed to save groups:", error);
+    }
+  }, [groups]);
+  
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_pixelGroups", JSON.stringify(pixelGroups));
+    } catch (error) {
+      console.error("Failed to save pixel groups:", error);
+    }
+  }, [pixelGroups]);
+  
+  // Save colors to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_primaryColor", primaryColor);
+    } catch (error) {
+      console.error("Failed to save primary color:", error);
+    }
+  }, [primaryColor]);
+  
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_secondaryColor", secondaryColor);
+    } catch (error) {
+      console.error("Failed to save secondary color:", error);
+    }
+  }, [secondaryColor]);
 
   // Update pixel array when totalPixels changes, preserving existing data
   useEffect(() => {
@@ -417,14 +527,24 @@ export default function PixelGrid() {
   }
 
   function saveToHTML() {
-    const data = JSON.stringify(pixelColors);
+    const data = {
+      pixelColors: pixelColors,
+      pixelGroups: pixelGroups,
+      groups: groups
+    };
+    const dataString = JSON.stringify(data);
     const html = `
 <body style="margin:0; overflow-x:hidden;">
 <div style="display:grid;grid-template-columns:repeat(200,0.75vw);grid-auto-rows:0.75vw;">
-${pixelColors.map(c => `<div style="width:0.75vw;height:0.75vw;background:${c}"></div>`).join("")}}
+${pixelColors.map((c, i) => {
+  const group = pixelGroups[i];
+  const style = `width:0.75vw;height:0.75vw;background:${c};${group ? `position:relative;z-index:${group.zIndex}` : ''}`;
+  return `<div style="${style}"${group ? ` id="${group.group}"` : ''}></div>`;
+}).join("")}
 </div>
 <script>
-const colors = ${data};
+const savedData = ${dataString};
+// Data includes: pixelColors, pixelGroups, groups
 </script>
 </body>
 </html>`;
@@ -441,10 +561,28 @@ const colors = ${data};
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target.result;
-      const match = text.match(/const colors = (\[[^;]+\])/);
-      if (match) {
-        const arr = JSON.parse(match[1]);
-        setPixelColors(arr);
+      // Try new format first (with groups)
+      const matchData = text.match(/const savedData = ({[^;]+})/);
+      if (matchData) {
+        try {
+          const data = JSON.parse(matchData[1]);
+          if (data.pixelColors) setPixelColors(data.pixelColors);
+          if (data.pixelGroups) setPixelGroups(data.pixelGroups);
+          if (data.groups) setGroups(data.groups);
+          return;
+        } catch (err) {
+          console.error("Failed to parse new format:", err);
+        }
+      }
+      // Fallback to old format (just colors)
+      const matchColors = text.match(/const colors = (\[[^;]+\])/);
+      if (matchColors) {
+        try {
+          const arr = JSON.parse(matchColors[1]);
+          setPixelColors(arr);
+        } catch (err) {
+          console.error("Failed to parse old format:", err);
+        }
       }
     };
     reader.readAsText(file);
@@ -895,7 +1033,8 @@ const colors = ${data};
                   color: "white",
                   textAlign: "center",
                   fontSize: ".9vw",
-                  borderBottom: "0.2vw solid #333"
+                  borderBottom: "0.2vw solid #333",
+                  padding: "0.5vw"
                 }}
               >
                 Save
@@ -912,9 +1051,44 @@ const colors = ${data};
                   color: "white",
                   textAlign: "center",
                   fontSize: ".9vw",
+                  borderBottom: "0.2vw solid #333",
+                  padding: "0.5vw"
                 }}
               >
                 Load
+              </div>
+
+              <div
+                onClick={() => {
+                  if (window.confirm("Clear all pixels, groups, and layers? This will also clear localStorage.")) {
+                    setPixelColors(Array(totalPixels).fill("#ffffff"));
+                    setPixelGroups({});
+                    setGroups([]);
+                    setActiveGroup(null);
+                    setSelectedPixels([]);
+                    setSelectionStart(null);
+                    setSelectionEnd(null);
+                    setShowGroupDialog(false);
+                    // Clear localStorage
+                    try {
+                      localStorage.removeItem("pixelgrid_pixelColors");
+                      localStorage.removeItem("pixelgrid_pixelGroups");
+                      localStorage.removeItem("pixelgrid_groups");
+                    } catch (err) {
+                      console.error("Failed to clear localStorage:", err);
+                    }
+                  }
+                  setShowFileMenu(false);
+                }}
+                style={{
+                  cursor: "pointer",
+                  color: "#f44336",
+                  textAlign: "center",
+                  fontSize: ".9vw",
+                  padding: "0.5vw"
+                }}
+              >
+                Clear All
               </div>
             </div>
           )}
@@ -974,7 +1148,8 @@ const colors = ${data};
               <i className="fas fa-paintbrush"></i>
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
+                await loadTool("line");
                 setActiveDrawingTool("line");
                 setLineStartPixel(null);
               }}
@@ -995,7 +1170,8 @@ const colors = ${data};
               <i className="fas fa-slash"></i>
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
+                await loadTool("curve");
                 setActiveDrawingTool("curve");
                 setLineStartPixel(null);
                 setCurveEndPixel(null);
@@ -1018,7 +1194,8 @@ const colors = ${data};
               <i className="fas fa-bezier-curve"></i>
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
+                await loadTool("bucket");
                 setActiveDrawingTool("bucket");
                 setLineStartPixel(null);
               }}
@@ -1039,7 +1216,8 @@ const colors = ${data};
               <i className="fas fa-fill-drip"></i>
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
+                await loadTool("select");
                 setActiveDrawingTool("select");
                 setLineStartPixel(null);
                 setSelectionStart(null);
