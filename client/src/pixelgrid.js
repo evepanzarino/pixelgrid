@@ -28,8 +28,8 @@ export default function PixelGrid() {
 
   // Logo and title pixel size based on screen size
   const getTitlePixelSize = () => {
-    if (size.w > 1750) return 0.75; // Desktop: smaller
-    return 1.43; // Mobile/Tablet: larger
+    if (size.w > 1650) return 0.75; // Desktop: smaller
+    return 1; // Mobile/Tablet: larger
   };
 
   const zoomFactor = getZoomFactor();
