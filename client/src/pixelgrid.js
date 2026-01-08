@@ -1234,8 +1234,8 @@ const colors = ${data};
           style={{
             position: "fixed",
             bottom: size.w <= 1024 ? "10vw" : "0",
-            left: 0,
-            width: "100%",
+            left: size.w <= 1024 ? "10vw" : "7vw",
+            right: 0,
             background: "#ffffff",
             padding: "1vw",
             borderTop: "0.3vw solid #000000",
