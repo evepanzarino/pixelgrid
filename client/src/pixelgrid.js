@@ -18,7 +18,6 @@ export default function PixelGrid() {
   const [lineStartPixel, setLineStartPixel] = useState(null); // For line/curve tool: first click position
   const [lineEndPixel, setLineEndPixel] = useState(null); // For line tool adjustment mode
   const [lineCurveAmount, setLineCurveAmount] = useState(0); // Line curve adjustment: -100 to 100%
-  const [curveAmount, setCurveAmount] = useState(50); // Curve intensity: 0-100%
   
   const color = activeTool === "primary" ? primaryColor : secondaryColor;
   const gridRef = useRef(null);
@@ -214,7 +213,7 @@ export default function PixelGrid() {
   }
 
   function drawCurve(startIndex, endIndex) {
-    const curvePixels = getQuadraticBezierPixels(startIndex, endIndex, curveAmount);
+    const curvePixels = getQuadraticBezierPixels(startIndex, endIndex, 50);
     setPixelColors((prev) => {
       const copy = [...prev];
       curvePixels.forEach(i => {
@@ -947,7 +946,7 @@ const colors = ${data};
             // Second click done, showing adjustable curve
             isInLinePreview = getQuadraticBezierPixels(lineStartPixel, lineEndPixel, lineCurveAmount).includes(i);
           } else if (activeDrawingTool === "curve" && lineStartPixel !== null && hoveredPixel !== null) {
-            isInLinePreview = getQuadraticBezierPixels(lineStartPixel, hoveredPixel, curveAmount).includes(i);
+            isInLinePreview = getQuadraticBezierPixels(lineStartPixel, hoveredPixel, 50).includes(i);
           }
           
           let borderColor = 'transparent';
