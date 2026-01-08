@@ -533,6 +533,49 @@ export default function PixelGrid() {
     setPixelGroups(newPixelGroups);
   }
 
+  // Move selected pixels (not in a group)
+  function moveSelectedPixels(deltaRow, deltaCol) {
+    if (selectedPixels.length === 0) return;
+    
+    // Get colors and positions of selected pixels
+    const pixelData = selectedPixels.map(idx => ({
+      oldIndex: idx,
+      color: pixelColors[idx],
+      row: Math.floor(idx / 200),
+      col: idx % 200
+    }));
+    
+    setPixelColors(prev => {
+      const copy = [...prev];
+      // Clear old positions
+      pixelData.forEach(p => {
+        copy[p.oldIndex] = "#ffffff";
+      });
+      // Set new positions
+      pixelData.forEach(p => {
+        const newRow = p.row + deltaRow;
+        const newCol = p.col + deltaCol;
+        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
+          const newIndex = newRow * 200 + newCol;
+          copy[newIndex] = p.color;
+        }
+      });
+      return copy;
+    });
+    
+    // Update selected pixels to new positions
+    const newSelectedPixels = pixelData.map(p => {
+      const newRow = p.row + deltaRow;
+      const newCol = p.col + deltaCol;
+      if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
+        return newRow * 200 + newCol;
+      }
+      return null;
+    }).filter(idx => idx !== null);
+    
+    setSelectedPixels(newSelectedPixels);
+  }
+
   function saveToHTML() {
     const data = {
       pixelColors: pixelColors,
@@ -1492,8 +1535,8 @@ const savedData = ${dataString};
           // Only calculate these in layers mode
           const isSelected = viewMode === "layers" ? selectedPixels.includes(i) : false;
           const isInSelectionRect = viewMode === "layers" && activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && isDrawing && getSelectionRectangle(selectionStart, selectionEnd).includes(i);
-          const isInActiveGroup = viewMode === "layers" && pixelGroup && pixelGroup.group === activeGroup;
-          const isMoveGroupHover = viewMode === "layers" && activeDrawingTool === "movegroup" && pixelGroup && hoveredPixel === i;
+          const isInActiveGroup = viewMode === "layers" && ((pixelGroup && pixelGroup.group === activeGroup) || (activeGroup === "__selected__" && selectedPixels.includes(i)));
+          const isMoveGroupHover = viewMode === "layers" && activeDrawingTool === "movegroup" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i;
           
           // Calculate preview position during group drag
           let isInDragPreview = false;
@@ -1505,7 +1548,11 @@ const savedData = ${dataString};
             const sourceRow = currentRow - deltaRow;
             const sourceCol = currentCol - deltaCol;
             const sourceIndex = sourceRow * 200 + sourceCol;
-            isInDragPreview = pixelGroups[sourceIndex]?.group === activeGroup;
+            if (activeGroup === "__selected__") {
+              isInDragPreview = selectedPixels.includes(sourceIndex);
+            } else {
+              isInDragPreview = pixelGroups[sourceIndex]?.group === activeGroup;
+            }
           }
           
           // Show straight line preview or curve preview (only in drawing mode for performance)
@@ -1588,6 +1635,11 @@ const savedData = ${dataString};
                   setActiveGroup(pixelGroup.group);
                   setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
                   setIsDrawing(true);
+                } else if (viewMode === "layers" && activeDrawingTool === "movegroup" && selectedPixels.includes(i)) {
+                  // Moving selected pixels (not in a group yet)
+                  setActiveGroup("__selected__");
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
+                  setIsDrawing(true);
                 } else if (viewMode === "layers" && pixelGroup && !activeDrawingTool.match(/select|movegroup/)) {
                   setActiveGroup(pixelGroup.group);
                   setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
@@ -1643,7 +1695,11 @@ const savedData = ${dataString};
                   const deltaCol = currentCol - groupDragStart.startCol;
                   
                   if (deltaRow !== 0 || deltaCol !== 0) {
-                    moveGroup(activeGroup, deltaRow, deltaCol);
+                    if (activeGroup === "__selected__") {
+                      moveSelectedPixels(deltaRow, deltaCol);
+                    } else {
+                      moveGroup(activeGroup, deltaRow, deltaCol);
+                    }
                   }
                   
                   setGroupDragStart(null);
