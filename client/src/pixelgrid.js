@@ -229,9 +229,12 @@ export default function PixelGrid() {
         
         if (visited.has(index)) continue;
         if (index < 0 || index >= copy.length) continue;
-        if (copy[index] !== targetColor) continue;
         
         visited.add(index);
+        
+        // Only fill if this pixel matches the target color
+        if (copy[index] !== targetColor) continue;
+        
         copy[index] = fillColor;
         
         const row = Math.floor(index / 200);
