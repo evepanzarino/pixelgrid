@@ -14,6 +14,7 @@ export default function PixelGrid() {
   const [hoveredPixel, setHoveredPixel] = useState(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
+  const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil" or future tools like "bucket"
   
   const color = activeTool === "primary" ? primaryColor : secondaryColor;
   const gridRef = useRef(null);
@@ -641,6 +642,30 @@ const colors = ${data};
         alignItems: "center",
         borderRight: "0.2vw solid #000000",
       }}>
+        {/* TOOLS SECTION */}
+        <div style={{ width: "100%", textAlign: "center", paddingTop: "1vw" }}>
+          <div style={{ color: "#000000", fontSize: "1.5vw", marginBottom: "0.5vw" }}><b>Tools</b></div>
+          <button
+            onClick={() => setActiveDrawingTool("pencil")}
+            style={{
+              width: size.w <= 1024 ? "8vw" : "6vw",
+              height: size.w <= 1024 ? "8vw" : "6vw",
+              background: activeDrawingTool === "pencil" ? "#333" : "#fefefe",
+              color: activeDrawingTool === "pencil" ? "#fff" : "#000",
+              border: "0.3vw solid #000000",
+              cursor: "pointer",
+              fontSize: size.w <= 1024 ? "4vw" : "3vw",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto",
+              boxShadow: activeDrawingTool === "pencil" ? "0px 0px .2vw .2vw #000000" : "none",
+            }}
+          >
+            <i className="fas fa-paintbrush"></i>
+          </button>
+        </div>
+
         {/* COLOR MENU HEADER */}
         <div style={{ width: "100%", position: "relative" }}>
           <button
