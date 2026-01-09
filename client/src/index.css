@@ -11,6 +11,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f5f5f5;
+  overflow-y: scroll; /* Always show scrollbar */
+  overscroll-behavior: none; /* Prevent bounce/overscroll */
+}
+
+/* Disable mouse wheel and touch scrolling */
+body {
+  touch-action: pan-x pan-y; /* Disable touch scrolling */
 }
 
 code {
