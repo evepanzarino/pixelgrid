@@ -55,7 +55,7 @@ const DrawingPixel = memo(({
       const brightness = (r + g + b) / 3;
       return brightness > 127;
     })();
-    borderColor = isLight ? '#000000' : '#AAAAAA';
+    borderColor = isLight ? '#000000' : '#CCCCCC';
     borderWidth = `${0.2 * zoomFactor}vw`;
     boxShadow = `0 0 ${0.6 * zoomFactor}vw ${0.3 * zoomFactor}vw ${borderColor}`;
   } else if (isInSelectionRect) {
@@ -69,7 +69,7 @@ const DrawingPixel = memo(({
       const brightness = (r + g + b) / 3;
       return brightness > 127;
     })();
-    borderColor = isLight ? '#000000' : '#AAAAAA';
+    borderColor = isLight ? '#000000' : '#CCCCCC';
     borderWidth = `${0.2 * zoomFactor}vw`;
   } else if (isSelected) {
     // Use same contrast detection as line/curve previews
@@ -82,7 +82,7 @@ const DrawingPixel = memo(({
       const brightness = (r + g + b) / 3;
       return brightness > 127;
     })();
-    borderColor = isLight ? '#000000' : '#AAAAAA';
+    borderColor = isLight ? '#000000' : '#CCCCCC';
     borderWidth = `${0.2 * zoomFactor}vw`;
   } else if (isCurveEnd || isLineStart || isInLinePreview) {
     // Use proper contrast detection for line/curve previews
@@ -95,7 +95,7 @@ const DrawingPixel = memo(({
       const brightness = (r + g + b) / 3;
       return brightness > 127;
     })();
-    borderColor = isLight ? '#000000' : '#AAAAAA';
+    borderColor = isLight ? '#000000' : '#CCCCCC';
     borderWidth = `${0.2 * zoomFactor}vw`;
   } else if (isHovered && !isDrawing) {
     // Use proper contrast detection for hover
@@ -108,7 +108,7 @@ const DrawingPixel = memo(({
       const brightness = (r + g + b) / 3;
       return brightness > 127;
     })();
-    borderColor = isLight ? '#000000' : '#AAAAAA';
+    borderColor = isLight ? '#000000' : '#CCCCCC';
     borderWidth = `${0.15 * zoomFactor}vw`;
   }
   
@@ -128,7 +128,8 @@ const DrawingPixel = memo(({
         border: borderStyle,
         boxShadow,
         opacity,
-        position: 'relative'
+        position: 'relative',
+        transition: 'border 0.05s ease-out, box-shadow 0.05s ease-out'
       }}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
@@ -2213,7 +2214,10 @@ const savedData = ${dataString};
                       setSelectionEnd(i);
                     }
                     // Desktop mode
-                    else if (size.w > 1024) {
+                    else if (size.w > 1024 && isDrawing && selectionStart !== null) {
+                      // Only update selectionEnd during active drag
+                      setSelectionEnd(i);
+                    } else if (size.w > 1024 && groupDragStart !== null) {
                       const context = {
                         isDrawing,
                         selectionStart,
@@ -2352,7 +2356,7 @@ const savedData = ${dataString};
               const brightness = (r + g + b) / 3;
               return brightness > 127;
             })();
-            borderColor = isLight ? '#000000' : '#AAAAAA';
+            borderColor = isLight ? '#000000' : '#CCCCCC';
             borderWidth = `${0.2 * zoomFactor}vw`;
             boxShadow = `0 0 ${0.6 * zoomFactor}vw ${0.3 * zoomFactor}vw ${borderColor}`;
           } else if (isMoveGroupHover || isSelectGroupHover) {
@@ -2370,7 +2374,7 @@ const savedData = ${dataString};
               const brightness = (r + g + b) / 3;
               return brightness > 127;
             })();
-            borderColor = isLight ? '#000000' : '#AAAAAA';
+            borderColor = isLight ? '#000000' : '#CCCCCC';
             borderWidth = `${0.2 * zoomFactor}vw`;
             boxShadow = `0 0 0.5vw ${borderColor}`;
           } else if (isSelected || isInSelectionRect) {
@@ -2384,7 +2388,7 @@ const savedData = ${dataString};
               const brightness = (r + g + b) / 3;
               return brightness > 127;
             })();
-            borderColor = isLight ? '#000000' : '#AAAAAA';
+            borderColor = isLight ? '#000000' : '#CCCCCC';
             borderWidth = `${0.2 * zoomFactor}vw`;
           } else if (isCurveEnd) {
             borderColor = getContrastBorderColor(c);
@@ -2420,7 +2424,8 @@ const savedData = ${dataString};
                 boxShadow,
                 position: 'relative',
                 zIndex: pixelGroup ? pixelGroup.zIndex : 0,
-                opacity
+                opacity,
+                transition: 'border 0.05s ease-out, box-shadow 0.05s ease-out'
               }}
               onPointerDown={(e) => {
                 // Check if clicking on a grouped pixel with movegroup tool and group is already selected
