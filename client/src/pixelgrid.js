@@ -1919,11 +1919,9 @@ const savedData = ${dataString};
       <div style={{
         position: "relative",
         flex: 1,
-        overflow: "auto",
-        msOverflowStyle: "none",
-        scrollbarWidth: "none"
+        overflow: "hidden"
       }}>
-        {/* BACKGROUND IMAGE LAYER */}
+        {/* BACKGROUND IMAGE LAYER - Fixed behind the scrollable grid */}
         {backgroundImage && (
           <div style={{
             position: "absolute",
@@ -1953,7 +1951,7 @@ const savedData = ${dataString};
           </div>
         )}
         
-        {/* GRID */}
+        {/* GRID - Scrollable with transparent background */}
         <div 
           ref={gridRef}
           data-pixel-grid="true"
@@ -1973,7 +1971,10 @@ const savedData = ${dataString};
             scrollBehavior: "auto",
             msOverflowStyle: "none",
             scrollbarWidth: "none",
-            willChange: "transform"
+            willChange: "transform",
+            height: "100%",
+            width: "100%",
+            background: "transparent"
           }}>
         {(pixelColors || []).map((c, i) => {
           // Completely isolate drawing mode from layer calculations for performance
@@ -2389,11 +2390,14 @@ const savedData = ${dataString};
             displayColor = pixelColors[sourceIndex] || c;
           }
           
+          // Make white pixels transparent when background image is loaded
+          const pixelBackground = (backgroundImage && displayColor === '#ffffff') ? 'transparent' : displayColor;
+          
           return (
             <div
               key={i}
               style={{ 
-                background: displayColor, 
+                background: pixelBackground, 
                 boxSizing: 'border-box',
                 border: `${borderWidth} solid ${borderColor}`,
                 boxShadow,
