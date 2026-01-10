@@ -2299,9 +2299,9 @@ const savedData = ${dataString};
                       dragStateRef.current.groupDragCurrent = null;
                       dragStateRef.current.isDrawing = true;
                       
-                      // Force immediate render by incrementing renderTrigger in flushSync
+                      // Force immediate render by creating new pixelColors reference in flushSync
                       flushSync(() => {
-                        setRenderTrigger(prev => prev + 1);
+                        setPixelColors(prev => [...prev]); // Shallow copy forces new reference
                       });
                       
                       console.log("Mobile drag initialized (delegated):", { startRow, startCol, activeGroup: "__selected__" });
@@ -2341,9 +2341,9 @@ const savedData = ${dataString};
                       dragStateRef.current.groupDragCurrent = null;
                       dragStateRef.current.isDrawing = true;
                       
-                      // Force immediate render by incrementing renderTrigger in flushSync
+                      // Force immediate render by creating new pixelColors reference in flushSync
                       flushSync(() => {
-                        setRenderTrigger(prev => prev + 1);
+                        setPixelColors(prev => [...prev]); // Shallow copy forces new reference
                       });
                       
                       console.log(">>> IMMEDIATELY AFTER flushSync (desktop) - ref state:", dragStateRef.current);
