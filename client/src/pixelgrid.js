@@ -176,7 +176,9 @@ export default function PixelGrid() {
       const x = e.clientX - rect.left;
       const percent = Math.max(0, Math.min(1, x / rect.width));
       const maxScroll = gridRef.current.scrollWidth - gridRef.current.clientWidth;
-      gridRef.current.scrollLeft = percent * maxScroll;
+      const newScrollLeft = percent * maxScroll;
+      gridRef.current.scrollLeft = newScrollLeft;
+      setScrollPosition(newScrollLeft);
     };
 
     const handlePointerUp = () => {
@@ -2033,7 +2035,9 @@ const savedData = ${dataString};
                 const percent = x / rect.width;
                 const maxScroll = gridRef.current ? gridRef.current.scrollWidth - gridRef.current.clientWidth : 0;
                 if (gridRef.current) {
-                  gridRef.current.scrollLeft = percent * maxScroll;
+                  const newScrollLeft = percent * maxScroll;
+                  gridRef.current.scrollLeft = newScrollLeft;
+                  setScrollPosition(newScrollLeft);
                 }
               }}
               style={{
