@@ -1607,6 +1607,7 @@ const savedData = ${dataString};
       {/* GRID */}
       <div 
         ref={gridRef}
+        data-pixel-grid="true"
         onScroll={(e) => {
           if (size.w <= 1024) {
             setScrollPosition(e.target.scrollLeft);
@@ -1622,7 +1623,6 @@ const savedData = ${dataString};
           scrollBehavior: "auto",
           msOverflowStyle: "none",
           scrollbarWidth: "none",
-          touchAction: "none",
           willChange: "transform"
         }}>
         {(pixelColors || []).map((c, i) => {

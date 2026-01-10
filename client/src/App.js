@@ -8,8 +8,14 @@ function App() {
   const [currentPage, setCurrentPage] = useState('pixelgrid');
 
   useEffect(() => {
-    // Prevent ALL scrolling globally
+    // Prevent scrolling but allow drawing on the grid
     const preventScroll = (e) => {
+      // Allow touch events on the grid for drawing
+      if (e.target.closest('[data-pixel-grid="true"]')) {
+        // Only prevent default to stop scrolling, don't stop propagation
+        e.preventDefault();
+        return;
+      }
       e.preventDefault();
     };
     
