@@ -499,6 +499,14 @@ export default function PixelGrid() {
       setSize({ w: window.innerWidth, h: window.innerHeight });
     }
     const stopDrawing = () => {
+      console.log("stopDrawing called", { 
+        groupDragStart, 
+        activeGroup, 
+        groupDragCurrent, 
+        selectedPixelsLength: selectedPixels.length,
+        isDrawing
+      });
+      
       // Finalize selected pixels move if dragging
       if (groupDragStart !== null && activeGroup === "__selected__" && groupDragCurrent !== null) {
         console.log("Finalizing move:", { groupDragStart, groupDragCurrent });
@@ -511,19 +519,13 @@ export default function PixelGrid() {
           moveSelectedPixels(deltaRow, deltaCol);
         }
         
-        // Clear drag state after a small delay to ensure move completes
-        setTimeout(() => {
-          setGroupDragStart(null);
-          setGroupDragCurrent(null);
-          setActiveGroup(null);
-        }, 0);
+        // Clear drag state
+        setGroupDragStart(null);
+        setGroupDragCurrent(null);
+        setActiveGroup(null);
       }
       
-      // Don't clear isDrawing immediately - let the onPointerUp handlers finish first
-      // The individual pixel handlers will clear isDrawing after processing
-      setTimeout(() => {
-        setIsDrawing(false);
-      }, 0);
+      setIsDrawing(false);
       
       // Don't clear hoveredPixel if we're in line/curve mode with points selected
       const lineToolActive = activeDrawingTool === "line" && (lineStartPixel !== null || lineEndPixel !== null);
@@ -2322,36 +2324,19 @@ const savedData = ${dataString};
                       if (loadedTools.select) {
                         loadedTools.select.onPointerUp(context);
                       } else {
-                        // Desktop fallback
-                        if (selectionStart !== null && selectionEnd !== null) {
+                        // Desktop fallback - only finalize selection rectangle, not move
+                        if (selectionStart !== null && selectionEnd !== null && activeGroup !== "__selected__") {
                           const selected = getSelectionPixels(selectionStart, selectionEnd);
                           setSelectedPixels(selected);
                           setSelectionStart(null);
                           setSelectionEnd(null);
                         }
-                        setGroupDragStart(null);
                       }
-                      setIsDrawing(false);
-                    } else {
-                      // Mobile mode - handle selected pixel move finalization
-                      if (groupDragStart !== null && activeGroup === "__selected__" && groupDragCurrent !== null) {
-                        const deltaRow = groupDragCurrent.row - groupDragStart.startRow;
-                        const deltaCol = groupDragCurrent.col - groupDragStart.startCol;
-                        console.log("Mobile: Finalizing move on pointerUp", { deltaRow, deltaCol });
-                        
-                        if (deltaRow !== 0 || deltaCol !== 0) {
-                          moveSelectedPixels(deltaRow, deltaCol);
-                        }
-                        
-                        setGroupDragStart(null);
-                        setGroupDragCurrent(null);
-                        setActiveGroup(null);
-                      }
-                      setIsDrawing(false);
                     }
+                    // Mobile mode - selection and move are handled in onPointerDown and global stopDrawing
                   }
-                  // Note: Global stopDrawing handler also handles move finalization as backup
-                  // to ensure it works even when releasing outside a pixel
+                  // Note: Selected pixels move finalization is handled in the global stopDrawing handler
+                  // Don't clear isDrawing or groupDragStart here - let global handler do it
                 }}
                 onPointerEnter={() => {
                   if (activeDrawingTool === "select") {
