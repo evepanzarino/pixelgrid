@@ -399,8 +399,11 @@ export default function PixelGrid() {
     const stopDrawing = () => {
       setIsDrawing(false);
       
-      // Don't clear hoveredPixel if we're in line/curve mode waiting for second click
-      if (!((activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel !== null)) {
+      // Don't clear hoveredPixel if we're in line/curve mode with points selected
+      const lineToolActive = activeDrawingTool === "line" && (lineStartPixel !== null || lineEndPixel !== null);
+      const curveToolActive = activeDrawingTool === "curve" && (lineStartPixel !== null || curveEndPixel !== null);
+      
+      if (!(lineToolActive || curveToolActive)) {
         setHoveredPixel(null);
       }
     };
@@ -1842,8 +1845,11 @@ const savedData = ${dataString};
                   }
                 }}
                 onPointerLeave={() => {
-                  // For line/curve preview, keep hover when leaving individual pixel
-                  if (!(activeDrawingTool === "line" || activeDrawingTool === "curve") || lineStartPixel === null) {
+                  // For line/curve preview, keep hover when endpoints are selected
+                  const lineToolActive = activeDrawingTool === "line" && (lineStartPixel !== null || lineEndPixel !== null);
+                  const curveToolActive = activeDrawingTool === "curve" && (lineStartPixel !== null || curveEndPixel !== null);
+                  
+                  if (!(lineToolActive || curveToolActive)) {
                     setHoveredPixel(null);
                   }
                 }}
