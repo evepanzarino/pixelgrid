@@ -2293,6 +2293,41 @@ const savedData = ${dataString};
                       setSelectionEnd(null);
                       setSelectedPixels([]);
                     }
+                  } else {
+                    // Desktop mode
+                    if (selectedPixels.includes(pixelIndex)) {
+                      // Clicking on selected pixel - start drag
+                      const startRow = Math.floor(pixelIndex / 200);
+                      const startCol = pixelIndex % 200;
+                      const dragState = { pixelIndex, startRow, startCol };
+                      
+                      console.log("DRAG INIT DEBUG (delegated, desktop):", { 
+                        clickedPixel: pixelIndex, 
+                        startRow, 
+                        startCol, 
+                        selectedPixels: selectedPixels.slice(0, 5),
+                        selectedPixelsLength: selectedPixels.length
+                      });
+                      
+                      setActiveGroup("__selected__");
+                      setGroupDragStart(dragState);
+                      setGroupDragCurrent(null);
+                      setIsDrawing(true);
+                      
+                      // Also update ref immediately for event handlers
+                      dragStateRef.current.activeGroup = "__selected__";
+                      dragStateRef.current.groupDragStart = dragState;
+                      dragStateRef.current.groupDragCurrent = null;
+                      dragStateRef.current.isDrawing = true;
+                      
+                      console.log("Desktop drag initialized (delegated):", { startRow, startCol, activeGroup: "__selected__" });
+                    } else {
+                      // Start new selection
+                      setSelectionStart(pixelIndex);
+                      setSelectionEnd(pixelIndex);
+                      setSelectedPixels([]);
+                      setIsDrawing(true);
+                    }
                   }
                 }
               } else {
