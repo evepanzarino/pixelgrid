@@ -562,13 +562,16 @@ export default function PixelGrid() {
         
         // Update preview pixels - show selected pixels at new positions
         const previewPixels = [];
+        const currentRows = Math.round(rect.height / pixelSize);
+        
         state.selectedPixels.forEach(sourceIndex => {
           const sourceRow = Math.floor(sourceIndex / 200);
           const sourceCol = sourceIndex % 200;
           const newRow = sourceRow + deltaRow;
           const newCol = sourceCol + deltaCol;
           
-          if (newRow >= 0 && newCol >= 0 && newCol < 200) {
+          // Only show preview for pixels within current grid bounds
+          if (newRow >= 0 && newRow < currentRows && newCol >= 0 && newCol < 200) {
             const newIndex = newRow * 200 + newCol;
             previewPixels.push({ index: newIndex, color: pixelColors[sourceIndex] });
           }
@@ -607,13 +610,16 @@ export default function PixelGrid() {
         
         // Update preview pixels - show selected pixels at new positions
         const previewPixels = [];
+        const currentRows = Math.round(rect.height / pixelSize);
+        
         state.selectedPixels.forEach(sourceIndex => {
           const sourceRow = Math.floor(sourceIndex / 200);
           const sourceCol = sourceIndex % 200;
           const newRow = sourceRow + deltaRow;
           const newCol = sourceCol + deltaCol;
           
-          if (newRow >= 0 && newCol >= 0 && newCol < 200) {
+          // Only show preview for pixels within current grid bounds
+          if (newRow >= 0 && newRow < currentRows && newCol >= 0 && newCol < 200) {
             const newIndex = newRow * 200 + newCol;
             previewPixels.push({ index: newIndex, color: pixelColors[sourceIndex] });
           }
