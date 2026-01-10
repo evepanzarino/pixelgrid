@@ -28,8 +28,6 @@ const DrawingPixel = memo(({
   let borderWidth = `${0.1 * zoomFactor}vw`;
   let opacity = 1;
   let boxShadow = 'none';
-
-  console.log(`Pixel ${index}: isSelectionStartPoint=${isSelectionStartPoint}, isInSelectionRect=${isInSelectionRect}, isSelected=${isSelected}, color=${color}`);
   
   // Dim original position during drag preview
   if (isSelected && isDrawing && activeDrawingTool === "select" && isInDragPreview === false) {
@@ -50,7 +48,6 @@ const DrawingPixel = memo(({
       const g = parseInt(color.substring(3, 5), 16);
       const b = parseInt(color.substring(5, 7), 16);
       const brightness = (r + g + b) / 3;
-      console.log(`DEBUG Selection start: color=${color}, brightness=${brightness}, isLight=${brightness > 127}, border will be ${brightness > 127 ? 'black' : 'white'}`);
       return brightness > 127;
     })();
     borderColor = isLight ? '#000000' : '#ffffff';
@@ -111,7 +108,6 @@ const DrawingPixel = memo(({
   }
   
   borderStyle = `${borderWidth} solid ${borderColor}`;
-  console.log(`Final border for pixel ${index}: ${borderStyle}`);
   
   return (
     <div
@@ -1798,8 +1794,15 @@ const savedData = ${dataString};
             const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
             const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
             const isSelected = selectedPixels.includes(i);
-            const isInSelectionRect = activeGroup !== null && activeGroup !== "__selected__" && 
-              pixelGroups[i]?.group === activeGroup;
+            const isInSelectionRect = (() => {
+              // Show selection rectangle preview for select tool during drag or mobile second click
+              if (activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null) {
+                return getSelectionRectangle(selectionStart, selectionEnd).includes(i);
+              }
+              // Show active group highlight for other tools
+              return activeGroup !== null && activeGroup !== "__selected__" && 
+                pixelGroups[i]?.group === activeGroup;
+            })();
             const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
             
             // Line/curve preview calculations - use fixed end when chosen, otherwise hover
@@ -2062,8 +2065,15 @@ const savedData = ${dataString};
           
           // Only calculate these in layers mode
           const isSelected = selectedPixels.includes(i);
-          const isInSelectionRect = activeGroup !== null && activeGroup !== "__selected__" && 
-            pixelGroup?.group === activeGroup;
+          const isInSelectionRect = (() => {
+            // Show selection rectangle preview for select tool during drag or mobile second click
+            if (activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null) {
+              return getSelectionRectangle(selectionStart, selectionEnd).includes(i);
+            }
+            // Show active group highlight for other tools
+            return activeGroup !== null && activeGroup !== "__selected__" && 
+              pixelGroup?.group === activeGroup;
+          })();
           const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
           const isInActiveGroup = (pixelGroup && pixelGroup.group === activeGroup) || (activeGroup === "__selected__" && selectedPixels.includes(i));
           const isMoveGroupHover = activeDrawingTool === "movegroup" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i;
