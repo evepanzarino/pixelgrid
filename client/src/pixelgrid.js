@@ -2247,8 +2247,13 @@ const savedData = ${dataString};
                 console.log("Grid click delegated to pixel:", pixelIndex, { row, col, x, y });
                 
                 // Find the actual pixel element and dispatch a pointer down event to it
-                const pixelElement = document.querySelector(`[data-pixel-index="${pixelIndex}"]`);
-                console.log("Found pixel element:", !!pixelElement);
+                const pixelElement = gridRef.current.querySelector(`[data-pixel-index="${pixelIndex}"]`);
+                console.log("Found pixel element:", !!pixelElement, "looking for index:", pixelIndex);
+                
+                // Debug: try to find ANY pixel element
+                const anyPixel = gridRef.current.querySelector('[data-pixel-index]');
+                console.log("Any pixel element exists?", !!anyPixel, anyPixel?.getAttribute('data-pixel-index'));
+                
                 if (pixelElement) {
                   // Create a new pointer event with the same properties
                   const syntheticEvent = new PointerEvent('pointerdown', {
@@ -2261,6 +2266,8 @@ const savedData = ${dataString};
                   });
                   pixelElement.dispatchEvent(syntheticEvent);
                   console.log("Dispatched synthetic event to pixel", pixelIndex);
+                } else {
+                  console.error("Could not find pixel element for index:", pixelIndex);
                 }
               } else {
                 console.log("Click outside grid bounds:", { row, col, rows, maxRow: rows - 1 });
