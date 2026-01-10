@@ -630,7 +630,11 @@ export default function PixelGrid() {
         hasPixelIndex: target.hasAttribute('data-pixel-index'),
         pixelIndex: target.getAttribute('data-pixel-index'),
         classList: Array.from(target.classList),
-        id: target.id
+        id: target.id,
+        hasDataPixelGrid: target.hasAttribute('data-pixel-grid'),
+        parentTagName: target.parentElement?.tagName,
+        parentHasPixelIndex: target.parentElement?.hasAttribute('data-pixel-index'),
+        computedPointerEvents: window.getComputedStyle(target).pointerEvents
       });
     };
 
