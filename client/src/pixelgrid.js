@@ -969,6 +969,50 @@ const savedData = ${dataString};
 
   // Track selection overlay element for rendering border around entire selection
   const selectionOverlayRef = useRef(null);
+  const selectionBorderColorRef = useRef('#000000');
+  
+  // Calculate border color only when selection is finalized (not during drag)
+  useEffect(() => {
+    if (!isDrawing && selectionStart !== null && selectionEnd !== null && activeDrawingTool === "select") {
+      const startRow = Math.floor(selectionStart / 200);
+      const startCol = selectionStart % 200;
+      const endRow = Math.floor(selectionEnd / 200);
+      const endCol = selectionEnd % 200;
+      
+      const minRow = Math.min(startRow, endRow);
+      const maxRow = Math.max(startRow, endRow);
+      const minCol = Math.min(startCol, endCol);
+      const maxCol = Math.max(startCol, endCol);
+      
+      // Sample a few pixels to determine border color (not all pixels for performance)
+      let totalBrightness = 0;
+      let sampleCount = 0;
+      const maxSamples = 100; // Limit samples for performance
+      const rowStep = Math.max(1, Math.floor((maxRow - minRow + 1) / 10));
+      const colStep = Math.max(1, Math.floor((maxCol - minCol + 1) / 10));
+      
+      for (let row = minRow; row <= maxRow && sampleCount < maxSamples; row += rowStep) {
+        for (let col = minCol; col <= maxCol && sampleCount < maxSamples; col += colStep) {
+          const index = row * 200 + col;
+          const color = pixelColors[index];
+          if (color && color.length >= 7) {
+            const r = parseInt(color.substring(1, 3), 16);
+            const g = parseInt(color.substring(3, 5), 16);
+            const b = parseInt(color.substring(5, 7), 16);
+            totalBrightness += (r + g + b) / 3;
+          } else {
+            totalBrightness += 255; // White pixels
+          }
+          sampleCount++;
+        }
+      }
+      
+      if (sampleCount > 0) {
+        const avgBrightness = totalBrightness / sampleCount;
+        selectionBorderColorRef.current = avgBrightness > 127 ? '#000000' : '#CCCCCC';
+      }
+    }
+  }, [isDrawing, selectionStart, selectionEnd, activeDrawingTool, pixelColors]);
   
   // Update selection overlay position when selection changes
   useEffect(() => {
@@ -986,12 +1030,12 @@ const savedData = ${dataString};
       const minCol = Math.min(startCol, endCol);
       const maxCol = Math.max(startCol, endCol);
       
-      // Position overlay using CSS grid positioning
-      overlayEl.style.gridRowStart = (minRow + 1).toString();
-      overlayEl.style.gridRowEnd = (maxRow + 2).toString();
-      overlayEl.style.gridColumnStart = (minCol + 1).toString();
-      overlayEl.style.gridColumnEnd = (maxCol + 2).toString();
-      overlayEl.style.border = `${0.2 * zoomFactor}vw dashed #2196F3`;
+      // Position overlay using CSS grid positioning (1-indexed)
+      overlayEl.style.gridRowStart = String(minRow + 1);
+      overlayEl.style.gridRowEnd = String(maxRow + 2);
+      overlayEl.style.gridColumnStart = String(minCol + 1);
+      overlayEl.style.gridColumnEnd = String(maxCol + 2);
+      overlayEl.style.border = `${0.2 * zoomFactor}vw dashed ${selectionBorderColorRef.current}`;
       overlayEl.style.display = 'block';
     } else {
       overlayEl.style.display = 'none';
