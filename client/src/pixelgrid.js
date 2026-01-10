@@ -1401,6 +1401,7 @@ const savedData = ${dataString};
                   setShowViewMenu(false);
                   setShowGroupDialog(false);
                   setActiveDrawingTool("pencil");
+                  setActiveGroup(null);
                 }}
                 style={{
                   cursor: "pointer",
@@ -1475,6 +1476,7 @@ const savedData = ${dataString};
                 <button
                   onClick={() => {
                     setActiveDrawingTool("pencil");
+                    setActiveGroup(null);
                     setLineStartPixel(null);
                   }}
                   style={{
@@ -1497,6 +1499,7 @@ const savedData = ${dataString};
                   onClick={async () => {
                     await loadTool("line");
                     setActiveDrawingTool("line");
+                    setActiveGroup(null);
                     setLineStartPixel(null);
                   }}
                   style={{
@@ -1519,6 +1522,7 @@ const savedData = ${dataString};
                   onClick={async () => {
                     await loadTool("curve");
                     setActiveDrawingTool("curve");
+                    setActiveGroup(null);
                     setLineStartPixel(null);
                     setCurveEndPixel(null);
                     setCurveCurveAmount(0);
@@ -1543,6 +1547,7 @@ const savedData = ${dataString};
                   onClick={async () => {
                     await loadTool("bucket");
                     setActiveDrawingTool("bucket");
+                    setActiveGroup(null);
                     setLineStartPixel(null);
                   }}
                   style={{
@@ -1756,9 +1761,8 @@ const savedData = ${dataString};
             const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
             const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
             const isSelected = selectedPixels.includes(i);
-            const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && 
-              isDrawing && size.w > 1024 && 
-              getSelectionRectangle(selectionStart, selectionEnd).includes(i);
+            const isInSelectionRect = activeGroup !== null && activeGroup !== "__selected__" && 
+              pixelGroups[i]?.group === activeGroup;
             const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
             
             // Line/curve preview calculations - use fixed end when chosen, otherwise hover
@@ -2021,9 +2025,8 @@ const savedData = ${dataString};
           
           // Only calculate these in layers mode
           const isSelected = selectedPixels.includes(i);
-          const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && 
-            isDrawing && size.w > 1024 && 
-            getSelectionRectangle(selectionStart, selectionEnd).includes(i);
+          const isInSelectionRect = activeGroup !== null && activeGroup !== "__selected__" && 
+            pixelGroup?.group === activeGroup;
           const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
           const isInActiveGroup = (pixelGroup && pixelGroup.group === activeGroup) || (activeGroup === "__selected__" && selectedPixels.includes(i));
           const isMoveGroupHover = activeDrawingTool === "movegroup" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i;
@@ -2849,7 +2852,7 @@ const savedData = ${dataString};
                     {/* Layer Name */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.2vw", flex: 1 }}>
                       <div
-                        onClick={() => setActiveGroup(group.name)}
+                        onClick={() => setActiveGroup(activeGroup === group.name ? null : group.name)}
                         style={{
                           fontSize: "0.8vw",
                           padding: "0.3vw",
