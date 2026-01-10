@@ -175,6 +175,7 @@ export default function PixelGrid() {
   const [selectionEnd, setSelectionEnd] = useState(null); // Rectangle selection end (during drag)
   const [selectedPixels, setSelectedPixels] = useState([]); // Array of selected pixel indices
   const [showGroupDialog, setShowGroupDialog] = useState(false); // Show group assignment dialog
+  const [selectAllPixels, setSelectAllPixels] = useState(false); // Toggle: select all pixels vs only colored pixels
   
   // Background image state
   const [backgroundImage, setBackgroundImage] = useState(() => {
@@ -749,11 +750,17 @@ export default function PixelGrid() {
     for (let row = minRow; row <= maxRow; row++) {
       for (let col = minCol; col <= maxCol; col++) {
         const pixelIndex = row * 200 + col;
-        // Include pixels that:
-        // 1. Are not null/empty (have been painted with a color)
-        // 2. OR are already part of a group (even if empty)
-        if ((pixelColors[pixelIndex] !== null && pixelColors[pixelIndex] !== "#ffffff") || pixelGroups[pixelIndex]) {
+        
+        if (selectAllPixels) {
+          // Select all pixels in rectangle, regardless of color
           pixels.push(pixelIndex);
+        } else {
+          // Only select pixels that:
+          // 1. Are not null/empty (have been painted with a color)
+          // 2. OR are already part of a group (even if empty)
+          if ((pixelColors[pixelIndex] !== null && pixelColors[pixelIndex] !== "#ffffff") || pixelGroups[pixelIndex]) {
+            pixels.push(pixelIndex);
+          }
         }
       }
     }
@@ -2957,7 +2964,29 @@ const savedData = ${dataString};
         }}>
           
           {/* Top Row: Group Creation + Close */}
-          <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto auto auto", gap: "0.5vw", alignItems: "center" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "auto auto 1fr auto auto auto", gap: "0.5vw", alignItems: "center" }}>
+            
+            {/* Selection Mode Toggle */}
+            <button
+              onClick={() => setSelectAllPixels(!selectAllPixels)}
+              style={{
+                background: selectAllPixels ? "#2196F3" : "#666",
+                color: "white",
+                border: "0.15vw solid #000",
+                padding: "0.3vw 0.8vw",
+                cursor: "pointer",
+                fontSize: "0.7vw",
+                fontWeight: "bold",
+                whiteSpace: "nowrap",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.3vw"
+              }}
+              title={selectAllPixels ? "Selecting all pixels in box" : "Selecting only colored pixels"}
+            >
+              <i className={selectAllPixels ? "fas fa-check-square" : "fas fa-square"}></i>
+              {selectAllPixels ? "All" : "Color"}
+            </button>
             
             {/* Group Creation Section - Always Visible */}
             <div style={{ fontSize: "0.8vw", fontWeight: "bold", whiteSpace: "nowrap" }}>
