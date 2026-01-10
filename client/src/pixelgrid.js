@@ -1797,12 +1797,20 @@ const savedData = ${dataString};
                 activeDrawingTool={activeDrawingTool}
                 onPointerDown={(e) => {
                   if (activeDrawingTool === "select") {
+                    // Ensure select tool is loaded
+                    if (!loadedTools.select) {
+                      loadTool("select").then(() => {
+                        // Tool will be loaded on next interaction
+                      });
+                    }
+                    
                     // Use modular select tool with context
                     const context = {
                       pixelGroups,
                       activeGroup,
                       selectionStart,
                       selectionEnd,
+                      selectedPixels,
                       size,
                       setActiveGroup,
                       setGroupDragStart,
@@ -1810,8 +1818,8 @@ const savedData = ${dataString};
                       setSelectionEnd,
                       setSelectedPixels,
                       setIsDrawing,
-                      getSelectionPixels: () => getSelectionPixels(selectionStart, selectionEnd),
-                      getSelectionRectangle: () => getSelectionRectangle(selectionStart, selectionEnd)
+                      getSelectionPixels: (start, end) => getSelectionPixels(start, end),
+                      getSelectionRectangle: (start, end) => getSelectionRectangle(start, end)
                     };
                     
                     if (loadedTools.select) {
@@ -1884,7 +1892,7 @@ const savedData = ${dataString};
                       selectionStart,
                       selectionEnd,
                       size,
-                      getSelectionPixels: () => getSelectionPixels(selectionStart, selectionEnd),
+                      getSelectionPixels: (start, end) => getSelectionPixels(start, end),
                       setSelectedPixels,
                       setSelectionStart,
                       setSelectionEnd,

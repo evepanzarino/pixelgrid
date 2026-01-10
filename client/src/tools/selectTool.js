@@ -20,6 +20,7 @@ export const selectTool = {
       // Start dragging the group
       context.setActiveGroup(clickedPixelGroup);
       context.setGroupDragStart(pixelIndex);
+      context.setIsDrawing(true);
       return;
     }
     
@@ -30,10 +31,11 @@ export const selectTool = {
         context.setSelectionStart(pixelIndex);
         context.setSelectionEnd(null);
         context.setSelectedPixels([]);
-      } else if (selectionStart !== null) {
+        // Don't set drawing state for mobile mode
+      } else {
         // Second click: finalize selection
         context.setSelectionEnd(pixelIndex);
-        const selected = context.getSelectionPixels();
+        const selected = context.getSelectionPixels(context.selectionStart, pixelIndex);
         context.setSelectedPixels(selected);
         context.setSelectionStart(null);
         context.setSelectionEnd(null);
@@ -46,6 +48,7 @@ export const selectTool = {
       context.setSelectionStart(pixelIndex);
       context.setSelectionEnd(pixelIndex);
       context.setSelectedPixels([]);
+      context.setIsDrawing(true);
     }
   },
   
@@ -87,7 +90,7 @@ export const selectTool = {
     
     // Desktop drag selection completion
     if (!isMobile && selectionStart !== null && selectionEnd !== null) {
-      const selected = context.getSelectionPixels();
+      const selected = context.getSelectionPixels(selectionStart, selectionEnd);
       context.setSelectedPixels(selected);
       context.setSelectionStart(null);
       context.setSelectionEnd(null);
@@ -109,7 +112,7 @@ export const selectTool = {
     
     // Show preview rectangle during drag or mobile hover
     if (selectionStart !== null && selectionEnd !== null) {
-      const rect = context.getSelectionRectangle();
+      const rect = context.getSelectionRectangle(selectionStart, selectionEnd);
       return rect.map(index => ({ index, type: 'selection-preview' }));
     }
     
