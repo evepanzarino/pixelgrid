@@ -176,6 +176,20 @@ export default function PixelGrid() {
   const [selectedPixels, setSelectedPixels] = useState([]); // Array of selected pixel indices
   const [showGroupDialog, setShowGroupDialog] = useState(false); // Show group assignment dialog
   
+  // Background image state
+  const [backgroundImage, setBackgroundImage] = useState(() => {
+    try {
+      return localStorage.getItem("pixelgrid_backgroundImage") || null;
+    } catch { return null; }
+  });
+  const [backgroundOpacity, setBackgroundOpacity] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pixelgrid_backgroundOpacity");
+      return saved ? parseFloat(saved) : 0.5;
+    } catch { return 0.5; }
+  });
+  const backgroundInputRef = useRef(null);
+  
   const [pixelGroups, setPixelGroups] = useState(() => {
     try {
       const saved = localStorage.getItem("pixelgrid_pixelGroups");
@@ -442,6 +456,27 @@ export default function PixelGrid() {
       console.error("Failed to save secondary color:", error);
     }
   }, [secondaryColor]);
+  
+  // Save background settings to localStorage
+  useEffect(() => {
+    try {
+      if (backgroundImage) {
+        localStorage.setItem("pixelgrid_backgroundImage", backgroundImage);
+      } else {
+        localStorage.removeItem("pixelgrid_backgroundImage");
+      }
+    } catch (error) {
+      console.error("Failed to save background image:", error);
+    }
+  }, [backgroundImage]);
+  
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_backgroundOpacity", backgroundOpacity.toString());
+    } catch (error) {
+      console.error("Failed to save background opacity:", error);
+    }
+  }, [backgroundOpacity]);
 
   // Update pixel array when totalPixels changes, preserving existing data
   useEffect(() => {
@@ -903,6 +938,21 @@ const savedData = ${dataString};
       }
     };
     reader.readAsText(file);
+  }
+  
+  // Handle background image upload
+  function handleBackgroundUpload(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setBackgroundImage(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+  
+  // Remove background image
+  function removeBackgroundImage() {
+    setBackgroundImage(null);
   }
 
   return (
@@ -1374,6 +1424,43 @@ const savedData = ${dataString};
               >
                 Load
               </div>
+              
+              <div
+                onClick={() => {
+                  setShowFileMenu(false);
+                  // trigger hidden background image input
+                  backgroundInputRef.current && backgroundInputRef.current.click();
+                }}
+                style={{
+                  cursor: "pointer",
+                  color: "white",
+                  textAlign: "center",
+                  fontSize: ".9vw",
+                  borderBottom: "0.2vw solid #333",
+                  padding: "0.5vw"
+                }}
+              >
+                {backgroundImage ? "Change Background" : "Upload Background"}
+              </div>
+              
+              {backgroundImage && (
+                <div
+                  onClick={() => {
+                    removeBackgroundImage();
+                    setShowFileMenu(false);
+                  }}
+                  style={{
+                    cursor: "pointer",
+                    color: "#ff9800",
+                    textAlign: "center",
+                    fontSize: ".9vw",
+                    borderBottom: "0.2vw solid #333",
+                    padding: "0.5vw"
+                  }}
+                >
+                  Remove Background
+                </div>
+              )}
 
               <div
                 onClick={() => {
@@ -1489,6 +1576,20 @@ const savedData = ${dataString};
           onChange={(e) => {
             const f = e.target.files && e.target.files[0];
             if (f) loadFromHTML(f);
+            // clear selection so same file can be reloaded if needed
+            e.target.value = null;
+          }}
+        />
+        
+        {/* hidden file input for background image */}
+        <input
+          ref={backgroundInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const f = e.target.files && e.target.files[0];
+            if (f) handleBackgroundUpload(f);
             // clear selection so same file can be reloaded if needed
             e.target.value = null;
           }}
@@ -1773,29 +1874,107 @@ const savedData = ${dataString};
             </div>
           </div>
         )}
+        
+        {/* BACKGROUND OPACITY CONTROL */}
+        {backgroundImage && (
+          <div style={{
+            width: "100%",
+            padding: "1vw",
+            borderTop: "0.2vw solid #ddd",
+            marginTop: "1vw"
+          }}>
+            <div style={{ 
+              color: "#000000", 
+              fontSize: "1.5vw", 
+              marginBottom: "0.5vw",
+              textAlign: "center"
+            }}>
+              <b>Background Opacity</b>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={backgroundOpacity}
+              onChange={(e) => setBackgroundOpacity(parseFloat(e.target.value))}
+              style={{
+                width: "100%",
+                cursor: "pointer"
+              }}
+            />
+            <div style={{
+              textAlign: "center",
+              fontSize: "1.2vw",
+              color: "#666",
+              marginTop: "0.3vw"
+            }}>
+              {Math.round(backgroundOpacity * 100)}%
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* GRID */}
-      <div 
-        ref={gridRef}
-        data-pixel-grid="true"
-        onScroll={(e) => {
-          if (size.w <= 1024) {
-            setScrollPosition(e.target.scrollLeft);
-          }
-        }}
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(200, ${displayPixelSize}vw)`,
-          gridTemplateRows: `repeat(${rows}, ${displayPixelSize}vw)`,
-          userSelect: "none",
-          flex: 1,
-          overflow: "auto",
-          scrollBehavior: "auto",
-          msOverflowStyle: "none",
-          scrollbarWidth: "none",
-          willChange: "transform"
-        }}>
+      {/* GRID CONTAINER WITH BACKGROUND */}
+      <div style={{
+        position: "relative",
+        flex: 1,
+        overflow: "auto",
+        msOverflowStyle: "none",
+        scrollbarWidth: "none"
+      }}>
+        {/* BACKGROUND IMAGE LAYER */}
+        {backgroundImage && (
+          <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: 0,
+            pointerEvents: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden"
+          }}>
+            <img
+              src={backgroundImage}
+              alt="Background"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                width: "auto",
+                height: "auto",
+                objectFit: "contain",
+                opacity: backgroundOpacity
+              }}
+            />
+          </div>
+        )}
+        
+        {/* GRID */}
+        <div 
+          ref={gridRef}
+          data-pixel-grid="true"
+          onScroll={(e) => {
+            if (size.w <= 1024) {
+              setScrollPosition(e.target.scrollLeft);
+            }
+          }}
+          style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(200, ${displayPixelSize}vw)`,
+            gridTemplateRows: `repeat(${rows}, ${displayPixelSize}vw)`,
+            userSelect: "none",
+            position: "relative",
+            zIndex: 1,
+            overflow: "auto",
+            scrollBehavior: "auto",
+            msOverflowStyle: "none",
+            scrollbarWidth: "none",
+            willChange: "transform"
+          }}>
         {(pixelColors || []).map((c, i) => {
           // Completely isolate drawing mode from layer calculations for performance
           if (viewMode === "drawing") {
@@ -2366,6 +2545,10 @@ const savedData = ${dataString};
         })}
       </div>
       </div>
+      {/* End of GRID CONTAINER WITH BACKGROUND */}
+      
+      </div>
+      {/* End of grid-sidebar-wrapper */}
       
       {/* MOBILE/TABLET BOTTOM SCROLLBAR */}
       {size.w <= 1024 && (
