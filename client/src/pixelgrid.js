@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, memo, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback, memo } from "react";
 import "./pixelgrid.css";
 
 // Memoized pixel component to prevent unnecessary re-renders
@@ -966,10 +966,15 @@ const savedData = ${dataString};
     setBackgroundImage(null);
   }
 
-  // Memoize selection rectangle for performance
-  const selectionRectSet = useMemo(() => {
-    const set = new Set();
-    if (activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null) {
+  // Track selection overlay element for rendering border around entire selection
+  const selectionOverlayRef = useRef(null);
+  
+  // Update selection overlay position when selection changes
+  useEffect(() => {
+    const overlayEl = selectionOverlayRef.current;
+    if (!overlayEl) return;
+    
+    if (activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && viewMode === "drawing") {
       const startRow = Math.floor(selectionStart / 200);
       const startCol = selectionStart % 200;
       const endRow = Math.floor(selectionEnd / 200);
@@ -980,14 +985,16 @@ const savedData = ${dataString};
       const minCol = Math.min(startCol, endCol);
       const maxCol = Math.max(startCol, endCol);
       
-      for (let row = minRow; row <= maxRow; row++) {
-        for (let col = minCol; col <= maxCol; col++) {
-          set.add(row * 200 + col);
-        }
-      }
+      // Position overlay using CSS grid positioning
+      overlayEl.style.gridRowStart = (minRow + 1).toString();
+      overlayEl.style.gridRowEnd = (maxRow + 2).toString();
+      overlayEl.style.gridColumnStart = (minCol + 1).toString();
+      overlayEl.style.gridColumnEnd = (maxCol + 2).toString();
+      overlayEl.style.display = 'block';
+    } else {
+      overlayEl.style.display = 'none';
     }
-    return set;
-  }, [activeDrawingTool, selectionStart, selectionEnd]);
+  }, [selectionStart, selectionEnd, activeDrawingTool, viewMode]);
 
   return (
     <div className="pixelgrid-container" style={{ width: "100vw", overflow: "hidden" }}>
@@ -2017,7 +2024,10 @@ const savedData = ${dataString};
           ref={selectionOverlayRef}
           style={{
             display: 'none',
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            border: `${0.2 * zoomFactor}vw dashed #2196F3`,
+            boxSizing: 'border-box',
+            zIndex: 10
           }}
         />
         
@@ -2029,6 +2039,7 @@ const savedData = ${dataString};
             const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
             const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
             const isSelected = selectedPixels.includes(i);
+            // Don't show individual pixel borders for select tool - overlay handles it
             const isInSelectionRect = activeGroup !== null && activeGroup !== "__selected__" && 
                 pixelGroups[i]?.group === activeGroup;
             const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
