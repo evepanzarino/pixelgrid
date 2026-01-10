@@ -11,6 +11,7 @@ const DrawingPixel = memo(({
   isInLinePreview,
   isSelected,
   isInSelectionRect,
+  isSelectionStartPoint,
   isInDragPreview,
   isDrawing,
   zoomFactor,
@@ -38,6 +39,10 @@ const DrawingPixel = memo(({
     borderColor = '#9C27B0';
     borderWidth = `${0.3 * zoomFactor}vw`;
     boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
+  } else if (isSelectionStartPoint) {
+    borderColor = '#FF9800';
+    borderWidth = `${0.4 * zoomFactor}vw`;
+    boxShadow = `0 0 ${0.6 * zoomFactor}vw ${0.3 * zoomFactor}vw #FF9800`;
   } else if (isInSelectionRect) {
     borderColor = '#2196F3';
     borderWidth = `${0.2 * zoomFactor}vw`;
@@ -1732,7 +1737,10 @@ const savedData = ${dataString};
             const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
             const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
             const isSelected = selectedPixels.includes(i);
-            const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && isDrawing && getSelectionRectangle(selectionStart, selectionEnd).includes(i);
+            const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && 
+              ((isDrawing && size.w > 1024) || (size.w <= 1024)) && 
+              getSelectionRectangle(selectionStart, selectionEnd).includes(i);
+            const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
             
             // Line/curve preview calculations - use fixed end when chosen, otherwise hover
             let isInLinePreview = false;
@@ -1782,21 +1790,64 @@ const savedData = ${dataString};
                 isInLinePreview={isInLinePreview}
                 isSelected={isSelected}
                 isInSelectionRect={isInSelectionRect}
+                isSelectionStartPoint={isSelectionStartPoint}
                 isInDragPreview={isInDragPreview}
                 isDrawing={isDrawing}
                 zoomFactor={zoomFactor}
                 activeDrawingTool={activeDrawingTool}
                 onPointerDown={(e) => {
-                  if (activeDrawingTool === "select" && selectedPixels.includes(i)) {
-                    // Select tool: clicking on a selected pixel enables drag-to-move
-                    setActiveGroup("__selected__");
-                    setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
-                    setIsDrawing(true);
-                  } else if (activeDrawingTool === "select") {
-                    // Start rectangle selection
-                    setSelectionStart(i);
-                    setSelectionEnd(i);
-                    setIsDrawing(true);
+                  if (activeDrawingTool === "select") {
+                    // Use modular select tool with context
+                    const context = {
+                      pixelGroups,
+                      activeGroup,
+                      selectionStart,
+                      selectionEnd,
+                      size,
+                      setActiveGroup,
+                      setGroupDragStart,
+                      setSelectionStart,
+                      setSelectionEnd,
+                      setSelectedPixels,
+                      setIsDrawing,
+                      getSelectionPixels: () => getSelectionPixels(selectionStart, selectionEnd),
+                      getSelectionRectangle: () => getSelectionRectangle(selectionStart, selectionEnd)
+                    };
+                    
+                    if (loadedTools.select) {
+                      loadedTools.select.onPointerDown(context, i);
+                    } else {
+                      // Fallback to inline logic for backwards compatibility
+                      if (selectedPixels.includes(i)) {
+                        // Select tool: clicking on a selected pixel enables drag-to-move
+                        setActiveGroup("__selected__");
+                        setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
+                        setIsDrawing(true);
+                      } else {
+                        // Mobile two-click selection mode
+                        if (size.w <= 1024) {
+                          if (selectionStart === null) {
+                            // First click: set selection start
+                            setSelectionStart(i);
+                            setSelectionEnd(null);
+                            setSelectedPixels([]);
+                          } else {
+                            // Second click: finalize selection
+                            setSelectionEnd(i);
+                            const selected = getSelectionPixels(selectionStart, i);
+                            setSelectedPixels(selected);
+                            setSelectionStart(null);
+                            setSelectionEnd(null);
+                          }
+                        } else {
+                          // Desktop drag selection mode
+                          setSelectionStart(i);
+                          setSelectionEnd(i);
+                          setSelectedPixels([]);
+                          setIsDrawing(true);
+                        }
+                      }
+                    }
                   } else if (activeDrawingTool === "pencil") {
                     setIsDrawing(true);
                     paintPixel(e, i);
@@ -1827,12 +1878,31 @@ const savedData = ${dataString};
                   }
                 }}
                 onPointerUp={() => {
-                  if (activeDrawingTool === "select" && selectionStart !== null) {
-                    // Finalize selection
-                    const selected = getSelectionPixels(selectionStart, selectionEnd || selectionStart);
-                    setSelectedPixels(selected);
-                    setSelectionStart(null);
-                    setSelectionEnd(null);
+                  if (activeDrawingTool === "select") {
+                    // Use modular select tool with context
+                    const context = {
+                      selectionStart,
+                      selectionEnd,
+                      size,
+                      getSelectionPixels: () => getSelectionPixels(selectionStart, selectionEnd),
+                      setSelectedPixels,
+                      setSelectionStart,
+                      setSelectionEnd,
+                      setGroupDragStart
+                    };
+                    
+                    if (loadedTools.select) {
+                      loadedTools.select.onPointerUp(context);
+                    } else {
+                      // Fallback logic for desktop only
+                      if (size.w > 1024 && selectionStart !== null) {
+                        const selected = getSelectionPixels(selectionStart, selectionEnd || selectionStart);
+                        setSelectedPixels(selected);
+                        setSelectionStart(null);
+                        setSelectionEnd(null);
+                      }
+                      setGroupDragStart(null);
+                    }
                     setIsDrawing(false);
                   } else if (groupDragStart !== null && activeGroup === "__selected__") {
                     // Finalize selected pixels move
@@ -1852,10 +1922,33 @@ const savedData = ${dataString};
                   }
                 }}
                 onPointerEnter={() => {
-                  if (isDrawing && activeDrawingTool === "pencil") {
+                  if (activeDrawingTool === "select") {
+                    // Use modular select tool with context
+                    const context = {
+                      isDrawing,
+                      selectionStart,
+                      selectionEnd,
+                      groupDragStart,
+                      activeGroup,
+                      size,
+                      setSelectionEnd,
+                      moveGroup,
+                      setGroupDragStart
+                    };
+                    
+                    if (loadedTools.select) {
+                      loadedTools.select.onPointerEnter(context, i);
+                    } else {
+                      // Fallback logic
+                      if (isDrawing && size.w > 1024) {
+                        setSelectionEnd(i);
+                      } else if (size.w <= 1024 && selectionStart !== null) {
+                        // Mobile preview
+                        setSelectionEnd(i);
+                      }
+                    }
+                  } else if (isDrawing && activeDrawingTool === "pencil") {
                     paintPixel(null, i);
-                  } else if (isDrawing && activeDrawingTool === "select") {
-                    setSelectionEnd(i);
                   }
                   setHoveredPixel(i);
                 }}
@@ -1891,7 +1984,10 @@ const savedData = ${dataString};
           
           // Only calculate these in layers mode
           const isSelected = selectedPixels.includes(i);
-          const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && isDrawing && getSelectionRectangle(selectionStart, selectionEnd).includes(i);
+          const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && 
+            ((isDrawing && size.w > 1024) || (size.w <= 1024)) && 
+            getSelectionRectangle(selectionStart, selectionEnd).includes(i);
+          const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
           const isInActiveGroup = (pixelGroup && pixelGroup.group === activeGroup) || (activeGroup === "__selected__" && selectedPixels.includes(i));
           const isMoveGroupHover = activeDrawingTool === "movegroup" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i;
           const isSelectGroupHover = activeDrawingTool === "select" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i && !isDrawing;
@@ -1946,6 +2042,10 @@ const savedData = ${dataString};
             borderColor = '#9C27B0';
             borderWidth = `${0.3 * zoomFactor}vw`;
             boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
+          } else if (isSelectionStartPoint) {
+            borderColor = '#FF9800';
+            borderWidth = `${0.4 * zoomFactor}vw`;
+            boxShadow = `0 0 ${0.6 * zoomFactor}vw ${0.3 * zoomFactor}vw #FF9800`;
           } else if (isMoveGroupHover || isSelectGroupHover) {
             borderColor = '#9C27B0';
             borderWidth = `${0.3 * zoomFactor}vw`;

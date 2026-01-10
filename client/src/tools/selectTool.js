@@ -10,7 +10,8 @@ export const selectTool = {
   },
   
   onPointerDown: (context, pixelIndex) => {
-    const { pixelGroups, activeGroup } = context;
+    const { pixelGroups, activeGroup, selectionStart, size } = context;
+    const isMobile = size.w <= 1024;
     
     // Check if clicking on a grouped pixel
     const clickedPixelGroup = pixelGroups[pixelIndex];
@@ -22,8 +23,26 @@ export const selectTool = {
       return;
     }
     
-    // Start new selection if not clicking on a group
-    if (!activeGroup) {
+    // Mobile two-click selection mode
+    if (isMobile && !activeGroup) {
+      if (selectionStart === null) {
+        // First click: set selection start
+        context.setSelectionStart(pixelIndex);
+        context.setSelectionEnd(null);
+        context.setSelectedPixels([]);
+      } else if (selectionStart !== null) {
+        // Second click: finalize selection
+        context.setSelectionEnd(pixelIndex);
+        const selected = context.getSelectionPixels();
+        context.setSelectedPixels(selected);
+        context.setSelectionStart(null);
+        context.setSelectionEnd(null);
+      }
+      return;
+    }
+    
+    // Desktop drag selection mode
+    if (!activeGroup && !isMobile) {
       context.setSelectionStart(pixelIndex);
       context.setSelectionEnd(pixelIndex);
       context.setSelectedPixels([]);
@@ -31,9 +50,16 @@ export const selectTool = {
   },
   
   onPointerEnter: (context, pixelIndex) => {
-    const { isDrawing, selectionStart, groupDragStart, activeGroup } = context;
+    const { isDrawing, selectionStart, groupDragStart, activeGroup, size } = context;
+    const isMobile = size.w <= 1024;
     
-    if (!isDrawing) return;
+    if (!isDrawing) {
+      // On mobile, show preview rectangle when hovering after first click
+      if (isMobile && selectionStart !== null) {
+        context.setSelectionEnd(pixelIndex);
+      }
+      return;
+    }
     
     // Handle group dragging
     if (groupDragStart !== null && activeGroup) {
@@ -49,19 +75,22 @@ export const selectTool = {
       return;
     }
     
-    // Handle selection rectangle
-    if (selectionStart !== null) {
+    // Handle desktop selection rectangle during drag
+    if (selectionStart !== null && !isMobile) {
       context.setSelectionEnd(pixelIndex);
     }
   },
   
   onPointerUp: (context) => {
-    const { selectionStart, selectionEnd } = context;
+    const { selectionStart, selectionEnd, size } = context;
+    const isMobile = size.w <= 1024;
     
-    // Finalize selection
-    if (selectionStart !== null && selectionEnd !== null) {
+    // Desktop drag selection completion
+    if (!isMobile && selectionStart !== null && selectionEnd !== null) {
       const selected = context.getSelectionPixels();
       context.setSelectedPixels(selected);
+      context.setSelectionStart(null);
+      context.setSelectionEnd(null);
     }
     
     // Clear group drag
@@ -70,17 +99,23 @@ export const selectTool = {
   
   // Get preview rectangle during selection
   getPreview: (context) => {
-    const { selectionStart, selectionEnd, selectedPixels } = context;
+    const { selectionStart, selectionEnd, selectedPixels, size } = context;
+    const isMobile = size.w <= 1024;
     
     // Show final selection if complete
     if (selectedPixels.length > 0) {
       return selectedPixels.map(index => ({ index, type: 'selection' }));
     }
     
-    // Show preview rectangle during drag
+    // Show preview rectangle during drag or mobile hover
     if (selectionStart !== null && selectionEnd !== null) {
       const rect = context.getSelectionRectangle();
       return rect.map(index => ({ index, type: 'selection-preview' }));
+    }
+    
+    // Show mobile first click indicator
+    if (isMobile && selectionStart !== null && selectionEnd === null) {
+      return [{ index: selectionStart, type: 'selection-start' }];
     }
     
     return [];
