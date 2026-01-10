@@ -1716,14 +1716,21 @@ const savedData = ${dataString};
             
             // Line/curve preview calculations - use fixed end when chosen, otherwise hover
             let isInLinePreview = false;
-            const previewTarget = lineEndPixel !== null ? lineEndPixel : hoveredPixel;
-            if (lineStartPixel !== null && previewTarget !== null && previewTarget !== lineStartPixel) {
-              if (activeDrawingTool === "line") {
+            if (activeDrawingTool === "line" && lineStartPixel !== null) {
+              const previewTarget = lineEndPixel !== null ? lineEndPixel : hoveredPixel;
+              if (previewTarget !== null && previewTarget !== lineStartPixel) {
                 isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
-              } else if (activeDrawingTool === "curve" && curveEndPixel === null) {
-                isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
-              } else if (activeDrawingTool === "curve" && curveEndPixel !== null) {
+              }
+            } else if (activeDrawingTool === "curve" && lineStartPixel !== null) {
+              if (curveEndPixel !== null) {
+                // Curve adjustment mode - show bezier curve
                 isInLinePreview = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount).includes(i);
+              } else {
+                // Waiting for second point - show straight line preview
+                const previewTarget = hoveredPixel;
+                if (previewTarget !== null && previewTarget !== lineStartPixel) {
+                  isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
+                }
               }
             }
             
@@ -1888,13 +1895,20 @@ const savedData = ${dataString};
           
           // Show straight line preview or curve preview (only in drawing mode for performance)
           let isInLinePreview = false;
-          const previewTarget = lineEndPixel !== null ? lineEndPixel : hoveredPixel;
-          if (activeDrawingTool === "line" && lineStartPixel !== null && previewTarget !== null) {
-            isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
-          } else if (activeDrawingTool === "curve" && lineStartPixel !== null && curveEndPixel === null && previewTarget !== null) {
-            isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
-          } else if (activeDrawingTool === "curve" && lineStartPixel !== null && curveEndPixel !== null) {
-            isInLinePreview = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount).includes(i);
+          if (activeDrawingTool === "line" && lineStartPixel !== null) {
+            const previewTarget = lineEndPixel !== null ? lineEndPixel : hoveredPixel;
+            if (previewTarget !== null && previewTarget !== lineStartPixel) {
+              isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
+            }
+          } else if (activeDrawingTool === "curve" && lineStartPixel !== null) {
+            if (curveEndPixel !== null) {
+              isInLinePreview = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount).includes(i);
+            } else {
+              const previewTarget = hoveredPixel;
+              if (previewTarget !== null && previewTarget !== lineStartPixel) {
+                isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
+              }
+            }
           }
           
           let borderColor = 'transparent';
