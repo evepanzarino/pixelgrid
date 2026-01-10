@@ -246,6 +246,17 @@ export default function PixelGrid() {
       lineEndPixel,
       curveEndPixel
     };
+    
+    // Debug: Log ref sync
+    if (groupDragStart !== null || isDrawing) {
+      console.log('>>> useEffect synced to ref:', {
+        groupDragStart,
+        activeGroup,
+        groupDragCurrent,
+        isDrawing,
+        selectedPixelsLength: selectedPixels.length
+      });
+    }
   }, [groupDragStart, activeGroup, groupDragCurrent, isDrawing, selectedPixels, lineStartPixel, lineEndPixel, curveEndPixel]);
   
   // Lazy load tool module when needed
@@ -547,9 +558,11 @@ export default function PixelGrid() {
         // Ensure we're within bounds
         if (row >= 0 && row < currentRows && col >= 0 && col < 200) {
           console.log("Global pointermove: Setting groupDragCurrent:", { row, col, x, y, pixelSize });
+          console.log(">>> BEFORE pointermove flushSync - ref.isDrawing:", state.isDrawing);
           flushSync(() => {
             setGroupDragCurrent({ row, col });
           });
+          console.log(">>> AFTER pointermove flushSync - ref.groupDragCurrent:", dragStateRef.current.groupDragCurrent);
         }
       }
     };
@@ -2290,6 +2303,8 @@ const savedData = ${dataString};
                       dragStateRef.current.isDrawing = true;
                       
                       console.log("Mobile drag initialized (delegated):", { startRow, startCol, activeGroup: "__selected__" });
+                      console.log(">>> IMMEDIATELY AFTER flushSync - ref state:", dragStateRef.current);
+                      console.log(">>> IMMEDIATELY AFTER flushSync - ref state:", dragStateRef.current);
                     } else if (selectionStart === null) {
                       // First click: set selection start
                       console.log("Mobile first click (delegated) - setting selection start to", pixelIndex);
@@ -2327,6 +2342,8 @@ const savedData = ${dataString};
                       dragStateRef.current.groupDragStart = dragState;
                       dragStateRef.current.groupDragCurrent = null;
                       dragStateRef.current.isDrawing = true;
+                      
+                      console.log(">>> IMMEDIATELY AFTER flushSync (desktop) - ref state:", dragStateRef.current);
                       
                       console.log("Desktop drag initialized (delegated):", { startRow, startCol, activeGroup: "__selected__" });
                     } else {
@@ -2427,6 +2444,17 @@ const savedData = ${dataString};
             const dragState = dragStateRef.current;
             let isInDragPreview = false;
             let dragPreviewColor = c;
+            
+            // Debug: Log condition check for EVERY pixel 0 render
+            if (i === 0) {
+              console.log('>>> PREVIEW CONDITION CHECK (pixel 0):', {
+                'groupDragStart !== null': dragState.groupDragStart !== null,
+                'activeGroup === "__selected__"': dragState.activeGroup === "__selected__",
+                'isDrawing': dragState.isDrawing,
+                'ALL TRUE?': dragState.groupDragStart !== null && dragState.activeGroup === "__selected__" && dragState.isDrawing
+              });
+            }
+            
             if (dragState.groupDragStart !== null && dragState.activeGroup === "__selected__" && dragState.isDrawing) {
               // Show preview immediately when drag starts, using delta (0,0) until cursor moves
               const currentDragPos = dragState.groupDragCurrent || { row: dragState.groupDragStart.startRow, col: dragState.groupDragStart.startCol };
