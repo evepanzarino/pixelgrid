@@ -2296,7 +2296,7 @@ const savedData = ${dataString};
                     setGroupDragStart(null);
                     setGroupDragCurrent(null);
                     setActiveGroup(null);
-                    setIsDrawing(false);
+                    setTimeout(() => setIsDrawing(false), 0);
                   }
                 }}
                 onPointerEnter={() => {
