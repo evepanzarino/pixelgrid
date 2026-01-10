@@ -970,7 +970,6 @@ const savedData = ${dataString};
   // Track selection overlay element for rendering border around entire selection
   const selectionOverlayRef = useRef(null);
   const selectionBorderColorRef = useRef('#000000');
-  const lastValidSelectionEndRef = useRef(null);
   
   // Calculate border color only when selection is finalized (not during drag)
   useEffect(() => {
@@ -1021,18 +1020,10 @@ const savedData = ${dataString};
     const gridEl = gridRef.current;
     if (!overlayEl || !gridEl) return;
     
-    // Use hoveredPixel if actively selecting, fallback to selectionEnd, then last valid position
+    // Use hoveredPixel if actively selecting, otherwise use selectionEnd
     let effectiveEnd = selectionEnd;
-    if (activeDrawingTool === "select" && isDrawing) {
-      if (hoveredPixel !== null) {
-        effectiveEnd = hoveredPixel;
-        lastValidSelectionEndRef.current = hoveredPixel;
-      } else if (lastValidSelectionEndRef.current !== null) {
-        effectiveEnd = lastValidSelectionEndRef.current;
-      }
-    } else {
-      // Reset when not actively selecting
-      lastValidSelectionEndRef.current = null;
+    if (activeDrawingTool === "select" && isDrawing && hoveredPixel !== null) {
+      effectiveEnd = hoveredPixel;
     }
     
     if (activeDrawingTool === "select" && selectionStart !== null && effectiveEnd !== null) {
@@ -1046,16 +1037,13 @@ const savedData = ${dataString};
       const minCol = Math.min(startCol, endCol);
       const maxCol = Math.max(startCol, endCol);
       
-      // Calculate pixel positions for absolute positioning (accounting for scroll)
-      const scrollTop = gridEl.scrollTop;
-      const scrollLeft = gridEl.scrollLeft;
-      const top = minRow * displayPixelSize - (scrollTop / window.innerWidth * 100);
-      const left = minCol * displayPixelSize - (scrollLeft / window.innerWidth * 100);
+      // Calculate pixel positions for absolute positioning
+      const top = minRow * displayPixelSize;
+      const left = minCol * displayPixelSize;
       const width = (maxCol - minCol + 1) * displayPixelSize;
       const height = (maxRow - minRow + 1) * displayPixelSize;
       
       // Position overlay using absolute positioning
-      overlayEl.style.position = 'absolute';
       overlayEl.style.top = `${top}vw`;
       overlayEl.style.left = `${left}vw`;
       overlayEl.style.width = `${width}vw`;
