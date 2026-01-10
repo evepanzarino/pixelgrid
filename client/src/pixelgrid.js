@@ -2287,21 +2287,20 @@ const savedData = ${dataString};
                         selectedPixelsLength: selectedPixels.length
                       });
                       
-                      // Set all state updates together
+                      // Set drag state
                       setActiveGroup("__selected__");
                       setGroupDragStart(dragState);
-                      setGroupDragCurrent(null);
                       setIsDrawing(true);
                       
-                      // Also update ref immediately for event handlers
+                      // Update ref immediately
                       dragStateRef.current.activeGroup = "__selected__";
                       dragStateRef.current.groupDragStart = dragState;
                       dragStateRef.current.groupDragCurrent = null;
                       dragStateRef.current.isDrawing = true;
                       
-                      // Force immediate render to show preview at drag start
+                      // Force immediate render by setting groupDragCurrent in flushSync
                       flushSync(() => {
-                        // This empty function forces React to flush pending updates
+                        setGroupDragCurrent(null);
                       });
                       
                       console.log("Mobile drag initialized (delegated):", { startRow, startCol, activeGroup: "__selected__" });
@@ -2330,21 +2329,20 @@ const savedData = ${dataString};
                         selectedPixelsLength: selectedPixels.length
                       });
                       
-                      // Set all state updates together
+                      // Set drag state
                       setActiveGroup("__selected__");
                       setGroupDragStart(dragState);
-                      setGroupDragCurrent(null);
                       setIsDrawing(true);
                       
-                      // Also update ref immediately for event handlers
+                      // Update ref immediately
                       dragStateRef.current.activeGroup = "__selected__";
                       dragStateRef.current.groupDragStart = dragState;
                       dragStateRef.current.groupDragCurrent = null;
                       dragStateRef.current.isDrawing = true;
                       
-                      // Force immediate render to show preview at drag start
+                      // Force immediate render by setting groupDragCurrent in flushSync
                       flushSync(() => {
-                        // This empty function forces React to flush pending updates
+                        setGroupDragCurrent(null);
                       });
                       
                       console.log(">>> IMMEDIATELY AFTER flushSync (desktop) - ref state:", dragStateRef.current);
