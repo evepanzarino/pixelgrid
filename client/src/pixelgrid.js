@@ -39,7 +39,7 @@ const DrawingPixel = memo(({
     opacity = 0.3;
   }
   
-  // Show preview at new position
+  // Show preview at new position with full opacity and purple border
   if (isInDragPreview) {
     borderColor = '#9C27B0';
     borderWidth = `${0.2 * zoomFactor}vw`;
@@ -2272,15 +2272,27 @@ const savedData = ${dataString};
               const sourceCol = currentCol - deltaCol;
               const sourceIndex = sourceRow * 200 + sourceCol;
               isInDragPreview = selectedPixels.includes(sourceIndex);
+              
+              // Comprehensive debug logging on first render
+              if (i === 0 && groupDragStart) {
+                console.log('=== PREVIEW CALCULATION DEBUG ===');
+                console.log('groupDragStart:', groupDragStart);
+                console.log('groupDragCurrent:', groupDragCurrent);
+                console.log('currentDragPos:', currentDragPos);
+                console.log('delta:', { deltaRow, deltaCol });
+                console.log('selectedPixels:', selectedPixels.slice(0, 10));
+                console.log('selectedPixels.length:', selectedPixels.length);
+              }
+              
               if (isInDragPreview) {
                 // Use source pixel color, defaulting to white if null/undefined
                 dragPreviewColor = pixelColors[sourceIndex] !== null && pixelColors[sourceIndex] !== undefined 
                   ? pixelColors[sourceIndex] 
                   : '#ffffff';
                 
-                // Debug: log first few preview pixels
-                if (i % 200 === 0 || i === sourceIndex) {
-                  console.log(`PREVIEW DEBUG: pixel ${i} (${currentRow},${currentCol}) shows source ${sourceIndex} (${sourceRow},${sourceCol}), delta=(${deltaRow},${deltaCol}), clickedAt=(${groupDragStart.startRow},${groupDragStart.startCol}), cursorAt=(${currentDragPos.row},${currentDragPos.col}), selectedPixels[0]=${selectedPixels[0]}`);
+                // Log first 3 preview pixels found
+                if (currentRow < 5) {
+                  console.log(`PREVIEW: pixel ${i} [${currentRow},${currentCol}] <- source ${sourceIndex} [${sourceRow},${sourceCol}], color=${dragPreviewColor}`);
                 }
               }
             }
