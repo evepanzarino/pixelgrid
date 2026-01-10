@@ -589,10 +589,11 @@ export default function PixelGrid() {
       });
       
       // Finalize selected pixels move if dragging
-      if (state.groupDragStart !== null && state.activeGroup === "__selected__" && state.groupDragCurrent !== null) {
-        console.log("Finalizing move:", { groupDragStart: state.groupDragStart, groupDragCurrent: state.groupDragCurrent });
-        const deltaRow = state.groupDragCurrent.row - state.groupDragStart.startRow;
-        const deltaCol = state.groupDragCurrent.col - state.groupDragStart.startCol;
+      if (state.groupDragStart !== null && state.activeGroup === "__selected__") {
+        const currentDragPos = state.groupDragCurrent || { row: state.groupDragStart.startRow, col: state.groupDragStart.startCol };
+        console.log("Finalizing move:", { groupDragStart: state.groupDragStart, groupDragCurrent: currentDragPos });
+        const deltaRow = currentDragPos.row - state.groupDragStart.startRow;
+        const deltaCol = currentDragPos.col - state.groupDragStart.startCol;
         console.log("Delta:", { deltaRow, deltaCol });
         
         if (deltaRow !== 0 || deltaCol !== 0) {
@@ -2260,9 +2261,11 @@ const savedData = ${dataString};
             // Calculate preview position during selected pixels drag
             let isInDragPreview = false;
             let dragPreviewColor = c;
-            if (groupDragStart !== null && groupDragCurrent !== null && activeGroup === "__selected__" && isDrawing) {
-              const deltaRow = groupDragCurrent.row - groupDragStart.startRow;
-              const deltaCol = groupDragCurrent.col - groupDragStart.startCol;
+            if (groupDragStart !== null && activeGroup === "__selected__" && isDrawing) {
+              // Use groupDragCurrent if set, otherwise use the clicked position (no preview movement yet)
+              const currentDragPos = groupDragCurrent || { row: groupDragStart.startRow, col: groupDragStart.startCol };
+              const deltaRow = currentDragPos.row - groupDragStart.startRow;
+              const deltaCol = currentDragPos.col - groupDragStart.startCol;
               const currentRow = Math.floor(i / 200);
               const currentCol = i % 200;
               const sourceRow = currentRow - deltaRow;
@@ -2309,17 +2312,16 @@ const savedData = ${dataString};
                         const startRow = Math.floor(i / 200);
                         const startCol = i % 200;
                         const dragState = { pixelIndex: i, startRow, startCol };
-                        const dragCurrent = { row: startRow, col: startCol };
                         
                         setActiveGroup("__selected__");
                         setGroupDragStart(dragState);
-                        setGroupDragCurrent(dragCurrent);
+                        setGroupDragCurrent(null); // Will be set on first pointer move
                         setIsDrawing(true);
                         
                         // Also update ref immediately for event handlers
                         dragStateRef.current.activeGroup = "__selected__";
                         dragStateRef.current.groupDragStart = dragState;
-                        dragStateRef.current.groupDragCurrent = dragCurrent;
+                        dragStateRef.current.groupDragCurrent = null;
                         dragStateRef.current.isDrawing = true;
                         
                         console.log("Mobile drag initialized:", { startRow, startCol, activeGroup: "__selected__" });
@@ -2366,17 +2368,16 @@ const savedData = ${dataString};
                           const startRow = Math.floor(i / 200);
                           const startCol = i % 200;
                           const dragState = { pixelIndex: i, startRow, startCol };
-                          const dragCurrent = { row: startRow, col: startCol };
                           
                           setActiveGroup("__selected__");
                           setGroupDragStart(dragState);
-                          setGroupDragCurrent(dragCurrent);
+                          setGroupDragCurrent(null); // Will be set on first pointer move
                           setIsDrawing(true);
                           
                           // Also update ref immediately for event handlers
                           dragStateRef.current.activeGroup = "__selected__";
                           dragStateRef.current.groupDragStart = dragState;
-                          dragStateRef.current.groupDragCurrent = dragCurrent;
+                          dragStateRef.current.groupDragCurrent = null;
                           dragStateRef.current.isDrawing = true;
                         } else {
                           setSelectionStart(i);
