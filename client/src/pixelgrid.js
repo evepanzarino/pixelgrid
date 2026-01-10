@@ -2296,22 +2296,9 @@ const savedData = ${dataString};
                       setIsDrawing(false);
                     }
                     // Mobile mode - selection is handled in onPointerDown
-                  } else if (groupDragStart !== null && activeGroup === "__selected__") {
-                    // Finalize selected pixels move
-                    const currentRow = Math.floor(i / 200);
-                    const currentCol = i % 200;
-                    const deltaRow = currentRow - groupDragStart.startRow;
-                    const deltaCol = currentCol - groupDragStart.startCol;
-                    
-                    if (deltaRow !== 0 || deltaCol !== 0) {
-                      moveSelectedPixels(deltaRow, deltaCol);
-                    }
-                    
-                    setGroupDragStart(null);
-                    setGroupDragCurrent(null);
-                    setActiveGroup(null);
-                    setTimeout(() => setIsDrawing(false), 0);
                   }
+                  // Note: Selected pixels move finalization is handled in the global stopDrawing handler
+                  // to ensure it works even when releasing outside a pixel
                 }}
                 onPointerEnter={() => {
                   if (activeDrawingTool === "select") {
