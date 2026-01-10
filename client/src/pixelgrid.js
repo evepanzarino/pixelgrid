@@ -2308,10 +2308,20 @@ const savedData = ${dataString};
                         console.log("Mobile: Starting drag on selected pixel", i);
                         const startRow = Math.floor(i / 200);
                         const startCol = i % 200;
+                        const dragState = { pixelIndex: i, startRow, startCol };
+                        const dragCurrent = { row: startRow, col: startCol };
+                        
                         setActiveGroup("__selected__");
-                        setGroupDragStart({ pixelIndex: i, startRow, startCol });
-                        setGroupDragCurrent({ row: startRow, col: startCol });
+                        setGroupDragStart(dragState);
+                        setGroupDragCurrent(dragCurrent);
                         setIsDrawing(true);
+                        
+                        // Also update ref immediately for event handlers
+                        dragStateRef.current.activeGroup = "__selected__";
+                        dragStateRef.current.groupDragStart = dragState;
+                        dragStateRef.current.groupDragCurrent = dragCurrent;
+                        dragStateRef.current.isDrawing = true;
+                        
                         console.log("Mobile drag initialized:", { startRow, startCol, activeGroup: "__selected__" });
                       } else if (selectionStart === null) {
                         // First click: set selection start
@@ -2355,10 +2365,19 @@ const savedData = ${dataString};
                         if (selectedPixels.includes(i)) {
                           const startRow = Math.floor(i / 200);
                           const startCol = i % 200;
+                          const dragState = { pixelIndex: i, startRow, startCol };
+                          const dragCurrent = { row: startRow, col: startCol };
+                          
                           setActiveGroup("__selected__");
-                          setGroupDragStart({ pixelIndex: i, startRow, startCol });
-                          setGroupDragCurrent({ row: startRow, col: startCol });
+                          setGroupDragStart(dragState);
+                          setGroupDragCurrent(dragCurrent);
                           setIsDrawing(true);
+                          
+                          // Also update ref immediately for event handlers
+                          dragStateRef.current.activeGroup = "__selected__";
+                          dragStateRef.current.groupDragStart = dragState;
+                          dragStateRef.current.groupDragCurrent = dragCurrent;
+                          dragStateRef.current.isDrawing = true;
                         } else {
                           setSelectionStart(i);
                           setSelectionEnd(i);
