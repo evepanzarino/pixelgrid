@@ -501,10 +501,13 @@ export default function PixelGrid() {
     const stopDrawing = () => {
       // Finalize selected pixels move if dragging
       if (groupDragStart !== null && activeGroup === "__selected__" && groupDragCurrent !== null) {
+        console.log("Finalizing move:", { groupDragStart, groupDragCurrent });
         const deltaRow = groupDragCurrent.row - groupDragStart.startRow;
         const deltaCol = groupDragCurrent.col - groupDragStart.startCol;
+        console.log("Delta:", { deltaRow, deltaCol });
         
         if (deltaRow !== 0 || deltaCol !== 0) {
+          console.log("Calling moveSelectedPixels");
           moveSelectedPixels(deltaRow, deltaCol);
         }
         
@@ -863,6 +866,7 @@ export default function PixelGrid() {
 
   // Move selected pixels (not in a group)
   function moveSelectedPixels(deltaRow, deltaCol) {
+    console.log("moveSelectedPixels called:", { deltaRow, deltaCol, selectedPixelsCount: selectedPixels.length });
     if (selectedPixels.length === 0) return;
     
     // Get colors and positions of selected pixels
@@ -872,6 +876,8 @@ export default function PixelGrid() {
       row: Math.floor(idx / 200),
       col: idx % 200
     }));
+    
+    console.log("Moving pixels:", pixelData.slice(0, 3), "...");
     
     setPixelColors(prev => {
       const copy = [...prev];
@@ -2335,6 +2341,14 @@ const savedData = ${dataString};
                   } else if (isDrawing && activeDrawingTool === "pencil") {
                     paintPixel(null, i);
                   }
+                  
+                  // Track current drag position for selected pixels move
+                  if (groupDragStart !== null && activeGroup === "__selected__" && isDrawing) {
+                    const currentRow = Math.floor(i / 200);
+                    const currentCol = i % 200;
+                    setGroupDragCurrent({ row: currentRow, col: currentCol });
+                  }
+                  
                   setHoveredPixel(i);
                 }}
                 onPointerMove={() => {
