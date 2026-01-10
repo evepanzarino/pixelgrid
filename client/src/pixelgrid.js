@@ -2276,7 +2276,6 @@ const savedData = ${dataString};
             max="100"
             value={curveCurveAmount}
             onChange={(e) => setCurveCurveAmount(Math.min(100, Math.max(-100, Number(e.target.value))))}
-            autoFocus
             style={{
               width: "12vw",
               padding: "1vw",
