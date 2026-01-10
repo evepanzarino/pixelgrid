@@ -56,6 +56,7 @@ const DrawingPixel = memo(({
   
   return (
     <div
+      data-pixel-index={index}
       style={{ 
         background: color, 
         boxSizing: 'border-box',
@@ -193,6 +194,32 @@ export default function PixelGrid() {
       window.removeEventListener('pointerup', handlePointerUp, { capture: true });
     };
   }, [isDraggingSlider]);
+
+  // Handle touch drawing on mobile - track finger position to find pixel under touch
+  useEffect(() => {
+    if (!isDrawing || activeDrawingTool !== "pencil") return;
+
+    const handleTouchMove = (e) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        if (element && element.hasAttribute('data-pixel-index')) {
+          const pixelIndex = parseInt(element.getAttribute('data-pixel-index'), 10);
+          if (!isNaN(pixelIndex) && pixelIndex !== hoveredPixel) {
+            setHoveredPixel(pixelIndex);
+            paintPixel(null, pixelIndex);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      window.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [isDrawing, activeDrawingTool, hoveredPixel]);
 
   // Zoom factor for drawing area based on screen size
   const getZoomFactor = () => {
