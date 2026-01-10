@@ -1607,6 +1607,7 @@ const savedData = ${dataString};
       {/* GRID */}
       <div 
         ref={gridRef}
+        data-is-grid="true"
         onScroll={(e) => {
           if (size.w <= 1024) {
             setScrollPosition(e.target.scrollLeft);

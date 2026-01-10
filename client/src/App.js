@@ -8,17 +8,20 @@ function App() {
   const [currentPage, setCurrentPage] = useState('pixelgrid');
 
   useEffect(() => {
-    // Prevent ALL scrolling - both wheel and touch
+    // Prevent scrolling on document/body, but allow it on the grid
     const preventScroll = (e) => {
+      // Check if the event target or its parent is the grid - if so, allow it
+      if (e.target.closest('[data-is-grid="true"]')) {
+        return; // Allow events on the grid
+      }
       e.preventDefault();
       e.stopPropagation();
     };
     
-    // Block all wheel, touch, and keyboard scroll events
-    const options = { passive: false, capture: true };
-    window.addEventListener('wheel', preventScroll, options);
-    window.addEventListener('touchmove', preventScroll, options);
-    document.addEventListener('scroll', preventScroll, options);
+    // Block all wheel and touch scroll events (except on grid)
+    const options = { passive: false, capture: false };
+    document.addEventListener('wheel', preventScroll, options);
+    document.addEventListener('touchmove', preventScroll, options);
     
     // Prevent keyboard scroll (arrow keys, space, etc)
     window.addEventListener('keydown', (e) => {
@@ -29,9 +32,8 @@ function App() {
     
     // Cleanup
     return () => {
-      window.removeEventListener('wheel', preventScroll, options);
-      window.removeEventListener('touchmove', preventScroll, options);
-      document.removeEventListener('scroll', preventScroll, options);
+      document.removeEventListener('wheel', preventScroll, options);
+      document.removeEventListener('touchmove', preventScroll, options);
     };
   }, []);
 
