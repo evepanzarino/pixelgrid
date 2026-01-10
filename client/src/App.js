@@ -8,20 +8,30 @@ function App() {
   const [currentPage, setCurrentPage] = useState('pixelgrid');
 
   useEffect(() => {
-    // Prevent ALL mouse wheel scrolling globally
-    // Only the PixelGrid's internal scrollable div should scroll
-    const preventWheel = (e) => {
+    // Prevent ALL scrolling - both wheel and touch
+    const preventScroll = (e) => {
       e.preventDefault();
       e.stopPropagation();
     };
     
-    // Block all wheel events at the window level
+    // Block all wheel, touch, and keyboard scroll events
     const options = { passive: false, capture: true };
-    window.addEventListener('wheel', preventWheel, options);
+    window.addEventListener('wheel', preventScroll, options);
+    window.addEventListener('touchmove', preventScroll, options);
+    document.addEventListener('scroll', preventScroll, options);
+    
+    // Prevent keyboard scroll (arrow keys, space, etc)
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'PageUp', 'PageDown'].includes(e.code) || e.code === 'Space') {
+        e.preventDefault();
+      }
+    }, options);
     
     // Cleanup
     return () => {
-      window.removeEventListener('wheel', preventWheel, options);
+      window.removeEventListener('wheel', preventScroll, options);
+      window.removeEventListener('touchmove', preventScroll, options);
+      document.removeEventListener('scroll', preventScroll, options);
     };
   }, []);
 

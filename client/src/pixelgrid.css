@@ -13,3 +13,8 @@
 .pixel-dark:hover {
   border: 0.1vw solid #fefefe !important;
 }
+
+/* Hide scrollbars but keep scrolling functionality */
+div::-webkit-scrollbar {
+  display: none;
+}

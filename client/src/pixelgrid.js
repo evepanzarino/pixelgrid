@@ -1586,6 +1586,9 @@ const savedData = ${dataString};
           userSelect: "none",
           flex: 1,
           overflow: "auto",
+          scrollBehavior: "auto",
+          msOverflowStyle: "none",
+          scrollbarWidth: "none",
           willChange: "transform"
         }}>
         {(pixelColors || []).map((c, i) => {
