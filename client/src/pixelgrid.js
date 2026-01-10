@@ -970,6 +970,7 @@ const savedData = ${dataString};
   // Track selection overlay element for rendering border around entire selection
   const selectionOverlayRef = useRef(null);
   const selectionBorderColorRef = useRef('#000000');
+  const lastValidSelectionEndRef = useRef(null);
   
   // Calculate border color only when selection is finalized (not during drag)
   useEffect(() => {
@@ -1020,10 +1021,19 @@ const savedData = ${dataString};
     const gridEl = gridRef.current;
     if (!overlayEl || !gridEl) return;
     
-    // Use hoveredPixel if actively selecting, otherwise use selectionEnd
-    const effectiveEnd = (activeDrawingTool === "select" && isDrawing && hoveredPixel !== null) 
-      ? hoveredPixel 
-      : selectionEnd;
+    // Use hoveredPixel if actively selecting, fallback to selectionEnd, then last valid position
+    let effectiveEnd = selectionEnd;
+    if (activeDrawingTool === "select" && isDrawing) {
+      if (hoveredPixel !== null) {
+        effectiveEnd = hoveredPixel;
+        lastValidSelectionEndRef.current = hoveredPixel;
+      } else if (lastValidSelectionEndRef.current !== null) {
+        effectiveEnd = lastValidSelectionEndRef.current;
+      }
+    } else {
+      // Reset when not actively selecting
+      lastValidSelectionEndRef.current = null;
+    }
     
     if (activeDrawingTool === "select" && selectionStart !== null && effectiveEnd !== null) {
       const startRow = Math.floor(selectionStart / 200);
