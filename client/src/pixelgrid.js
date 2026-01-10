@@ -28,6 +28,11 @@ const DrawingPixel = memo(({
   let borderWidth = `${0.1 * zoomFactor}vw`;
   let opacity = 1;
   let boxShadow = 'none';
+
+  // Debug logging for white pixels
+  if (color === '#ffffff' && (isSelectionStartPoint || isInSelectionRect || isSelected)) {
+    console.log(`White pixel ${index}: isSelectionStartPoint=${isSelectionStartPoint}, isInSelectionRect=${isInSelectionRect}, isSelected=${isSelected}`);
+  }
   
   // Dim original position during drag preview
   if (isSelected && isDrawing && activeDrawingTool === "select" && isInDragPreview === false) {
@@ -108,6 +113,11 @@ const DrawingPixel = memo(({
   }
   
   borderStyle = `${borderWidth} solid ${borderColor}`;
+  
+  // Debug final border for white pixels
+  if (color === '#ffffff' && borderColor !== 'transparent') {
+    console.log(`White pixel ${index} final border: ${borderStyle}`);
+  }
   
   return (
     <div
