@@ -3046,7 +3046,7 @@ const savedData = ${dataString};
         <div style={{
           position: "fixed",
              bottom: size.w <= 1024 ? "10vw" : "0",
-            left: size.w <= 1024 ? "7vw" : "7vw",
+            left: size.w <= 1024 ? "10vw" : "7vw",
           right: 0,
           background: "rgba(0,0,0,0.95)",
           color: "white",
