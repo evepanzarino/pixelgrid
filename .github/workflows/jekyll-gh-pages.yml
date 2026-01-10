@@ -28,9 +28,11 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
+        working-directory: ./client
         run: npm ci
 
       - name: Build React app
+        working-directory: ./client
         run: npm run build
       
       - name: Setup Pages
@@ -39,7 +41,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'build'
+          path: 'client/build'
 
   deploy:
     environment:
