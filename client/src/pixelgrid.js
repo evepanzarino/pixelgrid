@@ -562,6 +562,7 @@ export default function PixelGrid() {
           console.log(">>> BEFORE pointermove flushSync - ref.isDrawing:", state.isDrawing);
           flushSync(() => {
             setGroupDragCurrent({ row, col });
+            setRenderTrigger(prev => prev + 1); // Force re-render
           });
           console.log(">>> AFTER pointermove flushSync - ref.groupDragCurrent:", dragStateRef.current.groupDragCurrent);
         }
