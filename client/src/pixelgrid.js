@@ -519,80 +519,8 @@ export default function PixelGrid() {
     }
   }, [backgroundOpacity]);
   
-  // Create floating preview overlay that follows cursor during drag
-  const updateDragPreviewDOM = useCallback((cursorX, cursorY) => {
-    if (!gridRef.current) return;
-    
-    const state = dragStateRef.current;
-    if (!state.selectedPixels || state.selectedPixels.length === 0) return;
-    
-    // Remove existing preview container
-    let previewContainer = document.getElementById('drag-preview-container');
-    if (previewContainer) {
-      previewContainer.remove();
-    }
-    
-    // Create new preview container
-    previewContainer = document.createElement('div');
-    previewContainer.id = 'drag-preview-container';
-    previewContainer.style.position = 'fixed';
-    previewContainer.style.pointerEvents = 'none';
-    previewContainer.style.zIndex = '10000';
-    previewContainer.style.opacity = '0.7';
-    
-    const rect = gridRef.current.getBoundingClientRect();
-    // Use larger pixel size for better visibility - minimum 8px
-    const gridPixelSize = rect.width / 200;
-    const pixelSize = Math.max(8, gridPixelSize);
-    
-    // Calculate bounds of selected pixels
-    let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity;
-    state.selectedPixels.forEach(idx => {
-      const row = Math.floor(idx / 200);
-      const col = idx % 200;
-      minRow = Math.min(minRow, row);
-      maxRow = Math.max(maxRow, row);
-      minCol = Math.min(minCol, col);
-      maxCol = Math.max(maxCol, col);
-    });
-    
-    const width = (maxCol - minCol + 1) * pixelSize;
-    const height = (maxRow - minRow + 1) * pixelSize;
-    previewContainer.style.width = `${width}px`;
-    previewContainer.style.height = `${height}px`;
-    
-    // Position container at cursor (offset by where user grabbed)
-    const startPixelIndex = state.groupDragStart.pixelIndex;
-    const startRow = Math.floor(startPixelIndex / 200);
-    const startCol = startPixelIndex % 200;
-    const offsetRow = startRow - minRow;
-    const offsetCol = startCol - minCol;
-    
-    previewContainer.style.left = `${cursorX - (offsetCol * pixelSize)}px`;
-    previewContainer.style.top = `${cursorY - (offsetRow * pixelSize)}px`;
-    
-    // Create preview pixels
-    state.selectedPixels.forEach(sourceIndex => {
-      const sourceRow = Math.floor(sourceIndex / 200);
-      const sourceCol = sourceIndex % 200;
-      const relativeRow = sourceRow - minRow;
-      const relativeCol = sourceCol - minCol;
-      
-      const pixel = document.createElement('div');
-      pixel.style.position = 'absolute';
-      pixel.style.left = `${relativeCol * pixelSize}px`;
-      pixel.style.top = `${relativeRow * pixelSize}px`;
-      pixel.style.width = `${pixelSize}px`;
-      pixel.style.height = `${pixelSize}px`;
-      pixel.style.backgroundColor = pixelColors[sourceIndex] || '#ffffff';
-      pixel.style.boxSizing = 'border-box';
-      pixel.style.border = '0.5px solid rgba(0,0,0,0.2)';
-      
-      previewContainer.appendChild(pixel);
-    });
-    
-    document.body.appendChild(previewContainer);
-  }, [pixelColors]);
+  // Track which pixels should show preview during drag
+  const [dragPreviewPixels, setDragPreviewPixels] = useState([]);
   
   // Update pixel array when totalPixels changes, preserving existing data
   useEffect(() => {
@@ -619,9 +547,6 @@ export default function PixelGrid() {
       if (state.groupDragStart !== null && state.activeGroup === "__selected__" && state.isDrawing && gridRef.current) {
         e.preventDefault(); // Prevent scrolling on mobile
         
-        // Update floating preview at cursor position
-        updateDragPreviewDOM(e.clientX, e.clientY);
-        
         const rect = gridRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -630,6 +555,26 @@ export default function PixelGrid() {
         const pixelSize = rect.width / 200; // 200 columns
         const col = Math.floor(x / pixelSize);
         const row = Math.floor(y / pixelSize);
+        
+        // Calculate delta from drag start
+        const deltaRow = row - state.groupDragStart.startRow;
+        const deltaCol = col - state.groupDragStart.startCol;
+        
+        // Update preview pixels - show selected pixels at new positions
+        const previewPixels = [];
+        state.selectedPixels.forEach(sourceIndex => {
+          const sourceRow = Math.floor(sourceIndex / 200);
+          const sourceCol = sourceIndex % 200;
+          const newRow = sourceRow + deltaRow;
+          const newCol = sourceCol + deltaCol;
+          
+          if (newRow >= 0 && newCol >= 0 && newCol < 200) {
+            const newIndex = newRow * 200 + newCol;
+            previewPixels.push({ index: newIndex, color: pixelColors[sourceIndex] });
+          }
+        });
+        
+        setDragPreviewPixels(previewPixels);
         
         // Always update current position (even outside grid bounds for proper finalization)
         flushSync(() => {
@@ -647,9 +592,6 @@ export default function PixelGrid() {
         const touch = e.touches[0];
         if (!touch) return;
         
-        // Update floating preview at touch position
-        updateDragPreviewDOM(touch.clientX, touch.clientY);
-        
         const rect = gridRef.current.getBoundingClientRect();
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
@@ -658,6 +600,26 @@ export default function PixelGrid() {
         const pixelSize = rect.width / 200;
         const col = Math.floor(x / pixelSize);
         const row = Math.floor(y / pixelSize);
+        
+        // Calculate delta from drag start
+        const deltaRow = row - state.groupDragStart.startRow;
+        const deltaCol = col - state.groupDragStart.startCol;
+        
+        // Update preview pixels - show selected pixels at new positions
+        const previewPixels = [];
+        state.selectedPixels.forEach(sourceIndex => {
+          const sourceRow = Math.floor(sourceIndex / 200);
+          const sourceCol = sourceIndex % 200;
+          const newRow = sourceRow + deltaRow;
+          const newCol = sourceCol + deltaCol;
+          
+          if (newRow >= 0 && newCol >= 0 && newCol < 200) {
+            const newIndex = newRow * 200 + newCol;
+            previewPixels.push({ index: newIndex, color: pixelColors[sourceIndex] });
+          }
+        });
+        
+        setDragPreviewPixels(previewPixels);
         
         // Always update current position (even outside grid bounds for proper finalization)
         flushSync(() => {
@@ -669,11 +631,8 @@ export default function PixelGrid() {
     const stopDrawing = () => {
       const state = dragStateRef.current;
       
-      // Clean up floating preview container
-      const previewContainer = document.getElementById('drag-preview-container');
-      if (previewContainer) {
-        previewContainer.remove();
-      }
+      // Clear drag preview pixels
+      setDragPreviewPixels([]);
       
       // Finalize selected pixels move if dragging
       if (state.groupDragStart !== null && state.activeGroup === "__selected__") {
@@ -2464,18 +2423,6 @@ const savedData = ${dataString};
           if (viewMode === "drawing") {
             // DRAWING MODE - Minimal calculations for maximum performance
             
-            // Debug: Log ref state on EVERY render of first pixel
-            if (i === 0) {
-              const dragState = dragStateRef.current;
-              console.log('=== RENDER (pixel 0) ===', {
-                groupDragStart: dragState.groupDragStart,
-                activeGroup: dragState.activeGroup,
-                isDrawing: dragState.isDrawing,
-                groupDragCurrent: dragState.groupDragCurrent,
-                selectedPixelsLength: dragState.selectedPixels.length
-              });
-            }
-            
             const isHovered = hoveredPixel === i;
             const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
             const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
@@ -2511,56 +2458,11 @@ const savedData = ${dataString};
             let isInDragPreview = false;
             let dragPreviewColor = c;
             
-            // Debug: Log condition check for EVERY pixel 0 render
-            if (i === 0) {
-              console.log('>>> PREVIEW CONDITION CHECK (pixel 0):', {
-                'groupDragStart !== null': dragState.groupDragStart !== null,
-                'activeGroup === "__selected__"': dragState.activeGroup === "__selected__",
-                'isDrawing': dragState.isDrawing,
-                'ALL TRUE?': dragState.groupDragStart !== null && dragState.activeGroup === "__selected__" && dragState.isDrawing
-              });
-            }
-            
-            if (dragState.groupDragStart !== null && dragState.activeGroup === "__selected__" && dragState.isDrawing) {
-              // Show preview immediately when drag starts, using delta (0,0) until cursor moves
-              const currentDragPos = dragState.groupDragCurrent || { row: dragState.groupDragStart.startRow, col: dragState.groupDragStart.startCol };
-              const deltaRow = currentDragPos.row - dragState.groupDragStart.startRow;
-              const deltaCol = currentDragPos.col - dragState.groupDragStart.startCol;
-              const currentRow = Math.floor(i / 200);
-              const currentCol = i % 200;
-              const sourceRow = currentRow - deltaRow;
-              const sourceCol = currentCol - deltaCol;
-              const sourceIndex = sourceRow * 200 + sourceCol;
-              isInDragPreview = dragState.selectedPixels.includes(sourceIndex);
-              
-              // Comprehensive debug logging on first render
-              if (i === 0 && dragState.groupDragStart) {
-                console.log('=== PREVIEW CALCULATION DEBUG ===');
-                console.log('groupDragStart:', dragState.groupDragStart);
-                console.log('groupDragCurrent:', dragState.groupDragCurrent);
-                console.log('currentDragPos:', currentDragPos);
-                console.log('delta:', { deltaRow, deltaCol });
-                console.log('selectedPixels (first 10):', dragState.selectedPixels.slice(0, 10));
-                console.log('selectedPixels.length:', dragState.selectedPixels.length);
-                console.log('IMPORTANT: startRow/Col from groupDragStart:', { 
-                  startRow: dragState.groupDragStart.startRow, 
-                  startCol: dragState.groupDragStart.startCol,
-                  currentRow: currentDragPos.row,
-                  currentCol: currentDragPos.col
-                });
-              }
-              
-              if (isInDragPreview) {
-                // Use source pixel color, defaulting to white if null/undefined
-                dragPreviewColor = pixelColors[sourceIndex] !== null && pixelColors[sourceIndex] !== undefined 
-                  ? pixelColors[sourceIndex] 
-                  : '#ffffff';
-                
-                // Log first 3 preview pixels found
-                if (currentRow < 5) {
-                  console.log(`PREVIEW: pixel ${i} [${currentRow},${currentCol}] <- source ${sourceIndex} [${sourceRow},${sourceCol}], color=${dragPreviewColor}`);
-                }
-              }
+            // Check if this pixel should show a drag preview
+            const previewPixel = dragPreviewPixels.find(p => p.index === i);
+            if (previewPixel) {
+              isInDragPreview = true;
+              dragPreviewColor = previewPixel.color;
             }
             
             // Make white pixels transparent when background image is loaded
