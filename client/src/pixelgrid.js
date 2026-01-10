@@ -1601,11 +1601,11 @@ const savedData = ${dataString};
 
         {/* GROUP SELECTED PIXELS BUTTON */}
         {viewMode === "layers" && selectedPixels.length > 0 && (
-          <div style={{ width: "100%", padding: "1vw" }}>
+          <div style={{ width: "100%", padding: "1vw", display: "flex", gap: "1vw" }}>
             <button
               onClick={() => setShowGroupDialog(true)}
               style={{
-                width: "100%",
+                flex: 1,
                 background: "#4CAF50",
                 color: "white",
                 border: "0.2vw solid #000",
@@ -1616,6 +1616,25 @@ const savedData = ${dataString};
               }}
             >
               Create Group ({selectedPixels.length} pixels)
+            </button>
+            <button
+              onClick={() => {
+                setSelectedPixels([]);
+                setSelectionStart(null);
+                setSelectionEnd(null);
+              }}
+              style={{
+                background: "#f44336",
+                color: "white",
+                border: "0.2vw solid #000",
+                cursor: "pointer",
+                padding: "1vw",
+                fontSize: "1.2vw",
+                fontWeight: "bold",
+                minWidth: "6vw"
+              }}
+            >
+              Cancel
             </button>
           </div>
         )}
@@ -1738,7 +1757,7 @@ const savedData = ${dataString};
             const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
             const isSelected = selectedPixels.includes(i);
             const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && 
-              ((isDrawing && size.w > 1024) || (size.w <= 1024)) && 
+              ((isDrawing && size.w > 1024) || (size.w <= 1024 && selectionEnd !== selectionStart && selectedPixels.length === 0)) && 
               getSelectionRectangle(selectionStart, selectionEnd).includes(i);
             const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
             
@@ -1978,6 +1997,11 @@ const savedData = ${dataString};
                   }
                 }}
                 onPointerLeave={() => {
+                  // Clear mobile selection preview when leaving pixel
+                  if (activeDrawingTool === "select" && size.w <= 1024 && selectionStart !== null && selectedPixels.length === 0) {
+                    setSelectionEnd(null);
+                  }
+                  
                   // For line/curve preview, keep hover when endpoints are selected
                   const lineToolActive = activeDrawingTool === "line" && (lineStartPixel !== null || lineEndPixel !== null);
                   const curveToolActive = activeDrawingTool === "curve" && (lineStartPixel !== null || curveEndPixel !== null);
@@ -1998,7 +2022,7 @@ const savedData = ${dataString};
           // Only calculate these in layers mode
           const isSelected = selectedPixels.includes(i);
           const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && 
-            ((isDrawing && size.w > 1024) || (size.w <= 1024)) && 
+            ((isDrawing && size.w > 1024) || (size.w <= 1024 && selectionEnd !== selectionStart && selectedPixels.length === 0)) && 
             getSelectionRectangle(selectionStart, selectionEnd).includes(i);
           const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
           const isInActiveGroup = (pixelGroup && pixelGroup.group === activeGroup) || (activeGroup === "__selected__" && selectedPixels.includes(i));
@@ -2240,6 +2264,10 @@ const savedData = ${dataString};
                 }
               }}
               onPointerLeave={() => {
+                // Clear mobile selection preview when leaving pixel
+                if (activeDrawingTool === "select" && size.w <= 1024 && selectionStart !== null && selectedPixels.length === 0) {
+                  setSelectionEnd(null);
+                }
                 setHoveredPixel(null);
               }}
             />
