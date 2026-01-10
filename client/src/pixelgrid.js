@@ -2212,8 +2212,11 @@ const savedData = ${dataString};
                       if (selectedPixels.includes(i)) {
                         // Clicking on already selected pixel - enable drag-to-move
                         console.log("Mobile: Starting drag on selected pixel", i);
+                        const startRow = Math.floor(i / 200);
+                        const startCol = i % 200;
                         setActiveGroup("__selected__");
-                        setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
+                        setGroupDragStart({ pixelIndex: i, startRow, startCol });
+                        setGroupDragCurrent({ row: startRow, col: startCol });
                         setIsDrawing(true);
                       } else if (selectionStart === null) {
                         // First click: set selection start
@@ -2255,8 +2258,11 @@ const savedData = ${dataString};
                       } else {
                         // Desktop fallback
                         if (selectedPixels.includes(i)) {
+                          const startRow = Math.floor(i / 200);
+                          const startCol = i % 200;
                           setActiveGroup("__selected__");
-                          setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
+                          setGroupDragStart({ pixelIndex: i, startRow, startCol });
+                          setGroupDragCurrent({ row: startRow, col: startCol });
                           setIsDrawing(true);
                         } else {
                           setSelectionStart(i);
