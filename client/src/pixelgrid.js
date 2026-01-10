@@ -40,14 +40,41 @@ const DrawingPixel = memo(({
     borderWidth = `${0.3 * zoomFactor}vw`;
     boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
   } else if (isSelectionStartPoint) {
-    borderColor = '#FF9800';
+    // Use contrast detection for selection start point
+    const isLight = (() => {
+      if (!color || color.length < 7) return false;
+      const r = parseInt(color.substring(1, 3), 16);
+      const g = parseInt(color.substring(3, 5), 16);
+      const b = parseInt(color.substring(5, 7), 16);
+      const brightness = (r + g + b) / 3;
+      return brightness > 127;
+    })();
+    borderColor = isLight ? '#000000' : '#ffffff';
     borderWidth = `${0.4 * zoomFactor}vw`;
-    boxShadow = `0 0 ${0.6 * zoomFactor}vw ${0.3 * zoomFactor}vw #FF9800`;
+    boxShadow = `0 0 ${0.6 * zoomFactor}vw ${0.3 * zoomFactor}vw ${borderColor}`;
   } else if (isInSelectionRect) {
-    borderColor = '#2196F3';
+    // Use contrast detection for selection rectangle preview
+    const isLight = (() => {
+      if (!color || color.length < 7) return false;
+      const r = parseInt(color.substring(1, 3), 16);
+      const g = parseInt(color.substring(3, 5), 16);
+      const b = parseInt(color.substring(5, 7), 16);
+      const brightness = (r + g + b) / 3;
+      return brightness > 127;
+    })();
+    borderColor = isLight ? '#000000' : '#ffffff';
     borderWidth = `${0.2 * zoomFactor}vw`;
   } else if (isSelected) {
-    borderColor = '#4CAF50';
+    // Use contrast detection for final selection
+    const isLight = (() => {
+      if (!color || color.length < 7) return false;
+      const r = parseInt(color.substring(1, 3), 16);
+      const g = parseInt(color.substring(3, 5), 16);
+      const b = parseInt(color.substring(5, 7), 16);
+      const brightness = (r + g + b) / 3;
+      return brightness > 127;
+    })();
+    borderColor = isLight ? '#000000' : '#ffffff';
     borderWidth = `${0.3 * zoomFactor}vw`;
   } else if (isCurveEnd || isLineStart || isInLinePreview) {
     // Use proper contrast detection for line/curve previews
@@ -2084,19 +2111,46 @@ const savedData = ${dataString};
             borderWidth = `${0.3 * zoomFactor}vw`;
             boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
           } else if (isSelectionStartPoint) {
-            borderColor = '#FF9800';
+            // Use contrast detection for selection start point
+            const isLight = (() => {
+              if (!c || c.length < 7) return false;
+              const r = parseInt(c.substring(1, 3), 16);
+              const g = parseInt(c.substring(3, 5), 16);
+              const b = parseInt(c.substring(5, 7), 16);
+              const brightness = (r + g + b) / 3;
+              return brightness > 127;
+            })();
+            borderColor = isLight ? '#000000' : '#ffffff';
             borderWidth = `${0.4 * zoomFactor}vw`;
-            boxShadow = `0 0 ${0.6 * zoomFactor}vw ${0.3 * zoomFactor}vw #FF9800`;
+            boxShadow = `0 0 ${0.6 * zoomFactor}vw ${0.3 * zoomFactor}vw ${borderColor}`;
           } else if (isMoveGroupHover || isSelectGroupHover) {
             borderColor = '#9C27B0';
             borderWidth = `${0.3 * zoomFactor}vw`;
             boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
           } else if (isInActiveGroup) {
-            borderColor = '#2196F3';
+            // Use contrast detection for active group highlight
+            const isLight = (() => {
+              if (!c || c.length < 7) return false;
+              const r = parseInt(c.substring(1, 3), 16);
+              const g = parseInt(c.substring(3, 5), 16);
+              const b = parseInt(c.substring(5, 7), 16);
+              const brightness = (r + g + b) / 3;
+              return brightness > 127;
+            })();
+            borderColor = isLight ? '#000000' : '#ffffff';
             borderWidth = `${0.3 * zoomFactor}vw`;
-            boxShadow = '0 0 0.5vw #2196F3';
+            boxShadow = `0 0 0.5vw ${borderColor}`;
           } else if (isSelected || isInSelectionRect) {
-            borderColor = '#4CAF50';
+            // Use contrast detection for final selection
+            const isLight = (() => {
+              if (!c || c.length < 7) return false;
+              const r = parseInt(c.substring(1, 3), 16);
+              const g = parseInt(c.substring(3, 5), 16);
+              const b = parseInt(c.substring(5, 7), 16);
+              const brightness = (r + g + b) / 3;
+              return brightness > 127;
+            })();
+            borderColor = isLight ? '#000000' : '#ffffff';
             borderWidth = `${0.3 * zoomFactor}vw`;
           } else if (isCurveEnd) {
             borderColor = getContrastBorderColor(c);
