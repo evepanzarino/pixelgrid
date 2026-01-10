@@ -1921,20 +1921,21 @@ const savedData = ${dataString};
         flex: 1,
         overflow: "hidden"
       }}>
-        {/* BACKGROUND IMAGE LAYER - Fixed behind the scrollable grid */}
+        {/* BACKGROUND IMAGE LAYER - Fixed to viewport */}
         {backgroundImage && (
           <div style={{
             position: "absolute",
             top: 0,
             left: 0,
-            width: "100%",
-            height: "100%",
+            right: 0,
+            bottom: 0,
             zIndex: 0,
             pointerEvents: "none",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden"
+            alignItems: "flex-start",
+            justifyContent: "flex-start",
+            overflow: "hidden",
+            padding: 0
           }}>
             <img
               src={backgroundImage}
@@ -1945,6 +1946,7 @@ const savedData = ${dataString};
                 width: "auto",
                 height: "auto",
                 objectFit: "contain",
+                objectPosition: "top left",
                 opacity: backgroundOpacity
               }}
             />
