@@ -529,6 +529,8 @@ export default function PixelGrid() {
       const state = dragStateRef.current;
       // Track drag position for selected pixels move on mobile/desktop
       if (state.groupDragStart !== null && state.activeGroup === "__selected__" && state.isDrawing && gridRef.current) {
+        e.preventDefault(); // Prevent scrolling on mobile
+        
         const rect = gridRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -543,7 +545,34 @@ export default function PixelGrid() {
         
         // Ensure we're within bounds
         if (row >= 0 && row < currentRows && col >= 0 && col < 200) {
-          console.log("Global pointermove: Setting groupDragCurrent:", { row, col, isDrawing: state.isDrawing });
+          console.log("Global pointermove: Setting groupDragCurrent:", { row, col, x, y, pixelSize });
+          setGroupDragCurrent({ row, col });
+        }
+      }
+    };
+    
+    const handleTouchMove = (e) => {
+      const state = dragStateRef.current;
+      // Handle touch drag for mobile
+      if (state.groupDragStart !== null && state.activeGroup === "__selected__" && state.isDrawing && gridRef.current) {
+        e.preventDefault(); // Prevent scrolling
+        
+        const touch = e.touches[0];
+        if (!touch) return;
+        
+        const rect = gridRef.current.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        
+        // Calculate which pixel we're over
+        const pixelSize = rect.width / 200;
+        const col = Math.floor(x / pixelSize);
+        const row = Math.floor(y / pixelSize);
+        
+        const currentRows = Math.round(rect.height / pixelSize);
+        
+        if (row >= 0 && row < currentRows && col >= 0 && col < 200) {
+          console.log("Touch move: Setting groupDragCurrent:", { row, col, x, y });
           setGroupDragCurrent({ row, col });
         }
       }
@@ -567,7 +596,7 @@ export default function PixelGrid() {
         console.log("Delta:", { deltaRow, deltaCol });
         
         if (deltaRow !== 0 || deltaCol !== 0) {
-          console.log("Calling moveSelectedPixels");
+          console.log("Calling moveSelectedPixels with selectedPixels:", state.selectedPixels.length);
           moveSelectedPixels(deltaRow, deltaCol);
         }
         
@@ -589,12 +618,16 @@ export default function PixelGrid() {
     };
 
     window.addEventListener("resize", handleResize);
-    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointermove", handlePointerMove, { passive: false });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("pointerup", stopDrawing);
+    window.addEventListener("touchend", stopDrawing);
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("pointerup", stopDrawing);
+      window.removeEventListener("touchend", stopDrawing);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeDrawingTool]);
@@ -2270,6 +2303,7 @@ const savedData = ${dataString};
                       console.log("Clicked pixel", i, "isSelected:", selectedPixels.includes(i), "selectedPixels.length:", selectedPixels.length);
                       if (selectedPixels.includes(i)) {
                         // Clicking on already selected pixel - enable drag-to-move
+                        e.preventDefault(); // Prevent default touch behavior
                         console.log("Mobile: Starting drag on selected pixel", i);
                         const startRow = Math.floor(i / 200);
                         const startCol = i % 200;
@@ -2277,6 +2311,7 @@ const savedData = ${dataString};
                         setGroupDragStart({ pixelIndex: i, startRow, startCol });
                         setGroupDragCurrent({ row: startRow, col: startCol });
                         setIsDrawing(true);
+                        console.log("Mobile drag initialized:", { startRow, startCol, activeGroup: "__selected__" });
                       } else if (selectionStart === null) {
                         // First click: set selection start
                         console.log("Mobile first click - setting selection start to", i);
