@@ -2131,9 +2131,8 @@ const savedData = ${dataString};
                 opacity
               }}
               onPointerDown={(e) => {
-                // Check if clicking on a grouped pixel with movegroup tool
-                if (activeDrawingTool === "movegroup" && pixelGroup) {
-                  setActiveGroup(pixelGroup.group);
+                // Check if clicking on a grouped pixel with movegroup tool and group is already selected
+                if (activeDrawingTool === "movegroup" && pixelGroup && activeGroup === pixelGroup.group) {
                   setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
                   setIsDrawing(true);
                 } else if (activeDrawingTool === "movegroup" && selectedPixels.includes(i)) {
@@ -2141,18 +2140,13 @@ const savedData = ${dataString};
                   setActiveGroup("__selected__");
                   setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
                   setIsDrawing(true);
-                } else if (activeDrawingTool === "select" && pixelGroup) {
-                  // Select tool: clicking on grouped pixel enables drag-to-move
-                  setActiveGroup(pixelGroup.group);
+                } else if (activeDrawingTool === "select" && pixelGroup && activeGroup === pixelGroup.group) {
+                  // Select tool: clicking on already selected group enables drag-to-move
                   setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
                   setIsDrawing(true);
                 } else if (activeDrawingTool === "select" && selectedPixels.includes(i)) {
                   // Select tool: clicking on a selected pixel enables drag-to-move
                   setActiveGroup("__selected__");
-                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
-                  setIsDrawing(true);
-                } else if (pixelGroup && !activeDrawingTool.match(/select|movegroup/)) {
-                  setActiveGroup(pixelGroup.group);
                   setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
                   setIsDrawing(true);
                 } else if (activeDrawingTool === "select") {
