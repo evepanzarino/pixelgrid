@@ -48,6 +48,7 @@ const DrawingPixel = memo(({
       const g = parseInt(color.substring(3, 5), 16);
       const b = parseInt(color.substring(5, 7), 16);
       const brightness = (r + g + b) / 3;
+      console.log(`DEBUG Selection start: color=${color}, brightness=${brightness}, isLight=${brightness > 127}, border will be ${brightness > 127 ? 'black' : 'white'}`);
       return brightness > 127;
     })();
     borderColor = isLight ? '#000000' : '#ffffff';
