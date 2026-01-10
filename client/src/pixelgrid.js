@@ -2037,10 +2037,14 @@ const savedData = ${dataString};
               }
             }
             
+            // Make white pixels transparent when background image is loaded
+            const displayColor = isInDragPreview ? dragPreviewColor : c;
+            const pixelColor = (backgroundImage && displayColor === '#ffffff') ? 'transparent' : displayColor;
+            
             return (
               <DrawingPixel
                 key={i}
-                color={isInDragPreview ? dragPreviewColor : c}
+                color={pixelColor}
                 index={i}
                 isHovered={isHovered}
                 isLineStart={isLineStart}
