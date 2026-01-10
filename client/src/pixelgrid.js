@@ -1807,7 +1807,12 @@ const savedData = ${dataString};
             const isInSelectionRect = (() => {
               // Show selection rectangle preview for select tool during drag or mobile second click
               if (activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null) {
-                return getSelectionRectangle(selectionStart, selectionEnd).includes(i);
+                const inRect = getSelectionRectangle(selectionStart, selectionEnd).includes(i);
+                // Debug logging for selection rectangle
+                if (c === '#ffffff' || !c || c.length < 7) {
+                  console.log(`Uncolored pixel ${i}: inRect=${inRect}, color="${c}", selectionStart=${selectionStart}, selectionEnd=${selectionEnd}`);
+                }
+                return inRect;
               }
               // Show active group highlight for other tools
               return activeGroup !== null && activeGroup !== "__selected__" && 
