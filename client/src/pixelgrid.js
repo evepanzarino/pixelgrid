@@ -986,38 +986,17 @@ const savedData = ${dataString};
       const minCol = Math.min(startCol, endCol);
       const maxCol = Math.max(startCol, endCol);
       
-      // Calculate border color based on average brightness of selected pixels
-      let totalBrightness = 0;
-      let pixelCount = 0;
-      for (let row = minRow; row <= maxRow; row++) {
-        for (let col = minCol; col <= maxCol; col++) {
-          const index = row * 200 + col;
-          const color = pixelColors[index];
-          if (color && color.length >= 7) {
-            const r = parseInt(color.substring(1, 3), 16);
-            const g = parseInt(color.substring(3, 5), 16);
-            const b = parseInt(color.substring(5, 7), 16);
-            totalBrightness += (r + g + b) / 3;
-          } else {
-            totalBrightness += 255; // White pixels
-          }
-          pixelCount++;
-        }
-      }
-      const avgBrightness = totalBrightness / pixelCount;
-      const borderColor = avgBrightness > 127 ? '#000000' : '#CCCCCC';
-      
       // Position overlay using CSS grid positioning
       overlayEl.style.gridRowStart = (minRow + 1).toString();
       overlayEl.style.gridRowEnd = (maxRow + 2).toString();
       overlayEl.style.gridColumnStart = (minCol + 1).toString();
       overlayEl.style.gridColumnEnd = (maxCol + 2).toString();
-      overlayEl.style.border = `${0.2 * zoomFactor}vw dashed ${borderColor}`;
+      overlayEl.style.border = `${0.2 * zoomFactor}vw dashed #2196F3`;
       overlayEl.style.display = 'block';
     } else {
       overlayEl.style.display = 'none';
     }
-  }, [selectionStart, selectionEnd, activeDrawingTool, viewMode, pixelColors, zoomFactor]);
+  }, [selectionStart, selectionEnd, activeDrawingTool, zoomFactor]);
 
   return (
     <div className="pixelgrid-container" style={{ width: "100vw", overflow: "hidden" }}>
