@@ -518,7 +518,49 @@ export default function PixelGrid() {
       console.error("Failed to save background opacity:", error);
     }
   }, [backgroundOpacity]);
-
+  
+  // Direct DOM manipulation to show drag preview (bypassing React rendering)
+  const updateDragPreviewDOM = useCallback((deltaRow, deltaCol) => {
+    if (!gridRef.current) return;
+    
+    const state = dragStateRef.current;
+    if (!state.selectedPixels || state.selectedPixels.length === 0) return;
+    
+    // Remove any existing preview overlays
+    const existingPreviews = gridRef.current.querySelectorAll('[data-drag-preview]');
+    existingPreviews.forEach(el => el.remove());
+    
+    // Create preview elements for each selected pixel at new position
+    state.selectedPixels.forEach(sourceIndex => {
+      const sourceRow = Math.floor(sourceIndex / 200);
+      const sourceCol = sourceIndex % 200;
+      const newRow = sourceRow + deltaRow;
+      const newCol = sourceCol + deltaCol;
+      
+      if (newRow >= 0 && newCol >= 0 && newCol < 200) {
+        const newIndex = newRow * 200 + newCol;
+        const targetPixel = gridRef.current.querySelector(`[data-pixel-index="${newIndex}"]`);
+        
+        if (targetPixel) {
+          const preview = document.createElement('div');
+          preview.setAttribute('data-drag-preview', 'true');
+          preview.style.position = 'absolute';
+          preview.style.top = '0';
+          preview.style.left = '0';
+          preview.style.width = '100%';
+          preview.style.height = '100%';
+          preview.style.backgroundColor = pixelColors[sourceIndex] || '#ffffff';
+          preview.style.opacity = '0.5';
+          preview.style.pointerEvents = 'none';
+          preview.style.zIndex = '1000';
+          
+          targetPixel.style.position = 'relative';
+          targetPixel.appendChild(preview);
+        }
+      }
+    });
+  }, [pixelColors]);
+  
   // Update pixel array when totalPixels changes, preserving existing data
   useEffect(() => {
     setPixelColors((prev) => {
@@ -560,6 +602,12 @@ export default function PixelGrid() {
         if (row >= 0 && row < currentRows && col >= 0 && col < 200) {
           console.log("Global pointermove: Setting groupDragCurrent:", { row, col, x, y, pixelSize });
           console.log(">>> BEFORE pointermove flushSync - ref.isDrawing:", state.isDrawing);
+          
+          // Calculate delta and update DOM preview immediately
+          const deltaRow = row - state.groupDragStart.startRow;
+          const deltaCol = col - state.groupDragStart.startCol;
+          updateDragPreviewDOM(deltaRow, deltaCol);
+          
           flushSync(() => {
             setGroupDragCurrent({ row, col });
             setRenderTrigger(prev => prev + 1); // Force re-render
@@ -607,6 +655,12 @@ export default function PixelGrid() {
         selectedPixelsLength: state.selectedPixels.length,
         isDrawing: state.isDrawing
       });
+      
+      // Clean up DOM preview overlays
+      if (gridRef.current) {
+        const existingPreviews = gridRef.current.querySelectorAll('[data-drag-preview]');
+        existingPreviews.forEach(el => el.remove());
+      }
       
       // Finalize selected pixels move if dragging
       if (state.groupDragStart !== null && state.activeGroup === "__selected__") {
