@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkreact_client=self.webpackChunkreact_client||[]).push([[250],{250:(e,t,n)=>{n.r(t),n.d(t,{bucketTool:()=>c});const c={name:"bucket",icon:"fa-fill-drip",onActivate:e=>{e.setLineStartPixel(null)},onPointerDown:(e,t)=>{e.paintBucket(t)}}}}]);
+//# sourceMappingURL=250.76c80c16.chunk.js.map
