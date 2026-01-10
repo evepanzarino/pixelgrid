@@ -521,17 +521,29 @@ export default function PixelGrid() {
   
   // Direct DOM manipulation to show drag preview (bypassing React rendering)
   const updateDragPreviewDOM = useCallback((deltaRow, deltaCol) => {
-    if (!gridRef.current) return;
+    if (!gridRef.current) {
+      console.log('>>> DOM PREVIEW: No gridRef');
+      return;
+    }
     
     const state = dragStateRef.current;
-    if (!state.selectedPixels || state.selectedPixels.length === 0) return;
+    if (!state.selectedPixels || state.selectedPixels.length === 0) {
+      console.log('>>> DOM PREVIEW: No selected pixels');
+      return;
+    }
+    
+    console.log(`>>> DOM PREVIEW: Updating preview, delta=(${deltaRow}, ${deltaCol}), selectedPixels=${state.selectedPixels.length}`);
     
     // Remove any existing preview overlays
     const existingPreviews = gridRef.current.querySelectorAll('[data-drag-preview]');
+    console.log(`>>> DOM PREVIEW: Removing ${existingPreviews.length} existing previews`);
     existingPreviews.forEach(el => el.remove());
     
+    let createdCount = 0;
+    let notFoundCount = 0;
+    
     // Create preview elements for each selected pixel at new position
-    state.selectedPixels.forEach(sourceIndex => {
+    state.selectedPixels.forEach((sourceIndex, idx) => {
       const sourceRow = Math.floor(sourceIndex / 200);
       const sourceCol = sourceIndex % 200;
       const newRow = sourceRow + deltaRow;
@@ -556,9 +568,17 @@ export default function PixelGrid() {
           
           targetPixel.style.position = 'relative';
           targetPixel.appendChild(preview);
+          createdCount++;
+        } else {
+          if (idx < 3) { // Only log first few failures
+            console.log(`>>> DOM PREVIEW: Pixel ${newIndex} not found (source ${sourceIndex})`);
+          }
+          notFoundCount++;
         }
       }
     });
+    
+    console.log(`>>> DOM PREVIEW: Created ${createdCount} previews, ${notFoundCount} not found`);
   }, [pixelColors]);
   
   // Update pixel array when totalPixels changes, preserving existing data
