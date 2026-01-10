@@ -870,9 +870,14 @@ export default function PixelGrid() {
   // Move selected pixels (not in a group)
   function moveSelectedPixels(deltaRow, deltaCol) {
     console.log("moveSelectedPixels called:", { deltaRow, deltaCol, selectedPixelsCount: selectedPixels.length });
-    if (selectedPixels.length === 0) return;
+    if (selectedPixels.length === 0) {
+      console.log("No selected pixels, returning early");
+      return;
+    }
     
+    console.log("Setting pixel colors...");
     setPixelColors(prev => {
+      console.log("Inside setPixelColors updater, prev length:", prev.length);
       const copy = [...prev];
       
       // Get colors and positions of selected pixels from current state
@@ -884,11 +889,14 @@ export default function PixelGrid() {
       }));
       
       console.log("Moving pixels:", pixelData.slice(0, 3), "...");
+      console.log("First pixel before:", { index: pixelData[0].oldIndex, color: copy[pixelData[0].oldIndex] });
       
       // Clear old positions
       pixelData.forEach(p => {
         copy[p.oldIndex] = "#ffffff";
       });
+      
+      console.log("First pixel after clear:", { index: pixelData[0].oldIndex, color: copy[pixelData[0].oldIndex] });
       
       // Set new positions
       pixelData.forEach(p => {
@@ -897,12 +905,15 @@ export default function PixelGrid() {
         if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
           const newIndex = newRow * 200 + newCol;
           copy[newIndex] = p.color;
+          console.log("Set pixel", newIndex, "to", p.color);
         }
       });
       
+      console.log("Returning updated copy");
       return copy;
     });
     
+    console.log("Updating selected pixels...");
     // Update selected pixels to new positions
     const newSelectedPixels = selectedPixels.map(idx => {
       const row = Math.floor(idx / 200);
@@ -915,7 +926,9 @@ export default function PixelGrid() {
       return null;
     }).filter(idx => idx !== null);
     
+    console.log("New selected pixels:", newSelectedPixels.slice(0, 5));
     setSelectedPixels(newSelectedPixels);
+    console.log("moveSelectedPixels complete");
   }
 
   function saveToHTML() {
