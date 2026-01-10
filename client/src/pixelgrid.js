@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, memo, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback, memo } from "react";
 import "./pixelgrid.css";
 
 // Memoized pixel component to prevent unnecessary re-renders
@@ -966,91 +966,39 @@ const savedData = ${dataString};
     setBackgroundImage(null);
   }
 
-  // Track previous selection rectangle to diff changes
-  const prevSelectionRectRef = useRef(new Set());
+  // Track selection rectangle for overlay rendering
+  const selectionOverlayRef = useRef(null);
   
-  // Memoize selection rectangle for O(1) lookups to prevent re-calculating for every pixel
-  const selectionRectSet = useMemo(() => {
-    const set = new Set();
-    if (activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null) {
-      const rectPixels = getSelectionRectangle(selectionStart, selectionEnd);
-      rectPixels.forEach(idx => set.add(idx));
-    }
-    return set;
-  }, [activeDrawingTool, selectionStart, selectionEnd]);
-  
-  // Update selection borders incrementally using direct DOM manipulation
+  // Update selection overlay using CSS grid positioning
   useEffect(() => {
-    if (activeDrawingTool !== "select" || viewMode !== "drawing") {
-      // Clear all selection borders when not in select mode
-      prevSelectionRectRef.current.forEach(idx => {
-        const el = document.querySelector(`[data-pixel-index="${idx}"]`);
-        if (el) {
-          el.style.border = '';
-          el.style.boxShadow = '';
-        }
-      });
-      prevSelectionRectRef.current.clear();
-      return;
+    const overlayEl = selectionOverlayRef.current;
+    if (!overlayEl) return;
+    
+    if (activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && viewMode === "drawing") {
+      const startRow = Math.floor(selectionStart / 200);
+      const startCol = selectionStart % 200;
+      const endRow = Math.floor(selectionEnd / 200);
+      const endCol = selectionEnd % 200;
+      
+      const minRow = Math.min(startRow, endRow);
+      const maxRow = Math.max(startRow, endRow);
+      const minCol = Math.min(startCol, endCol);
+      const maxCol = Math.max(startCol, endCol);
+      
+      // Position overlay using CSS grid
+      overlayEl.style.gridRowStart = minRow + 1;
+      overlayEl.style.gridRowEnd = maxRow + 2;
+      overlayEl.style.gridColumnStart = minCol + 1;
+      overlayEl.style.gridColumnEnd = maxCol + 2;
+      overlayEl.style.display = 'block';
+      overlayEl.style.border = '0.2vw solid #2196F3';
+      overlayEl.style.pointerEvents = 'none';
+      overlayEl.style.zIndex = '10';
+      overlayEl.style.boxSizing = 'border-box';
+    } else {
+      overlayEl.style.display = 'none';
     }
-    
-    const prevSet = prevSelectionRectRef.current;
-    const currentSet = selectionRectSet;
-    
-    // Use requestAnimationFrame for smoother updates
-    requestAnimationFrame(() => {
-      // Find pixels to remove border from (in prev but not in current)
-      prevSet.forEach(idx => {
-        if (!currentSet.has(idx)) {
-          const el = document.querySelector(`[data-pixel-index="${idx}"]`);
-          if (el) {
-            el.style.border = '';
-            el.style.boxShadow = '';
-          }
-        }
-      });
-      
-      // Find pixels to add border to (in current but not in prev)
-      currentSet.forEach(idx => {
-        if (!prevSet.has(idx)) {
-          const el = document.querySelector(`[data-pixel-index="${idx}"]`);
-          if (el) {
-            const color = pixelColors[idx] || '#ffffff';
-            const isLight = (() => {
-              if (!color || color.length < 7) return true;
-              const r = parseInt(color.substring(1, 3), 16);
-              const g = parseInt(color.substring(3, 5), 16);
-              const b = parseInt(color.substring(5, 7), 16);
-              const brightness = (r + g + b) / 3;
-              return brightness > 127;
-            })();
-            const borderColor = isLight ? '#000000' : '#CCCCCC';
-            const zoomFactor = 1;
-            const borderWidth = `${0.2 * zoomFactor}vw`;
-            el.style.border = `${borderWidth} solid ${borderColor}`;
-          }
-        }
-      });
-      
-      // Update ref for next render
-      prevSelectionRectRef.current = new Set(currentSet);
-    });
-  }, [selectionRectSet, activeDrawingTool, viewMode, pixelColors]);
-  
-  // Clear selection borders when switching away from select tool or changing modes
-  useEffect(() => {
-    return () => {
-      // Cleanup: remove all selection borders when unmounting or tool changes
-      prevSelectionRectRef.current.forEach(idx => {
-        const el = document.querySelector(`[data-pixel-index="${idx}"]`);
-        if (el) {
-          el.style.border = '';
-          el.style.boxShadow = '';
-        }
-      });
-      prevSelectionRectRef.current.clear();
-    };
-  }, [activeDrawingTool, viewMode]);
+  }, [selectionStart, selectionEnd, activeDrawingTool, viewMode]);
 
   return (
     <div className="pixelgrid-container" style={{ width: "100vw", overflow: "hidden" }}>
@@ -2075,6 +2023,15 @@ const savedData = ${dataString};
             width: "100%",
             background: "transparent"
           }}>
+        {/* Selection rectangle overlay - single div positioned via CSS grid */}
+        <div 
+          ref={selectionOverlayRef}
+          style={{
+            display: 'none',
+            pointerEvents: 'none'
+          }}
+        />
+        
         {(pixelColors || []).map((c, i) => {
           // Completely isolate drawing mode from layer calculations for performance
           if (viewMode === "drawing") {
@@ -2083,17 +2040,8 @@ const savedData = ${dataString};
             const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
             const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
             const isSelected = selectedPixels.includes(i);
-            const isInSelectionRect = (() => {
-              // Show selection rectangle preview for select tool during drag or mobile second click
-              // NOTE: Border styling is now handled via direct DOM manipulation in useEffect
-              // to prevent flashing - this just returns false to avoid React re-renders
-              if (activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null) {
-                return false; // DOM manipulation handles this
-              }
-              // Show active group highlight for other tools
-              return activeGroup !== null && activeGroup !== "__selected__" && 
+            const isInSelectionRect = activeGroup !== null && activeGroup !== "__selected__" && 
                 pixelGroups[i]?.group === activeGroup;
-            })();
             const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
             
             // Line/curve preview calculations - use fixed end when chosen, otherwise hover
