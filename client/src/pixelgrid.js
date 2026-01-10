@@ -2156,6 +2156,7 @@ const savedData = ${dataString};
                     if (selectionStart === null) {
                       // First click: set selection start
                       console.log("Mobile first click - setting selection start to", i);
+                      setActiveGroup(null); // Close any layer selection
                       setSelectionStart(i);
                       setSelectionEnd(null);
                       setSelectedPixels([]);
@@ -2172,6 +2173,7 @@ const savedData = ${dataString};
                     }
                   } else {
                     // Desktop drag selection mode
+                    setActiveGroup(null); // Close any layer selection
                     setSelectionStart(i);
                     setSelectionEnd(i);
                     setIsDrawing(true);
