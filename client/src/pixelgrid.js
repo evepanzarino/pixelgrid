@@ -103,6 +103,7 @@ export default function PixelGrid() {
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
   const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil", "line", "curve", "bucket", "select", "movegroup"
   const [lineStartPixel, setLineStartPixel] = useState(null); // For line/curve tool: first click position
+  const [lineEndPixel, setLineEndPixel] = useState(null); // For line tool apply/preview
   const [curveEndPixel, setCurveEndPixel] = useState(null); // For curve tool adjustment mode
   const [curveCurveAmount, setCurveCurveAmount] = useState(0); // Curve adjustment: -100 to 100%
   const [selectionStart, setSelectionStart] = useState(null); // Rectangle selection start
@@ -161,6 +162,18 @@ export default function PixelGrid() {
       loadTool(activeDrawingTool);
     }
   }, [activeDrawingTool, loadTool]);
+
+  // Reset line/curve state when leaving those tools
+  useEffect(() => {
+    if (activeDrawingTool !== 'line' && activeDrawingTool !== 'curve') {
+      setLineStartPixel(null);
+      setLineEndPixel(null);
+      setCurveEndPixel(null);
+    }
+    if (activeDrawingTool !== 'line') {
+      setLineEndPixel(null);
+    }
+  }, [activeDrawingTool]);
 
   // Handle scrollbar slider dragging with global pointer move
   useEffect(() => {
@@ -228,11 +241,12 @@ export default function PixelGrid() {
   }, [isDrawing, activeDrawingTool, hoveredPixel, color]);
 
   // Ensure line/curve preview updates even when pointer is over overlays (desktop & mobile)
+  // Also set hoveredPixel immediately on touch/pointer down so preview appears without holding/dragging
   useEffect(() => {
     if (lineStartPixel === null) return;
     if (!(activeDrawingTool === "line" || activeDrawingTool === "curve")) return;
 
-    const handleMove = (e) => {
+    const updateHoverFromEvent = (e) => {
       const point = e.touches && e.touches.length ? e.touches[0] : e;
       const el = document.elementFromPoint(point.clientX, point.clientY);
       if (el && el.hasAttribute('data-pixel-index')) {
@@ -243,11 +257,16 @@ export default function PixelGrid() {
       }
     };
 
-    window.addEventListener('pointermove', handleMove, { passive: true });
-    window.addEventListener('touchmove', handleMove, { passive: true });
+    window.addEventListener('pointermove', updateHoverFromEvent, { passive: true });
+    window.addEventListener('touchmove', updateHoverFromEvent, { passive: true });
+    window.addEventListener('pointerdown', updateHoverFromEvent, { passive: true });
+    window.addEventListener('touchstart', updateHoverFromEvent, { passive: true });
+
     return () => {
-      window.removeEventListener('pointermove', handleMove);
-      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('pointermove', updateHoverFromEvent);
+      window.removeEventListener('touchmove', updateHoverFromEvent);
+      window.removeEventListener('pointerdown', updateHoverFromEvent);
+      window.removeEventListener('touchstart', updateHoverFromEvent);
     };
   }, [lineStartPixel, activeDrawingTool, hoveredPixel]);
 
@@ -1692,13 +1711,14 @@ const savedData = ${dataString};
             const isSelected = selectedPixels.includes(i);
             const isInSelectionRect = activeDrawingTool === "select" && selectionStart !== null && selectionEnd !== null && isDrawing && getSelectionRectangle(selectionStart, selectionEnd).includes(i);
             
-            // Line preview calculations - only when actively drawing lines/curves
+            // Line/curve preview calculations - use fixed end when chosen, otherwise hover
             let isInLinePreview = false;
-            if (lineStartPixel !== null && hoveredPixel !== null && hoveredPixel !== lineStartPixel) {
+            const previewTarget = lineEndPixel !== null ? lineEndPixel : hoveredPixel;
+            if (lineStartPixel !== null && previewTarget !== null && previewTarget !== lineStartPixel) {
               if (activeDrawingTool === "line") {
-                isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
+                isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
               } else if (activeDrawingTool === "curve" && curveEndPixel === null) {
-                isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
+                isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
               } else if (activeDrawingTool === "curve" && curveEndPixel !== null) {
                 isInLinePreview = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount).includes(i);
               }
@@ -1755,17 +1775,21 @@ const savedData = ${dataString};
                   } else if (activeDrawingTool === "line") {
                     if (lineStartPixel === null) {
                       setLineStartPixel(i);
+                      setLineEndPixel(null);
                     } else if (lineStartPixel === i) {
                       setLineStartPixel(null);
+                      setLineEndPixel(null);
                     } else {
-                      drawLine(lineStartPixel, i);
-                      setLineStartPixel(null);
+                      setLineEndPixel(i);
+                      setHoveredPixel(i);
                     }
                   } else if (activeDrawingTool === "curve") {
                     if (lineStartPixel === null) {
                       setLineStartPixel(i);
+                      setCurveEndPixel(null);
                     } else if (lineStartPixel === i) {
                       setLineStartPixel(null);
+                      setCurveEndPixel(null);
                     } else {
                       setCurveEndPixel(i);
                     }
@@ -1857,10 +1881,11 @@ const savedData = ${dataString};
           
           // Show straight line preview or curve preview (only in drawing mode for performance)
           let isInLinePreview = false;
-          if (activeDrawingTool === "line" && lineStartPixel !== null && hoveredPixel !== null) {
-            isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
-          } else if (activeDrawingTool === "curve" && lineStartPixel !== null && curveEndPixel === null && hoveredPixel !== null) {
-            isInLinePreview = getLinePixels(lineStartPixel, hoveredPixel).includes(i);
+          const previewTarget = lineEndPixel !== null ? lineEndPixel : hoveredPixel;
+          if (activeDrawingTool === "line" && lineStartPixel !== null && previewTarget !== null) {
+            isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
+          } else if (activeDrawingTool === "curve" && lineStartPixel !== null && curveEndPixel === null && previewTarget !== null) {
+            isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
           } else if (activeDrawingTool === "curve" && lineStartPixel !== null && curveEndPixel !== null) {
             isInLinePreview = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount).includes(i);
           }
@@ -2255,6 +2280,65 @@ const savedData = ${dataString};
               Done
             </button>
           </div>
+        </div>
+      )}
+
+      {/* LINE APPLY OVERLAY */}
+      {activeDrawingTool === "line" && lineStartPixel !== null && lineEndPixel !== null && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: size.w <= 1024 ? "10vw" : "0",
+            left: size.w <= 1024 ? "10vw" : "10vw",
+            right: 0,
+            background: "#ffffff",
+            padding: "1vw",
+            borderTop: "0.3vw solid #000000",
+            zIndex: 1000,
+            display: "flex",
+            justifyContent: "center",
+            gap: "1vw"
+          }}
+        >
+          <button
+            onClick={() => {
+              setLineStartPixel(null);
+              setLineEndPixel(null);
+              setHoveredPixel(null);
+            }}
+            style={{
+              background: "#f44336",
+              color: "white",
+              border: "0.2vw solid #000",
+              padding: "1vw 3vw",
+              cursor: "pointer",
+              fontSize: "1.3vw",
+              fontWeight: "bold"
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              if (lineStartPixel !== null && lineEndPixel !== null) {
+                drawLine(lineStartPixel, lineEndPixel);
+              }
+              setLineStartPixel(null);
+              setLineEndPixel(null);
+              setHoveredPixel(null);
+            }}
+            style={{
+              background: "#4CAF50",
+              color: "white",
+              border: "0.2vw solid #000",
+              padding: "1vw 3vw",
+              cursor: "pointer",
+              fontSize: "1.3vw",
+              fontWeight: "bold"
+            }}
+          >
+            Apply
+          </button>
         </div>
       )}
 
