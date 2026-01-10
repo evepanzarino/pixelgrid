@@ -45,10 +45,28 @@ const DrawingPixel = memo(({
     borderColor = '#4CAF50';
     borderWidth = `${0.3 * zoomFactor}vw`;
   } else if (isCurveEnd || isLineStart || isInLinePreview) {
-    borderColor = color === '#ffffff' ? '#000000' : '#ffffff';
+    // Use proper contrast detection for line/curve previews
+    const isLight = (() => {
+      if (!color || color.length < 7) return false;
+      const r = parseInt(color.substring(1, 3), 16);
+      const g = parseInt(color.substring(3, 5), 16);
+      const b = parseInt(color.substring(5, 7), 16);
+      const brightness = (r + g + b) / 3;
+      return brightness > 127;
+    })();
+    borderColor = isLight ? '#000000' : '#ffffff';
     borderWidth = `${0.3 * zoomFactor}vw`;
   } else if (isHovered && !isDrawing) {
-    borderColor = color === '#ffffff' ? '#000000' : '#ffffff';
+    // Use proper contrast detection for hover
+    const isLight = (() => {
+      if (!color || color.length < 7) return false;
+      const r = parseInt(color.substring(1, 3), 16);
+      const g = parseInt(color.substring(3, 5), 16);
+      const b = parseInt(color.substring(5, 7), 16);
+      const brightness = (r + g + b) / 3;
+      return brightness > 127;
+    })();
+    borderColor = isLight ? '#000000' : '#ffffff';
     borderWidth = `${0.2 * zoomFactor}vw`;
   }
   
