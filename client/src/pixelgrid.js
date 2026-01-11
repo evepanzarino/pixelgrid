@@ -519,9 +519,6 @@ export default function PixelGrid() {
     }
   }, [backgroundOpacity]);
   
-  // Track which pixels should show preview during drag
-  const [dragPreviewPixels, setDragPreviewPixels] = useState([]);
-  
   // Update pixel array when totalPixels changes, preserving existing data
   useEffect(() => {
     setPixelColors((prev) => {
@@ -551,35 +548,11 @@ export default function PixelGrid() {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
-        // Calculate which pixel we're over based on cursor position
+        // Calculate which pixel we're over
         const pixelSize = rect.width / 200; // 200 columns
         const col = Math.floor(x / pixelSize);
         const row = Math.floor(y / pixelSize);
         
-        // Calculate delta from drag start
-        const deltaRow = row - state.groupDragStart.startRow;
-        const deltaCol = col - state.groupDragStart.startCol;
-        
-        // Update preview pixels - show selected pixels at new positions
-        const previewPixels = [];
-        const currentRows = Math.round(rect.height / pixelSize);
-        
-        state.selectedPixels.forEach(sourceIndex => {
-          const sourceRow = Math.floor(sourceIndex / 200);
-          const sourceCol = sourceIndex % 200;
-          const newRow = sourceRow + deltaRow;
-          const newCol = sourceCol + deltaCol;
-          
-          // Only show preview for pixels within current grid bounds
-          if (newRow >= 0 && newRow < currentRows && newCol >= 0 && newCol < 200) {
-            const newIndex = newRow * 200 + newCol;
-            previewPixels.push({ index: newIndex, color: pixelColors[sourceIndex] });
-          }
-        });
-        
-        setDragPreviewPixels(previewPixels);
-        
-        // Always update current position (even outside grid bounds for proper finalization)
         flushSync(() => {
           setGroupDragCurrent({ row, col });
         });
@@ -604,30 +577,6 @@ export default function PixelGrid() {
         const col = Math.floor(x / pixelSize);
         const row = Math.floor(y / pixelSize);
         
-        // Calculate delta from drag start
-        const deltaRow = row - state.groupDragStart.startRow;
-        const deltaCol = col - state.groupDragStart.startCol;
-        
-        // Update preview pixels - show selected pixels at new positions
-        const previewPixels = [];
-        const currentRows = Math.round(rect.height / pixelSize);
-        
-        state.selectedPixels.forEach(sourceIndex => {
-          const sourceRow = Math.floor(sourceIndex / 200);
-          const sourceCol = sourceIndex % 200;
-          const newRow = sourceRow + deltaRow;
-          const newCol = sourceCol + deltaCol;
-          
-          // Only show preview for pixels within current grid bounds
-          if (newRow >= 0 && newRow < currentRows && newCol >= 0 && newCol < 200) {
-            const newIndex = newRow * 200 + newCol;
-            previewPixels.push({ index: newIndex, color: pixelColors[sourceIndex] });
-          }
-        });
-        
-        setDragPreviewPixels(previewPixels);
-        
-        // Always update current position (even outside grid bounds for proper finalization)
         flushSync(() => {
           setGroupDragCurrent({ row, col });
         });
@@ -636,9 +585,6 @@ export default function PixelGrid() {
     
     const stopDrawing = () => {
       const state = dragStateRef.current;
-      
-      // Clear drag preview pixels
-      setDragPreviewPixels([]);
       
       // Finalize selected pixels move if dragging
       if (state.groupDragStart !== null && state.activeGroup === "__selected__") {
@@ -2349,7 +2295,7 @@ const savedData = ${dataString};
                       // Clicking on selected pixel - start drag
                       const startRow = Math.floor(pixelIndex / 200);
                       const startCol = pixelIndex % 200;
-                      const dragState = { pixelIndex, startRow, startCol };
+                      const dragState = { pixelIndex, startRow, startCol, clientX: e.clientX, clientY: e.clientY };
                       
                       console.log("DRAG INIT DEBUG (delegated, desktop):", { 
                         clickedPixel: pixelIndex, 
@@ -2464,11 +2410,24 @@ const savedData = ${dataString};
             let isInDragPreview = false;
             let dragPreviewColor = c;
             
-            // Check if this pixel should show a drag preview
-            const previewPixel = dragPreviewPixels.find(p => p.index === i);
-            if (previewPixel) {
-              isInDragPreview = true;
-              dragPreviewColor = previewPixel.color;
+            if (dragState.groupDragStart !== null && dragState.activeGroup === "__selected__" && dragState.isDrawing) {
+              // Calculate which source pixel should appear at this position
+              const currentDragPos = dragState.groupDragCurrent || { row: dragState.groupDragStart.startRow, col: dragState.groupDragStart.startCol };
+              const deltaRow = currentDragPos.row - dragState.groupDragStart.startRow;
+              const deltaCol = currentDragPos.col - dragState.groupDragStart.startCol;
+              const currentRow = Math.floor(i / 200);
+              const currentCol = i % 200;
+              const sourceRow = currentRow - deltaRow;
+              const sourceCol = currentCol - deltaCol;
+              const sourceIndex = sourceRow * 200 + sourceCol;
+              isInDragPreview = dragState.selectedPixels.includes(sourceIndex);
+              
+              if (isInDragPreview) {
+                // Use source pixel color, defaulting to white if null/undefined
+                dragPreviewColor = pixelColors[sourceIndex] !== null && pixelColors[sourceIndex] !== undefined
+                  ? pixelColors[sourceIndex] 
+                  : '#ffffff';
+              }
             }
             
             // Make white pixels transparent when background image is loaded
@@ -2503,7 +2462,7 @@ const savedData = ${dataString};
                         console.log("Mobile: Starting drag on selected pixel", i);
                         const startRow = Math.floor(i / 200);
                         const startCol = i % 200;
-                        const dragState = { pixelIndex: i, startRow, startCol };
+                        const dragState = { pixelIndex: i, startRow, startCol, clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
                         
                         console.log("DRAG INIT DEBUG:", { 
                           clickedPixel: i, 
@@ -2567,7 +2526,7 @@ const savedData = ${dataString};
                         if (selectedPixels.includes(i)) {
                           const startRow = Math.floor(i / 200);
                           const startCol = i % 200;
-                          const dragState = { pixelIndex: i, startRow, startCol };
+                          const dragState = { pixelIndex: i, startRow, startCol, clientX: e.clientX, clientY: e.clientY };
                           
                           console.log("DRAG INIT DEBUG (Desktop):", { 
                             clickedPixel: i, 
@@ -2886,21 +2845,21 @@ const savedData = ${dataString};
               onPointerDown={(e) => {
                 // Check if clicking on a grouped pixel with movegroup tool and group is already selected
                 if (activeDrawingTool === "movegroup" && pixelGroup && activeGroup === pixelGroup.group) {
-                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
                   setIsDrawing(true);
                 } else if (activeDrawingTool === "movegroup" && selectedPixels.includes(i)) {
                   // Moving selected pixels (not in a group yet)
                   setActiveGroup("__selected__");
-                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
                   setIsDrawing(true);
                 } else if (activeDrawingTool === "select" && pixelGroup && activeGroup === pixelGroup.group) {
                   // Select tool: clicking on already selected group enables drag-to-move
-                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
                   setIsDrawing(true);
                 } else if (activeDrawingTool === "select" && selectedPixels.includes(i)) {
                   // Select tool: clicking on a selected pixel enables drag-to-move
                   setActiveGroup("__selected__");
-                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200 });
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
                   setIsDrawing(true);
                 } else if (activeDrawingTool === "select") {
                   // Mobile two-click selection mode
