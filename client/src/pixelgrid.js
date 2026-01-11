@@ -3389,8 +3389,13 @@ const savedData = ${dataString};
           overflowY: "auto"
         }}>
           
+          {/* Selection Type Label - Above Toggle */}
+          <div style={{ fontSize: "2vw", fontWeight: "bold", marginBottom: "0.5vw" }}>
+            Select
+          </div>
+          
           {/* Top Row: Group Creation + Close */}
-          <div style={{ display: "grid", gridTemplateColumns: "auto auto 1fr auto auto auto", gap: "0.5vw", alignItems: "center" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto auto auto", gap: "0.5vw", alignItems: "center" }}>
             
             {/* Selection Mode Toggle */}
             <button
@@ -3429,10 +3434,11 @@ const savedData = ${dataString};
                 }}
                 style={{
                   padding: "0.3vw 0.5vw",
-                  fontSize: "0.8vw",
+                  fontSize: "2vw",
                   border: "0.15vw solid #4CAF50",
                   textAlign: "center",
                   background: "#222",
+                  lineHeight: "4vw",
                   color: "white"
                 }}
               />
