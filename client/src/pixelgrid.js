@@ -545,13 +545,14 @@ export default function PixelGrid() {
         e.preventDefault(); // Prevent scrolling on mobile
         
         const rect = gridRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const x = e.clientX - rect.left + gridRef.current.scrollLeft;
+        const y = e.clientY - rect.top + gridRef.current.scrollTop;
         
         // Calculate which pixel we're over
-        const pixelSize = rect.width / 200; // 200 columns
-        const col = Math.floor(x / pixelSize);
-        const row = Math.floor(y / pixelSize);
+        const pixelSizeVw = displayPixelSize; // Already in vw units
+        const pixelSizePx = (pixelSizeVw * window.innerWidth) / 100;
+        const col = Math.floor(x / pixelSizePx);
+        const row = Math.floor(y / pixelSizePx);
         
         flushSync(() => {
           setGroupDragCurrent({ row, col });
@@ -569,13 +570,14 @@ export default function PixelGrid() {
         if (!touch) return;
         
         const rect = gridRef.current.getBoundingClientRect();
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
+        const x = touch.clientX - rect.left + gridRef.current.scrollLeft;
+        const y = touch.clientY - rect.top + gridRef.current.scrollTop;
         
         // Calculate which pixel we're over based on cursor position
-        const pixelSize = rect.width / 200;
-        const col = Math.floor(x / pixelSize);
-        const row = Math.floor(y / pixelSize);
+        const pixelSizeVw = displayPixelSize;
+        const pixelSizePx = (pixelSizeVw * window.innerWidth) / 100;
+        const col = Math.floor(x / pixelSizePx);
+        const row = Math.floor(y / pixelSizePx);
         
         flushSync(() => {
           setGroupDragCurrent({ row, col });
@@ -2462,7 +2464,7 @@ const savedData = ${dataString};
                         console.log("Mobile: Starting drag on selected pixel", i);
                         const startRow = Math.floor(i / 200);
                         const startCol = i % 200;
-                        const dragState = { pixelIndex: i, startRow, startCol, clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+                        const dragState = { pixelIndex: i, startRow, startCol, clientX: e.clientX, clientY: e.clientY };
                         
                         console.log("DRAG INIT DEBUG:", { 
                           clickedPixel: i, 
