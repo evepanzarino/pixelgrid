@@ -625,6 +625,21 @@ export default function PixelGrid() {
         setGroupDragCurrent(null);
         setActiveGroup(null);
       }
+      // Finalize actual grouped layer move if dragging
+      else if (state.groupDragStart !== null && state.activeGroup && state.activeGroup !== "__selected__") {
+        const currentDragPos = state.groupDragCurrent || { row: state.groupDragStart.startRow, col: state.groupDragStart.startCol };
+        const deltaRow = currentDragPos.row - state.groupDragStart.startRow;
+        const deltaCol = currentDragPos.col - state.groupDragStart.startCol;
+        
+        if (deltaRow !== 0 || deltaCol !== 0) {
+          moveGroup(state.activeGroup, deltaRow, deltaCol);
+        }
+        
+        // Clear drag state
+        setGroupDragStart(null);
+        setGroupDragCurrent(null);
+        setActiveGroup(null);
+      }
       
       setIsDrawing(false);
       
@@ -948,48 +963,35 @@ export default function PixelGrid() {
 
   // Move group pixels
   function moveGroup(groupName, deltaRow, deltaCol) {
-    const groupPixels = Object.keys(pixelGroups)
-      .filter(idx => pixelGroups[idx].group === groupName)
-      .map(idx => parseInt(idx));
+    const group = groups.find(g => g.name === groupName);
+    if (!group || !group.pixels) return;
     
-    if (groupPixels.length === 0) return;
-    
-    // Get colors and clear old positions
-    const pixelData = groupPixels.map(idx => ({
-      oldIndex: idx,
-      color: pixelColors[idx],
-      row: Math.floor(idx / 200),
-      col: idx % 200
-    }));
-    
-    setPixelColors(prev => {
-      const copy = [...prev];
-      // Clear old positions
-      pixelData.forEach(p => {
-        copy[p.oldIndex] = "#ffffff";
-      });
-      // Set new positions
-      pixelData.forEach(p => {
-        const newRow = p.row + deltaRow;
-        const newCol = p.col + deltaCol;
-        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
-          const newIndex = newRow * 200 + newCol;
-          copy[newIndex] = p.color;
-        }
-      });
-      return copy;
-    });
-    
-    // Update pixel groups mapping
-    const newPixelGroups = { ...pixelGroups };
-    pixelData.forEach(p => {
-      delete newPixelGroups[p.oldIndex];
-      const newRow = p.row + deltaRow;
-      const newCol = p.col + deltaCol;
+    const newPixels = {};
+    Object.keys(group.pixels).forEach(pixelIndex => {
+      const idx = parseInt(pixelIndex);
+      const row = Math.floor(idx / 200);
+      const col = idx % 200;
+      const newRow = row + deltaRow;
+      const newCol = col + deltaCol;
+      
       if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
         const newIndex = newRow * 200 + newCol;
-        newPixelGroups[newIndex] = pixelGroups[p.oldIndex] || { group: groupName, zIndex: 0 };
+        newPixels[newIndex] = group.pixels[pixelIndex];
       }
+    });
+    
+    const newGroups = groups.map(g => 
+      g.name === groupName ? { ...g, pixels: newPixels } : g
+    );
+    setGroups(newGroups);
+    
+    // Also update pixelGroups for backwards compatibility
+    const newPixelGroups = { ...pixelGroups };
+    Object.keys(group.pixels).forEach(pixelIndex => {
+      delete newPixelGroups[pixelIndex];
+    });
+    Object.keys(newPixels).forEach(newIndex => {
+      newPixelGroups[newIndex] = { group: groupName, zIndex: group.zIndex };
     });
     setPixelGroups(newPixelGroups);
   }
