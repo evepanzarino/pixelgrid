@@ -195,19 +195,16 @@ export default function PixelGrid() {
   });
   const backgroundInputRef = useRef(null);
   
-  const [pixelGroups, setPixelGroups] = useState(() => {
-    try {
-      const saved = localStorage.getItem("pixelgrid_pixelGroups");
-      return saved ? JSON.parse(saved) : {};
-    } catch { return {}; }
-  });
-  
+  // Groups store their own pixel data: { name, zIndex, pixels: { pixelIndex: color } }
   const [groups, setGroups] = useState(() => {
     try {
       const saved = localStorage.getItem("pixelgrid_groups");
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   });
+  
+  // Legacy pixelGroups for backwards compatibility
+  const [pixelGroups, setPixelGroups] = useState({});
   
   const [activeGroup, setActiveGroup] = useState(null); // Currently selected group for moving
   const [renameGroup, setRenameGroup] = useState(null); // Group being renamed
@@ -948,150 +945,72 @@ export default function PixelGrid() {
     if (selectedPixels.length === 0) return;
     
     const newGroups = [...groups];
-    const existingGroup = newGroups.find(g => g.name === groupName);
-    const zIndex = existingGroup ? existingGroup.zIndex : groups.length;
+    let existingGroup = newGroups.find(g => g.name === groupName);
     
     if (!existingGroup) {
-      newGroups.push({ name: groupName, zIndex });
-      setGroups(newGroups);
-    }
-    
-    const newPixelGroups = { ...pixelGroups };
-    selectedPixels.forEach(pixelIndex => {
-      // Store the current color of the pixel with the group data
-      const currentColor = pixelColors[pixelIndex] || "#ffffff";
-      
-      // Support multiple layers per pixel - store as array
-      const existingLayers = Array.isArray(newPixelGroups[pixelIndex]) 
-        ? newPixelGroups[pixelIndex] 
-        : (newPixelGroups[pixelIndex] ? [newPixelGroups[pixelIndex]] : []);
-      
-      // Remove this group from the pixel if it already exists
-      const filteredLayers = existingLayers.filter(layer => layer.group !== groupName);
-      
-      // Add the new/updated layer
-      filteredLayers.push({
-        group: groupName, 
-        zIndex,
-        color: currentColor
+      // Create new group with pixel data
+      const pixels = {};
+      selectedPixels.forEach(pixelIndex => {
+        pixels[pixelIndex] = pixelColors[pixelIndex] || "#ffffff";
       });
       
-      newPixelGroups[pixelIndex] = filteredLayers;
-    });
-    setPixelGroups(newPixelGroups);
+      existingGroup = { 
+        name: groupName, 
+        zIndex: groups.length,
+        pixels: pixels
+      };
+      newGroups.push(existingGroup);
+    } else {
+      // Add pixels to existing group
+      selectedPixels.forEach(pixelIndex => {
+        existingGroup.pixels[pixelIndex] = pixelColors[pixelIndex] || "#ffffff";
+      });
+    }
     
+    setGroups(newGroups);
     setSelectedPixels([]);
     setSelectionStart(null);
     setSelectionEnd(null);
-    // Keep bottom bar open and activate the newly created group
     setActiveGroup(groupName);
   }
 
-  // Helper function to update z-index for a specific group in pixelGroups
+  // Helper function to update z-index for a specific group
   function updateGroupZIndex(groupName, deltaZ) {
-    const newPixelGroups = {};
-    Object.keys(pixelGroups).forEach(idx => {
-      const layers = pixelGroups[idx];
-      const layerArray = Array.isArray(layers) ? layers : [layers];
-      newPixelGroups[idx] = layerArray.map(layer => 
-        layer.group === groupName 
-          ? { ...layer, zIndex: layer.zIndex + deltaZ }
-          : layer
-      );
-    });
-    setPixelGroups(newPixelGroups);
+    const newGroups = groups.map(g => 
+      g.name === groupName 
+        ? { ...g, zIndex: g.zIndex + deltaZ }
+        : g
+    );
+    setGroups(newGroups);
   }
 
   // Move group pixels
   function moveGroup(groupName, deltaRow, deltaCol) {
-    // Find all pixels that contain this group (now pixelGroups stores arrays)
-    const groupPixels = [];
-    Object.keys(pixelGroups).forEach(idx => {
-      const layers = pixelGroups[idx];
-      const layerArray = Array.isArray(layers) ? layers : [layers];
-      const hasGroup = layerArray.some(layer => layer.group === groupName);
-      if (hasGroup) {
-        groupPixels.push(parseInt(idx));
-      }
-    });
+    const group = groups.find(g => g.name === groupName);
+    if (!group || !group.pixels) return;
     
-    if (groupPixels.length === 0) return;
+    const newPixels = {};
     
-    // Get data for pixels in this group
-    const pixelData = groupPixels.map(idx => {
-      const layers = pixelGroups[idx];
-      const layerArray = Array.isArray(layers) ? layers : [layers];
-      const groupLayer = layerArray.find(layer => layer.group === groupName);
+    Object.keys(group.pixels).forEach(pixelIndex => {
+      const idx = parseInt(pixelIndex);
+      const row = Math.floor(idx / 200);
+      const col = idx % 200;
+      const newRow = row + deltaRow;
+      const newCol = col + deltaCol;
       
-      return {
-        oldIndex: idx,
-        color: groupLayer.color || pixelColors[idx],
-        row: Math.floor(idx / 200),
-        col: idx % 200,
-        zIndex: groupLayer.zIndex,
-        allLayers: layerArray  // Keep all layers at this pixel
-      };
-    });
-    
-    setPixelColors(prev => {
-      const copy = [...prev];
-      // Clear old positions (only if this layer is the visible one)
-      pixelData.forEach(p => {
-        const topLayer = p.allLayers.reduce((highest, current) => 
-          (!highest || current.zIndex > highest.zIndex) ? current : highest
-        , null);
-        if (topLayer && topLayer.group === groupName) {
-          copy[p.oldIndex] = "#ffffff";
-        }
-      });
-      // Set new positions
-      pixelData.forEach(p => {
-        const newRow = p.row + deltaRow;
-        const newCol = p.col + deltaCol;
-        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
-          const newIndex = newRow * 200 + newCol;
-          copy[newIndex] = p.color;
-        }
-      });
-      return copy;
-    });
-    
-    // Update pixel groups mapping with preserved color data
-    const newPixelGroups = { ...pixelGroups };
-    
-    // Remove this group from old positions
-    pixelData.forEach(p => {
-      const layers = Array.isArray(newPixelGroups[p.oldIndex]) 
-        ? newPixelGroups[p.oldIndex] 
-        : [newPixelGroups[p.oldIndex]];
-      const filtered = layers.filter(layer => layer.group !== groupName);
-      if (filtered.length === 0) {
-        delete newPixelGroups[p.oldIndex];
-      } else {
-        newPixelGroups[p.oldIndex] = filtered;
-      }
-    });
-    
-    // Add this group to new positions
-    pixelData.forEach(p => {
-      const newRow = p.row + deltaRow;
-      const newCol = p.col + deltaCol;
       if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
         const newIndex = newRow * 200 + newCol;
-        const existing = newPixelGroups[newIndex];
-        const existingArray = Array.isArray(existing) ? existing : (existing ? [existing] : []);
-        
-        existingArray.push({
-          group: groupName, 
-          zIndex: p.zIndex,
-          color: p.color
-        });
-        
-        newPixelGroups[newIndex] = existingArray;
+        newPixels[newIndex] = group.pixels[pixelIndex];
       }
     });
     
-    setPixelGroups(newPixelGroups);
+    const newGroups = groups.map(g => 
+      g.name === groupName 
+        ? { ...g, pixels: newPixels }
+        : g
+    );
+    
+    setGroups(newGroups);
   }
 
   // Move selected pixels (not in a group)
@@ -2826,19 +2745,14 @@ const savedData = ${dataString};
           }
           
           // LAYERS MODE - Full layer functionality
-          const pixelLayers = pixelGroups[i];
-          
-          // Find the layer with the highest z-index for this pixel
-          let pixelGroup = null;
-          if (Array.isArray(pixelLayers) && pixelLayers.length > 0) {
-            // Sort by z-index and get the highest
-            pixelGroup = pixelLayers.reduce((highest, current) => 
-              (!highest || current.zIndex > highest.zIndex) ? current : highest
-            , null);
-          } else if (pixelLayers && !Array.isArray(pixelLayers)) {
-            // Backwards compatibility - convert single object to array format
-            pixelGroup = pixelLayers;
-          }
+          // Find which group(s) this pixel belongs to
+          const pixelInGroups = groups.filter(g => g.pixels && g.pixels[i]);
+          // Get the top layer (highest z-index)
+          const pixelGroup = pixelInGroups.length > 0 
+            ? pixelInGroups.reduce((highest, current) => 
+                (!highest || current.zIndex > highest.zIndex) ? current : highest
+              , null)
+            : null;
           
           const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
           const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
@@ -2849,10 +2763,10 @@ const savedData = ${dataString};
             // Don't show individual pixel borders for select tool - overlay handles it
             // Only show active group highlight for other tools
             return activeGroup !== null && activeGroup !== "__selected__" && 
-              pixelGroup?.group === activeGroup;
+              pixelGroup?.name === activeGroup;
           })();
           const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
-          const isInActiveGroup = (pixelGroup && pixelGroup.group === activeGroup) || (activeGroup === "__selected__" && selectedPixels.includes(i));
+          const isInActiveGroup = (pixelGroup && pixelGroup.name === activeGroup) || (activeGroup === "__selected__" && selectedPixels.includes(i));
           const isMoveGroupHover = activeDrawingTool === "movegroup" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i;
           const isSelectGroupHover = activeDrawingTool === "select" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i && !isDrawing;
           
@@ -2869,7 +2783,9 @@ const savedData = ${dataString};
             if (activeGroup === "__selected__") {
               isInDragPreview = selectedPixels.includes(sourceIndex);
             } else {
-              isInDragPreview = pixelGroups[sourceIndex]?.group === activeGroup;
+              // Check if source pixel is in the active group
+              const activeGroupObj = groups.find(g => g.name === activeGroup);
+              isInDragPreview = activeGroupObj && activeGroupObj.pixels && activeGroupObj.pixels[sourceIndex];
             }
           }
           
@@ -2960,7 +2876,7 @@ const savedData = ${dataString};
           }
           
           // Get the display color (use stored color from group if pixel is in a group, otherwise use pixelColors)
-          let displayColor = pixelGroup && pixelGroup.color ? pixelGroup.color : c;
+          let displayColor = pixelGroup && pixelGroup.pixels ? pixelGroup.pixels[i] : c;
           
           // Override with drag preview color if currently dragging
           if (isInDragPreview) {
@@ -2971,8 +2887,13 @@ const savedData = ${dataString};
             const sourceRow = currentRow - deltaRow;
             const sourceCol = currentCol - deltaCol;
             const sourceIndex = sourceRow * 200 + sourceCol;
-            const sourceGroup = pixelGroups[sourceIndex];
-            displayColor = sourceGroup && sourceGroup.color ? sourceGroup.color : (pixelColors[sourceIndex] || c);
+            
+            if (activeGroup === "__selected__") {
+              displayColor = pixelColors[sourceIndex] || c;
+            } else {
+              const activeGroupObj = groups.find(g => g.name === activeGroup);
+              displayColor = activeGroupObj && activeGroupObj.pixels ? activeGroupObj.pixels[sourceIndex] : c;
+            }
           }
           
           // Make white pixels transparent when background image is loaded
@@ -2992,17 +2913,17 @@ const savedData = ${dataString};
               }}
               onPointerDown={(e) => {
                 // Check if clicking on a grouped pixel with movegroup tool and group is already selected
-                if (activeDrawingTool === "movegroup" && pixelGroup && activeGroup === pixelGroup.group) {
+                if (activeDrawingTool === "movegroup" && pixelGroup && activeGroup === pixelGroup.name) {
                   e.stopPropagation();
                   setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
                   setIsDrawing(true);
                   return;
                 }
                 
-                if (activeDrawingTool === "movegroup" && pixelGroup && activeGroup !== pixelGroup.group) {
+                if (activeDrawingTool === "movegroup" && pixelGroup && activeGroup !== pixelGroup.name) {
                   // Movegroup tool: clicking on a different grouped pixel - select that layer
                   e.stopPropagation();
-                  setActiveGroup(pixelGroup.group);
+                  setActiveGroup(pixelGroup.name);
                   setSelectedPixels([]);
                   setSelectionStart(null);
                   setSelectionEnd(null);
@@ -3018,7 +2939,7 @@ const savedData = ${dataString};
                   return;
                 }
                 
-                if (activeDrawingTool === "select" && pixelGroup && activeGroup === pixelGroup.group) {
+                if (activeDrawingTool === "select" && pixelGroup && activeGroup === pixelGroup.name) {
                   // Select tool: clicking on already selected group enables drag-to-move
                   e.stopPropagation();
                   setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
@@ -3026,10 +2947,10 @@ const savedData = ${dataString};
                   return;
                 }
                 
-                if (activeDrawingTool === "select" && pixelGroup && activeGroup !== pixelGroup.group) {
+                if (activeDrawingTool === "select" && pixelGroup && activeGroup !== pixelGroup.name) {
                   // Select tool: clicking on a different grouped pixel - select that layer instead of starting new selection
                   e.stopPropagation();
-                  setActiveGroup(pixelGroup.group);
+                  setActiveGroup(pixelGroup.name);
                   setSelectedPixels([]);
                   setSelectionStart(null);
                   setSelectionEnd(null);
