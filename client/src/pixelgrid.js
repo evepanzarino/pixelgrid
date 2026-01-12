@@ -3823,7 +3823,7 @@ const savedData = ${dataString};
                             onClick={() => moveGroup(group.name, 0, -1)}
                             style={{
                               background: "#ffffff",
-                              color: "#ffffff",
+                              color: "#000000",
                               border: "0.2vw solid #000",
                               width: "10vw",
                               height: "10vw",
@@ -3845,7 +3845,7 @@ const savedData = ${dataString};
                             onClick={() => moveGroup(group.name, -1, 0)}
                             style={{
                               background: "#ffffff",
-                              color: "#ffffff",
+                              color: "#000000",
                               border: "0.2vw solid #000",
                               width: "10vw",
                               height: "10vw",
@@ -3867,7 +3867,7 @@ const savedData = ${dataString};
                             onClick={() => moveGroup(group.name, 1, 0)}
                             style={{
                               background: "#ffffff",
-                              color: "#ffffff",
+                              color: "#000000",
                               border: "0.2vw solid #000",
                               width: "10vw",
                               height: "10vw",
@@ -3889,7 +3889,7 @@ const savedData = ${dataString};
                             onClick={() => moveGroup(group.name, 0, 1)}
                             style={{
                               background: "#ffffff",
-                              color: "#ffffff",
+                              color: "#000000",
                               border: "0.2vw solid #000",
                               width: "10vw",
                               height: "10vw",
@@ -3927,7 +3927,7 @@ const savedData = ${dataString};
                       }}
                       style={{
                         background: "#ffffff",
-                        color: "#ffffff",
+                        color: "#000000",
                         border: "0.2vw solid #000",
                         width: "10vw",
                       height: "10vw",
@@ -3961,7 +3961,7 @@ const savedData = ${dataString};
                       }}
                       style={{
                         background: "#ffffff",
-                        color: "#ffffff",
+                        color: "#000000",
                         border: "0.2vw solid #000",
                         width: "10vw",
                       height: "10vw",
@@ -4001,7 +4001,7 @@ const savedData = ${dataString};
                       }}
                       style={{
                         background: "#ffffff",
-                        color: "#ffffff",
+                        color: "#000000",
                         border: "0.2vw solid #000",
                         width: "10vw",
                       height: "10vw",
