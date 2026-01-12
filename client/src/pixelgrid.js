@@ -4436,69 +4436,6 @@ const savedData = ${dataString};
             </button>
           </div>
           
-          {/* Active Layer Editing Section */}
-          {activeGroup && (
-            <>
-              <div style={{ fontSize: "2vw", fontWeight: "bold", color: "#000000", marginBottom: "0" }}>
-                Rename
-              </div>
-              <div style={{ display: "flex", gap: "0", alignItems: "center", marginBottom: "0" }}>
-                <input
-                  type="text"
-                  value={groups.find(g => g.name === activeGroup)?.name || activeGroup}
-                  onChange={(e) => {
-                    if (e.target.value.trim()) {
-                      const newGroups = groups.map(g => 
-                        g.name === activeGroup ? { ...g, name: e.target.value.trim() } : g
-                      );
-                      setGroups(newGroups);
-                      
-                      const newPixelGroups = {};
-                      Object.keys(pixelGroups).forEach(idx => {
-                        const pg = pixelGroups[idx];
-                        newPixelGroups[idx] = pg.group === activeGroup 
-                          ? { ...pg, group: e.target.value.trim() }
-                          : pg;
-                      });
-                      setPixelGroups(newPixelGroups);
-                      setActiveGroup(e.target.value.trim());
-                    }
-                  }}
-                  placeholder="Rename layer"
-                  style={{
-                    padding: "0",
-                    fontSize: "1.5vw",
-                    border: "0.2vw solid #ffffff",
-                    textAlign: "center",
-                    background: "#ffffff",
-                    color: "#ffffff",
-                    flex: 1,
-                    lineHeight: "10vw"
-                  }}
-                />
-                <button
-                  onClick={() => setActiveGroup(null)}
-                  style={{
-                    background: "#666",
-                    color: "#ffffff",
-                    border: "0.2vw solid #000",
-                    cursor: "pointer",
-                    fontSize: "1.3vw",
-                    fontWeight: "bold",
-                    width: "10vw",
-                    height: "10vw",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "0"
-                  }}
-                >
-                  Done
-                </button>
-              </div>
-            </>
-          )}
-          
               <div style={{
                 display: "grid",
                 gridTemplateColumns: "auto 1fr auto auto auto",
