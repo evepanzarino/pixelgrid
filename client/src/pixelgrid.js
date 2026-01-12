@@ -210,6 +210,8 @@ export default function PixelGrid() {
   });
   
   const [activeGroup, setActiveGroup] = useState(null); // Currently selected group for moving
+  const [renameGroup, setRenameGroup] = useState(null); // Group being renamed
+  const [renameValue, setRenameValue] = useState(""); // Temporary value while renaming
   const [groupDragStart, setGroupDragStart] = useState(null); // { pixelIndex, startRow, startCol }
   const [groupDragCurrent, setGroupDragCurrent] = useState(null); // Current hover position during drag
   const [renderTrigger, setRenderTrigger] = useState(0); // Force re-renders by incrementing
@@ -3789,30 +3791,108 @@ const savedData = ${dataString};
                     
                     {/* Layer Name */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "0", flex: 1 }}>
-                      <div
-                        onClick={() => {
-                          setActiveGroup(activeGroup === group.name ? null : group.name);
-                          setSelectedPixels([]); // Clear green selection preview
-                          setSelectionStart(null); // Clear selection state
-                          setSelectionEnd(null);
-                        }}
-                        style={{
-                          fontSize: "3vw",
-                          padding: "0",
-                          background: "#000000",
-                          color: "#ffffff",
-                          borderRadius: "0",
-                          cursor: "pointer",
-                          border: "0.15vw solid #ffffff",
-                          fontWeight: activeGroup === group.name ? "bold" : "normal",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          width: "15vw",
-                          lineHeight: "10vw"
-                        }}
-                      >
-                        {group.name}
+                      <div style={{ position: "relative", display: "flex" }}>
+                        <div
+                          onClick={() => {
+                            setActiveGroup(activeGroup === group.name ? null : group.name);
+                            setSelectedPixels([]); // Clear green selection preview
+                            setSelectionStart(null); // Clear selection state
+                            setSelectionEnd(null);
+                          }}
+                          style={{
+                            fontSize: "3vw",
+                            padding: "0",
+                            background: "#000000",
+                            color: "#ffffff",
+                            borderRadius: "0",
+                            cursor: "pointer",
+                            border: "0.15vw solid #ffffff",
+                            fontWeight: activeGroup === group.name ? "bold" : "normal",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            width: "15vw",
+                            lineHeight: "10vw",
+                            height: "10vw"
+                          }}
+                        >
+                          {group.name}
+                        </div>
+                        
+                        {/* Edit/Confirm Button */}
+                        <button
+                          onClick={() => {
+                            if (renameGroup === group.name) {
+                              // Confirm rename
+                              if (renameValue.trim()) {
+                                const newGroups = groups.map(g => 
+                                  g.name === group.name ? { ...g, name: renameValue.trim() } : g
+                                );
+                                setGroups(newGroups);
+                                
+                                const newPixelGroups = {};
+                                Object.keys(pixelGroups).forEach(idx => {
+                                  const pg = pixelGroups[idx];
+                                  newPixelGroups[idx] = pg.group === group.name 
+                                    ? { ...pg, group: renameValue.trim() }
+                                    : pg;
+                                });
+                                setPixelGroups(newPixelGroups);
+                                
+                                if (activeGroup === group.name) {
+                                  setActiveGroup(renameValue.trim());
+                                }
+                              }
+                              setRenameGroup(null);
+                              setRenameValue("");
+                            } else {
+                              // Start rename
+                              setRenameGroup(group.name);
+                              setRenameValue(group.name);
+                            }
+                          }}
+                          style={{
+                            width: "5vw",
+                            height: "10vw",
+                            background: "#000000",
+                            color: "#ffffff",
+                            border: "0.15vw solid #ffffff",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "2.5vw",
+                            fontWeight: "bold",
+                            borderRadius: "0"
+                          }}
+                        >
+                          {renameGroup === group.name ? "✓" : "✎"}
+                        </button>
+                        
+                        {/* Rename Overlay */}
+                        {renameGroup === group.name && (
+                          <input
+                            type="text"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            autoFocus
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "15vw",
+                              height: "10vw",
+                              fontSize: "3vw",
+                              border: "0.15vw solid #000000",
+                              background: "#ffffff",
+                              color: "#000000",
+                              textAlign: "center",
+                              lineHeight: "10vw",
+                              padding: "0",
+                              zIndex: 1000
+                            }}
+                          />
+                        )}
                       </div>
                       
                       {/* Directional Movement Buttons - Show when movegroup tool is active and this layer is active */}
@@ -4514,30 +4594,108 @@ const savedData = ${dataString};
                     
                     {/* Layer Name */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "0", flex: 1 }}>
-                      <div
-                        onClick={() => {
-                          setActiveGroup(activeGroup === group.name ? null : group.name);
-                          setSelectedPixels([]); // Clear green selection preview
-                          setSelectionStart(null); // Clear selection state
-                          setSelectionEnd(null);
-                        }}
-                        style={{
-                          fontSize: "3vw",
-                          padding: "0",
-                          background: activeGroup === group.name ? "#fefefe" : "#000000",
-                          borderRadius: "0",
-                          color: activeGroup === group.name ? "#000000" : "#ffffff",
-                          cursor: "pointer",
-                          border: activeGroup === group.name ? "0.15vw solid #000000" : "0.15vw solid #fefefe",
-                          fontWeight: activeGroup === group.name ? "bold" : "normal",
-                          overflow: "hidden",
-                          lineHeight: "10vw",
-                          textOverflow: "ellipsis",
-
-                          whiteSpace: "nowrap"
-                        }}
-                      >
-                        {group.name}
+                      <div style={{ position: "relative", display: "flex" }}>
+                        <div
+                          onClick={() => {
+                            setActiveGroup(activeGroup === group.name ? null : group.name);
+                            setSelectedPixels([]); // Clear green selection preview
+                            setSelectionStart(null); // Clear selection state
+                            setSelectionEnd(null);
+                          }}
+                          style={{
+                            fontSize: "3vw",
+                            padding: "0",
+                            background: activeGroup === group.name ? "#fefefe" : "#000000",
+                            borderRadius: "0",
+                            color: activeGroup === group.name ? "#000000" : "#ffffff",
+                            cursor: "pointer",
+                            border: activeGroup === group.name ? "0.15vw solid #000000" : "0.15vw solid #fefefe",
+                            fontWeight: activeGroup === group.name ? "bold" : "normal",
+                            overflow: "hidden",
+                            lineHeight: "10vw",
+                            height: "10vw",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            flex: 1
+                          }}
+                        >
+                          {group.name}
+                        </div>
+                        
+                        {/* Edit/Confirm Button */}
+                        <button
+                          onClick={() => {
+                            if (renameGroup === group.name) {
+                              // Confirm rename
+                              if (renameValue.trim()) {
+                                const newGroups = groups.map(g => 
+                                  g.name === group.name ? { ...g, name: renameValue.trim() } : g
+                                );
+                                setGroups(newGroups);
+                                
+                                const newPixelGroups = {};
+                                Object.keys(pixelGroups).forEach(idx => {
+                                  const pg = pixelGroups[idx];
+                                  newPixelGroups[idx] = pg.group === group.name 
+                                    ? { ...pg, group: renameValue.trim() }
+                                    : pg;
+                                });
+                                setPixelGroups(newPixelGroups);
+                                
+                                if (activeGroup === group.name) {
+                                  setActiveGroup(renameValue.trim());
+                                }
+                              }
+                              setRenameGroup(null);
+                              setRenameValue("");
+                            } else {
+                              // Start rename
+                              setRenameGroup(group.name);
+                              setRenameValue(group.name);
+                            }
+                          }}
+                          style={{
+                            width: "5vw",
+                            height: "10vw",
+                            background: "#000000",
+                            color: "#ffffff",
+                            border: "0.15vw solid #ffffff",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "2.5vw",
+                            fontWeight: "bold",
+                            borderRadius: "0"
+                          }}
+                        >
+                          {renameGroup === group.name ? "✓" : "✎"}
+                        </button>
+                        
+                        {/* Rename Overlay */}
+                        {renameGroup === group.name && (
+                          <input
+                            type="text"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            autoFocus
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "calc(100% - 5vw)",
+                              height: "10vw",
+                              fontSize: "3vw",
+                              border: "0.15vw solid #000000",
+                              background: "#ffffff",
+                              color: "#000000",
+                              textAlign: "center",
+                              lineHeight: "10vw",
+                              padding: "0",
+                              zIndex: 1000
+                            }}
+                          />
+                        )}
                       </div>
                       
                       {/* Directional Movement Buttons - Show when movegroup tool is active and this layer is active */}
