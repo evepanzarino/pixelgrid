@@ -2907,6 +2907,12 @@ const savedData = ${dataString};
                 if (activeDrawingTool === "movegroup" && pixelGroup && activeGroup === pixelGroup.group) {
                   setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
                   setIsDrawing(true);
+                } else if (activeDrawingTool === "movegroup" && pixelGroup && activeGroup !== pixelGroup.group) {
+                  // Movegroup tool: clicking on a different grouped pixel - select that layer
+                  setActiveGroup(pixelGroup.group);
+                  setSelectedPixels([]);
+                  setSelectionStart(null);
+                  setSelectionEnd(null);
                 } else if (activeDrawingTool === "movegroup" && selectedPixels.includes(i)) {
                   // Moving selected pixels (not in a group yet)
                   setActiveGroup("__selected__");
@@ -2916,6 +2922,12 @@ const savedData = ${dataString};
                   // Select tool: clicking on already selected group enables drag-to-move
                   setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
                   setIsDrawing(true);
+                } else if (activeDrawingTool === "select" && pixelGroup && activeGroup !== pixelGroup.group) {
+                  // Select tool: clicking on a different grouped pixel - select that layer instead of starting new selection
+                  setActiveGroup(pixelGroup.group);
+                  setSelectedPixels([]);
+                  setSelectionStart(null);
+                  setSelectionEnd(null);
                 } else if (activeDrawingTool === "select" && selectedPixels.includes(i)) {
                   // Select tool: clicking on a selected pixel enables drag-to-move
                   setActiveGroup("__selected__");
