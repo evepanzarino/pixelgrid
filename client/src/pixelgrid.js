@@ -3580,7 +3580,7 @@ const savedData = ${dataString};
                     border: "0.2vw solid #000000",
                     textAlign: "center",
                     background: "#ffffff",
-                    color: "#ffffff",
+                    color: "#000000",
                     flex: 1,
                     lineHeight: "10vw"
                   }}
@@ -3595,7 +3595,7 @@ const savedData = ${dataString};
                   }}
                   style={{
                     background: "#ffffff",
-                    color: "#ffffff",
+                    color: "#000000",
                     border: "0.2vw solid #000",
                     cursor: "pointer",
                     fontSize: "1.5vw",
@@ -4365,7 +4365,7 @@ const savedData = ${dataString};
                 border: "0.2vw solid #000000",
                 textAlign: "center",
                 background: "#ffffff",
-                color: "#ffffff",
+                color: "#000000",
                 flex: 1,
                 lineHeight: "10vw"
               }}
@@ -4380,7 +4380,7 @@ const savedData = ${dataString};
               }}
               style={{
                 background: "#ffffff",
-                color: "#ffffff",
+                color: "#000000",
                 border: "0.2vw solid #000",
                 cursor: "pointer",
                 fontSize: "1.5vw",
