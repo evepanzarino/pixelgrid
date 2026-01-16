@@ -168,9 +168,7 @@ export default function PixelGrid() {
   const [hoveredPixel, setHoveredPixel] = useState(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
-  const [verticalScrollPosition, setVerticalScrollPosition] = useState(0);
-  const [isDraggingVerticalSlider, setIsDraggingVerticalSlider] = useState(false);
-  const [activeDrawingTool, setActiveDrawingTool] = useState("movegroup"); // "pencil", "line", "curve", "bucket", "select", "movegroup"
+  const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil", "line", "curve", "bucket", "select", "movegroup"
   const [lineStartPixel, setLineStartPixel] = useState(null); // For line/curve tool: first click position
   const [lineEndPixel, setLineEndPixel] = useState(null); // For line tool apply/preview
   const [curveEndPixel, setCurveEndPixel] = useState(null); // For curve tool adjustment mode
@@ -205,36 +203,13 @@ export default function PixelGrid() {
   const [groups, setGroups] = useState(() => {
     try {
       const saved = localStorage.getItem("pixelgrid_groups");
-      const savedGroups = saved ? JSON.parse(saved) : [];
-      
-      // Ensure background layer exists
-      const hasBackground = savedGroups.some(g => g.name === "Background");
-      if (!hasBackground) {
-        // Create background layer with all current non-white pixels
-        const backgroundPixels = {};
-        const savedColors = localStorage.getItem("pixelgrid_pixelColors");
-        if (savedColors) {
-          const colors = JSON.parse(savedColors);
-          colors.forEach((color, index) => {
-            if (color && color !== null) {
-              backgroundPixels[index] = color;
-            }
-          });
-        }
-        savedGroups.unshift({ name: "Background", zIndex: -1, pixels: backgroundPixels, locked: true });
-      }
-      
-      return savedGroups;
-    } catch { 
-      // Create default background layer
-      return [{ name: "Background", zIndex: -1, pixels: {}, locked: true }]; 
-    }
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
   
   const [activeGroup, setActiveGroup] = useState(null); // Currently selected group for moving
   const [groupDragStart, setGroupDragStart] = useState(null); // { pixelIndex, startRow, startCol }
   const [groupDragCurrent, setGroupDragCurrent] = useState(null); // Current hover position during drag
-  const [selectionTransform, setSelectionTransform] = useState({ deltaRow: 0, deltaCol: 0, active: false }); // Dynamic CSS transform for selection movement
   const [renderTrigger, setRenderTrigger] = useState(0); // Force re-renders by incrementing
   
   // Layer drag-and-drop state
@@ -303,8 +278,7 @@ export default function PixelGrid() {
   
   // Load tool when drawing tool changes
   useEffect(() => {
-    const toolsNeedingLoad = ['line', 'curve', 'bucket', 'select'];
-    if (activeDrawingTool && toolsNeedingLoad.includes(activeDrawingTool)) {
+    if (activeDrawingTool && activeDrawingTool !== 'pencil') {
       loadTool(activeDrawingTool);
     }
   }, [activeDrawingTool, loadTool]);
@@ -353,52 +327,6 @@ export default function PixelGrid() {
       window.removeEventListener('pointerup', handlePointerUp, { capture: true });
     };
   }, [isDraggingSlider]);
-
-  // Handle vertical scrollbar slider dragging with global pointer move
-  useEffect(() => {
-    if (!isDraggingVerticalSlider) return;
-
-    const handlePointerMove = (e) => {
-      const scrollbarTrack = document.querySelector('[data-mobile-layers-scrollbar-track="true"]');
-      if (!scrollbarTrack) return;
-      
-      const scrollContainer = scrollbarTrack.previousSibling;
-      if (!scrollContainer) return;
-      
-      const rect = scrollbarTrack.getBoundingClientRect();
-      const y = e.clientY - rect.top;
-      const percent = Math.max(0, Math.min(1, y / rect.height));
-      const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-      const newScrollTop = percent * maxScroll;
-      scrollContainer.scrollTop = newScrollTop;
-      setVerticalScrollPosition(newScrollTop);
-    };
-
-    const handlePointerUp = () => {
-      setIsDraggingVerticalSlider(false);
-    };
-
-    window.addEventListener('pointermove', handlePointerMove, { passive: false, capture: true });
-    window.addEventListener('pointerup', handlePointerUp, { capture: true });
-
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove, { capture: true });
-      window.removeEventListener('pointerup', handlePointerUp, { capture: true });
-    };
-  }, [isDraggingVerticalSlider]);
-
-  // Sync vertical scrollbar thumb position with scroll events
-  useEffect(() => {
-    const scrollContainer = document.querySelector('[data-mobile-layers-scroll-container="true"]');
-    if (!scrollContainer) return;
-
-    const handleScroll = () => {
-      setVerticalScrollPosition(scrollContainer.scrollTop);
-    };
-
-    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
-    return () => scrollContainer.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Handle touch drawing on mobile - track finger position to find pixel under touch
   useEffect(() => {
@@ -502,7 +430,7 @@ export default function PixelGrid() {
         const parsed = JSON.parse(saved);
         if (parsed.length === totalPixels) return parsed;
         // If size changed, extend or trim array
-        const newArray = Array(totalPixels).fill(null);
+        const newArray = Array(totalPixels).fill("#ffffff");
         const copyLength = Math.min(parsed.length, totalPixels);
         for (let i = 0; i < copyLength; i++) {
           newArray[i] = parsed[i];
@@ -510,7 +438,7 @@ export default function PixelGrid() {
         return newArray;
       }
     } catch { }
-    return Array(totalPixels).fill(null);
+    return Array(totalPixels).fill("#ffffff");
   });
 
   const fileInputRef = useRef(null);
@@ -591,39 +519,11 @@ export default function PixelGrid() {
     }
   }, [backgroundOpacity]);
   
-  // Save groups (layers) to localStorage - ONLY when explicitly called, not automatically
-  // This prevents moves from persisting until user draws with that layer selected
-  const saveGroupsToLocalStorage = useCallback(() => {
-    try {
-      // Create frozen copies of layer data to prevent modification
-      const frozenGroups = groups.map(g => {
-        // Skip __selected__ temporary layer
-        if (g.name === "__selected__") return null;
-        
-        // Create frozen copy of pixels object
-        const frozenPixels = Object.freeze({ ...g.pixels });
-        
-        return Object.freeze({
-          name: g.name,
-          zIndex: g.zIndex,
-          pixels: frozenPixels,
-          locked: g.locked,
-          originalSelectionArea: g.originalSelectionArea || []
-        });
-      }).filter(g => g !== null);
-      
-      localStorage.setItem("pixelgrid_groups", JSON.stringify(frozenGroups));
-      console.log("Saved groups to localStorage");
-    } catch (error) {
-      console.error("Failed to save groups to localStorage:", error);
-    }
-  }, [groups]);
-  
   // Update pixel array when totalPixels changes, preserving existing data
   useEffect(() => {
     setPixelColors((prev) => {
       if (prev.length === totalPixels) return prev;
-      const newArray = Array(totalPixels).fill(null);
+      const newArray = Array(totalPixels).fill("#ffffff");
       // Copy over existing colors
       const copyLength = Math.min(prev.length, totalPixels);
       for (let i = 0; i < copyLength; i++) {
@@ -703,24 +603,7 @@ export default function PixelGrid() {
         setGroupDragCurrent(null);
         setActiveGroup(null);
       }
-      // Finalize actual grouped layer move if dragging
-      else if (state.groupDragStart !== null && state.activeGroup && state.activeGroup !== "__selected__") {
-        const currentDragPos = state.groupDragCurrent || { row: state.groupDragStart.startRow, col: state.groupDragStart.startCol };
-        const deltaRow = currentDragPos.row - state.groupDragStart.startRow;
-        const deltaCol = currentDragPos.col - state.groupDragStart.startCol;
-        
-        if (deltaRow !== 0 || deltaCol !== 0) {
-          moveGroup(state.activeGroup, deltaRow, deltaCol);
-        }
-        
-        // Clear drag state
-        setGroupDragStart(null);
-        setGroupDragCurrent(null);
-        setActiveGroup(null);
-      }
       
-      // Always clear preview and drag state when pointer up
-      setSelectionTransform({ deltaRow: 0, deltaCol: 0, active: false });
       setIsDrawing(false);
       
       // Don't clear hoveredPixel if we're in line/curve mode with points selected
@@ -765,77 +648,14 @@ export default function PixelGrid() {
   }, [activeDrawingTool]);
 
   function paintPixel(e, index) {
-    // Only allow painting with drawing tools (pencil, bucket, line, curve)
-    const isDrawingTool = ["pencil", "bucket", "line", "curve"].includes(activeDrawingTool);
-    if (!isDrawingTool) {
-      return; // Don't paint if using select/movegroup tools
-    }
-    
-    // If there's an active group, paint into the layer's pixels
-    if (activeGroup && activeGroup !== "__selected__") {
-      // Check if pixel is in the active layer - restrict drawing to layer pixels only
-      const pixelGroup = pixelGroups[index];
-      if (pixelGroup && pixelGroup.group !== activeGroup) {
-        return; // Don't draw on pixels from other layers
-      }
-      
-      setGroups(prevGroups => {
-        const updated = prevGroups.map(g => {
-          if (g.name === activeGroup) {
-            const newPixels = { ...g.pixels };
-            newPixels[index] = color;
-            return Object.freeze({ ...g, pixels: Object.freeze(newPixels) });
-          }
-          return g;
-        });
-        
-        // Save to localStorage immediately
-        try {
-          const frozenGroups = updated.filter(g => g.name !== "__selected__").map(g => ({
-            name: g.name,
-            zIndex: g.zIndex,
-            pixels: { ...g.pixels },
-            locked: g.locked
-          }));
-          localStorage.setItem("pixelgrid_groups", JSON.stringify(frozenGroups));
-        } catch (error) {
-          console.error("Failed to save to localStorage:", error);
-        }
-        
-        return updated;
-      });
-      
-      // Also update pixelGroups to track this pixel belongs to the layer
-      setPixelGroups(prevPixelGroups => {
-        const group = groups.find(g => g.name === activeGroup);
-        if (group) {
-          return {
-            ...prevPixelGroups,
-            [index]: { group: activeGroup, zIndex: group.zIndex }
-          };
-        }
-        return prevPixelGroups;
-      });
-      
-      // Clear from base pixelColors if it was there
-      setPixelColors((prev) => {
-        if (prev[index] !== null) {
-          const copy = [...prev];
-          copy[index] = null;
-          return copy;
-        }
-        return prev;
-      });
-    } else {
-      // No active layer - paint to base pixelColors (drawing mode)
-      setPixelColors((prev) => {
-        // Skip if color is already the same
-        if (prev[index] === color) return prev;
-        const copy = [...prev];
-        copy[index] = color;
-        return copy;
-      });
-    }
+    // Always immediate update for responsive feel
+    setPixelColors((prev) => {
+      // Skip if color is already the same
+      if (prev[index] === color) return prev;
+      const copy = [...prev];
+      copy[index] = color;
+      return copy;
+    });
   }
 
   function normalizeHexInput(raw) {
@@ -857,22 +677,6 @@ export default function PixelGrid() {
 
   function getContrastBorderColor(bgColor) {
     return isLightColor(bgColor) ? "#000000" : "#ffffff";
-  }
-
-  // Get the display color for a pixel based on highest z-index
-  function getPixelDisplayColor(pixelIndex) {
-    // Check if pixel is in any group using pixelGroups mapping
-    const pixelGroup = pixelGroups[pixelIndex];
-    if (pixelGroup) {
-      // Find the group and get its pixel color
-      const group = groups.find(g => g.name === pixelGroup.group);
-      if (group && group.pixels && group.pixels[pixelIndex]) {
-        // Return a copy of the color, not a reference (prevents modification)
-        return String(group.pixels[pixelIndex]);
-      }
-    }
-    // Fall back to base pixelColors
-    return pixelColors[pixelIndex] || null;
   }
 
   function getLinePixels(start, end) {
@@ -956,50 +760,13 @@ export default function PixelGrid() {
 
   function drawLine(startIndex, endIndex) {
     const linePixels = getLinePixels(startIndex, endIndex);
-    
-    if (activeGroup && activeGroup !== "__selected__") {
-      // Drawing on a layer - only draw on pixels that belong to this layer
-      setGroups(prevGroups => {
-        const updated = prevGroups.map(g => {
-          if (g.name === activeGroup) {
-            const newPixels = { ...g.pixels };
-            linePixels.forEach(i => {
-              // Only draw if pixel is in this layer or unassigned
-              const pixelGroup = pixelGroups[i];
-              if (!pixelGroup || pixelGroup.group === activeGroup) {
-                newPixels[i] = color;
-              }
-            });
-            return Object.freeze({ ...g, pixels: Object.freeze(newPixels) });
-          }
-          return g;
-        });
-        
-        // Save to localStorage
-        try {
-          const frozenGroups = updated.filter(g => g.name !== "__selected__").map(g => ({
-            name: g.name,
-            zIndex: g.zIndex,
-            pixels: { ...g.pixels },
-            locked: g.locked
-          }));
-          localStorage.setItem("pixelgrid_groups", JSON.stringify(frozenGroups));
-        } catch (error) {
-          console.error("Failed to save to localStorage:", error);
-        }
-        
-        return updated;
+    setPixelColors((prev) => {
+      const copy = [...prev];
+      linePixels.forEach(i => {
+        copy[i] = color;
       });
-    } else {
-      // No active layer - draw to base pixelColors
-      setPixelColors((prev) => {
-        const copy = [...prev];
-        linePixels.forEach(i => {
-          copy[i] = color;
-        });
-        return copy;
-      });
-    }
+      return copy;
+    });
   }
 
   // Build regions map: which region does each pixel belong to
@@ -1047,106 +814,28 @@ export default function PixelGrid() {
   }
 
   function paintBucket(startIndex) {
-    if (activeGroup && activeGroup !== "__selected__") {
-      // Fill on a layer - only fill pixels that belong to this layer
-      setGroups(prevGroups => {
-        const activeLayerGroup = prevGroups.find(g => g.name === activeGroup);
-        if (!activeLayerGroup) return prevGroups;
-        
-        const targetColor = activeLayerGroup.pixels[startIndex];
-        const fillColor = color;
-        
-        // Don't fill if already the same color
-        if (targetColor === fillColor) return prevGroups;
-        
-        const layerPixelsArray = Object.keys(activeLayerGroup.pixels).map(idx => parseInt(idx));
-        const regionMap = {};
-        let regionId = 0;
-        
-        // Build regions only for this layer's pixels
-        layerPixelsArray.forEach(pixelIdx => {
-          if (regionMap[pixelIdx] !== undefined) return;
-          
-          const pixelColor = activeLayerGroup.pixels[pixelIdx];
-          const queue = [pixelIdx];
-          regionMap[pixelIdx] = regionId;
-          
-          while (queue.length > 0) {
-            const idx = queue.shift();
-            const row = Math.floor(idx / 200);
-            const col = idx % 200;
-            
-            const neighbors = [
-              idx - 200, idx + 200, idx - 1, idx + 1
-            ];
-            
-            neighbors.forEach(nIdx => {
-              if (regionMap[nIdx] === undefined && activeLayerGroup.pixels[nIdx] === pixelColor) {
-                regionMap[nIdx] = regionId;
-                queue.push(nIdx);
-              }
-            });
-          }
-          regionId++;
-        });
-        
-        const targetRegion = regionMap[startIndex];
-        const newPixels = { ...activeLayerGroup.pixels };
-        
-        // Fill all pixels in the same region
-        Object.keys(regionMap).forEach(idx => {
-          if (regionMap[idx] === targetRegion) {
-            newPixels[idx] = fillColor;
-          }
-        });
-        
-        const updated = prevGroups.map(g => {
-          if (g.name === activeGroup) {
-            return Object.freeze({ ...g, pixels: Object.freeze(newPixels) });
-          }
-          return g;
-        });
-        
-        // Save to localStorage
-        try {
-          const frozenGroups = updated.filter(g => g.name !== "__selected__").map(g => ({
-            name: g.name,
-            zIndex: g.zIndex,
-            pixels: { ...g.pixels },
-            locked: g.locked
-          }));
-          localStorage.setItem("pixelgrid_groups", JSON.stringify(frozenGroups));
-        } catch (error) {
-          console.error("Failed to save to localStorage:", error);
+    setPixelColors((prev) => {
+      const targetColor = prev[startIndex];
+      const fillColor = color;
+      
+      // Don't fill if already the same color
+      if (targetColor === fillColor) return prev;
+      
+      const copy = [...prev];
+      
+      // Build region map to identify connected regions
+      const regionMap = buildRegionsMap(copy);
+      const targetRegion = regionMap[startIndex];
+      
+      // Fill all pixels in the same region
+      for (let i = 0; i < copy.length; i++) {
+        if (regionMap[i] === targetRegion) {
+          copy[i] = fillColor;
         }
-        
-        return updated;
-      });
-    } else {
-      // No active layer - fill base pixelColors
-      setPixelColors((prev) => {
-        const targetColor = prev[startIndex];
-        const fillColor = color;
-        
-        // Don't fill if already the same color
-        if (targetColor === fillColor) return prev;
-        
-        const copy = [...prev];
-        
-        // Build region map to identify connected regions
-        const regionMap = buildRegionsMap(copy);
-        const targetRegion = regionMap[startIndex];
-        
-        // Fill all pixels in the same region
-        for (let i = 0; i < copy.length; i++) {
-          if (regionMap[i] === targetRegion) {
-            copy[i] = fillColor;
-          }
-        }
-        
-        return copy;
-      });
-    }
+      }
+      
+      return copy;
+    });
   }
 
   // Get all pixels in selection rectangle (for preview)
@@ -1187,41 +876,19 @@ export default function PixelGrid() {
     const maxCol = Math.max(startCol, endCol);
     
     const pixels = [];
-    
-    // Get __selected__ layer if it exists to check originalPixelIndices
-    const selectedLayer = groups.find(g => g.name === "__selected__");
-    
     for (let row = minRow; row <= maxRow; row++) {
       for (let col = minCol; col <= maxCol; col++) {
         const pixelIndex = row * 200 + col;
         
-        // If __selected__ is active, only select pixels from originalPixelIndices
-        if (activeGroup === "__selected__") {
-          // Check if pixel is in the originalPixelIndices array (not pixelGroups)
-          // because __selected__ pixels are NOT mapped in pixelGroups during preview
-          if (selectedLayer && selectedLayer.originalPixelIndices && 
-              selectedLayer.originalPixelIndices.includes(pixelIndex)) {
-            pixels.push(pixelIndex);
-          }
-        }
-        // If a regular layer is selected, only select pixels from that layer
-        else if (activeGroup) {
-          // Only include pixels that belong to the active layer
-          if (pixelGroups[pixelIndex]?.group === activeGroup) {
-            pixels.push(pixelIndex);
-          }
+        if (selectAllPixels) {
+          // Select all pixels in rectangle, regardless of color
+          pixels.push(pixelIndex);
         } else {
-          // No layer selected - select from background layer
-          if (selectAllPixels) {
-            // Select all pixels in rectangle that are NOT in any layer
-            if (!pixelGroups[pixelIndex]) {
-              pixels.push(pixelIndex);
-            }
-          } else {
-            // Only select background pixels that have a color and are not in any layer
-            if (pixelColors[pixelIndex] && !pixelGroups[pixelIndex]) {
-              pixels.push(pixelIndex);
-            }
+          // Only select pixels that:
+          // 1. Are not null/empty (have been painted with a color)
+          // 2. OR are already part of a group (even if empty)
+          if ((pixelColors[pixelIndex] !== null && pixelColors[pixelIndex] !== "#ffffff") || pixelGroups[pixelIndex]) {
+            pixels.push(pixelIndex);
           }
         }
       }
@@ -1235,49 +902,11 @@ export default function PixelGrid() {
     
     const newGroups = [...groups];
     const existingGroup = newGroups.find(g => g.name === groupName);
-    // Exclude locked layers from z-index calculation
-    const normalLayers = groups.filter(g => !g.locked);
-    const zIndex = existingGroup ? existingGroup.zIndex : normalLayers.length;
-    
-    // Store pixel colors in the layer's pixels property
-    const layerPixels = {};
-    selectedPixels.forEach(pixelIndex => {
-      layerPixels[pixelIndex] = pixelColors[pixelIndex] || null;
-    });
-    
-    // Store the original selection area for this layer
-    const originalSelectionArea = [...selectedPixels];
+    const zIndex = existingGroup ? existingGroup.zIndex : groups.length;
     
     if (!existingGroup) {
-      newGroups.push({ 
-        name: groupName, 
-        zIndex, 
-        pixels: layerPixels,
-        originalSelectionArea: originalSelectionArea // Store original selection
-      });
+      newGroups.push({ name: groupName, zIndex });
       setGroups(newGroups);
-      // Select the newly created layer and switch to move tool
-      setActiveGroup(groupName);
-      setActiveDrawingTool("movegroup");
-    } else {
-      // Merge pixels into existing group
-      setGroups(prevGroups => {
-        return prevGroups.map(g => {
-          if (g.name === groupName) {
-            // Merge selection areas if merging pixels
-            const mergedSelection = [...new Set([...(g.originalSelectionArea || []), ...originalSelectionArea])];
-            return { 
-              ...g, 
-              pixels: { ...g.pixels, ...layerPixels },
-              originalSelectionArea: mergedSelection
-            };
-          }
-          return g;
-        });
-      });
-      // Select the layer and switch to move tool even when merging
-      setActiveGroup(groupName);
-      setActiveDrawingTool("movegroup");
     }
     
     const newPixelGroups = { ...pixelGroups };
@@ -1286,15 +915,6 @@ export default function PixelGrid() {
     });
     setPixelGroups(newPixelGroups);
     
-    // Clear pixels from base pixelColors array (they now belong to the layer)
-    setPixelColors(prevColors => {
-      const newColors = [...prevColors];
-      selectedPixels.forEach(pixelIndex => {
-        newColors[pixelIndex] = null;
-      });
-      return newColors;
-    });
-    
     setSelectedPixels([]);
     setSelectionStart(null);
     setSelectionEnd(null);
@@ -1302,947 +922,52 @@ export default function PixelGrid() {
     setActiveGroup(groupName);
   }
 
-  // Calculate the bounding box of a selection
-  function calculateSelectionBounds(pixelIndices) {
-    if (pixelIndices.length === 0) return null;
-    
-    let minRow = Infinity, maxRow = -Infinity;
-    let minCol = Infinity, maxCol = -Infinity;
-    
-    pixelIndices.forEach(idx => {
-      const row = Math.floor(idx / 200);
-      const col = idx % 200;
-      minRow = Math.min(minRow, row);
-      maxRow = Math.max(maxRow, row);
-      minCol = Math.min(minCol, col);
-      maxCol = Math.max(maxCol, col);
-    });
-    
-    return {
-      minRow, maxRow, minCol, maxCol,
-      width: maxCol - minCol + 1,
-      height: maxRow - minRow + 1
-    };
-  }
-
-  // Calculate rectangle selection area from pixel positions
-  // Returns array of all pixel indices within the bounding rectangle
-  function calculateRectangleFromPixels(pixelIndices) {
-    if (!pixelIndices || pixelIndices.length === 0) return [];
-    
-    const bounds = calculateSelectionBounds(pixelIndices);
-    if (!bounds) return [];
-    
-    const rectanglePixels = [];
-    
-    for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
-      for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
-        rectanglePixels.push(row * 200 + col);
-      }
-    }
-    
-    return rectanglePixels;
-  }
-
-  // Validate that a selection area forms a proper rectangle/square
-  // A valid rectangle must have exactly (width * height) pixels in consecutive rows/cols
-  function isValidRectangle(selectionArea) {
-    if (!selectionArea || selectionArea.length === 0) return false;
-    
-    const bounds = calculateSelectionBounds(selectionArea);
-    if (!bounds) return false;
-    
-    const expectedCount = bounds.width * bounds.height;
-    if (selectionArea.length !== expectedCount) return false;
-    
-    // Verify all pixels in the bounding box are present
-    const pixelSet = new Set(selectionArea);
-    for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
-      for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
-        const idx = row * 200 + col;
-        if (!pixelSet.has(idx)) return false;
-      }
-    }
-    
-    return true;
-  }
-
-  // Clean up corrupted layers by committing their data to background
-  function cleanupCorruptedLayers() {
-    console.log("=== VALIDATING LAYER SELECTION AREAS ===");
-    
-    const layersToRemove = [];
-    const newPixelColors = [...pixelColors];
-    
-    groups.forEach(layer => {
-      // Skip __selected__ temporary layer and layers without selection areas
-      if (layer.name === "__selected__" || !layer.originalSelectionArea) {
-        return;
-      }
-      
-      const isValid = isValidRectangle(layer.originalSelectionArea);
-      
-      console.log(`Validating layer "${layer.name}":`, {
-        hasSelectionArea: !!layer.originalSelectionArea,
-        selectionAreaLength: layer.originalSelectionArea?.length,
-        pixelsCount: Object.keys(layer.pixels || {}).length,
-        isValid
-      });
-      
-      if (!isValid) {
-        console.warn(`Layer "${layer.name}" has corrupted selection area - committing to background`, {
-          selectionAreaLength: layer.originalSelectionArea?.length,
-          pixelsCount: Object.keys(layer.pixels || {}).length,
-          bounds: calculateSelectionBounds(layer.originalSelectionArea)
-        });
-        
-        layersToRemove.push(layer.name);
-        
-        // Restore pixel data from localStorage if available
-        const storedGroups = JSON.parse(localStorage.getItem('pixelgrid_groups') || '[]');
-        const storedLayer = storedGroups.find(g => g.name === layer.name);
-        
-        if (storedLayer && storedLayer.pixels) {
-          console.log(`Committing ${Object.keys(storedLayer.pixels).length} pixels from layer "${layer.name}" to background`);
-          
-          // Copy all pixel data to background layer
-          Object.entries(storedLayer.pixels).forEach(([pixelIndex, color]) => {
-            const idx = parseInt(pixelIndex, 10);
-            if (color && color !== null && color !== undefined) {
-              newPixelColors[idx] = color;
-            }
-          });
-        } else if (layer.pixels) {
-          console.log(`Committing ${Object.keys(layer.pixels).length} pixels from layer "${layer.name}" to background (from memory)`);
-          
-          // Fallback to in-memory layer data
-          Object.entries(layer.pixels).forEach(([pixelIndex, color]) => {
-            const idx = parseInt(pixelIndex, 10);
-            if (color && color !== null && color !== undefined) {
-              newPixelColors[idx] = color;
-            }
-          });
-        }
-      }
-    });
-    
-    if (layersToRemove.length > 0) {
-      console.log(`Removing ${layersToRemove.length} corrupted layers:`, layersToRemove);
-      
-      // Update pixelColors with committed data
-      setPixelColors(newPixelColors);
-      
-      // Remove corrupted layers from state
-      const cleanedGroups = groups.filter(g => !layersToRemove.includes(g.name));
-      setGroups(cleanedGroups);
-      
-      // Update localStorage
-      const storedGroups = JSON.parse(localStorage.getItem('pixelgrid_groups') || '[]');
-      const cleanedStoredGroups = storedGroups.filter(g => !layersToRemove.includes(g.name));
-      localStorage.setItem('pixelgrid_groups', JSON.stringify(cleanedStoredGroups));
-      
-      // Update pixelGroups to remove references to deleted layers
-      const newPixelGroups = { ...pixelGroups };
-      Object.entries(newPixelGroups).forEach(([pixelIndex, groupInfo]) => {
-        if (layersToRemove.includes(groupInfo.group)) {
-          delete newPixelGroups[pixelIndex];
-        }
-      });
-      setPixelGroups(newPixelGroups);
-      
-      console.log("=== CORRUPTED LAYERS CLEANED UP ===");
-      return true;
-    }
-    
-    console.log("All layer selection areas are valid rectangles");
-    return false;
-  }
-
-  // Extract active layer to __selected__ for moving
-  function extractLayerToSelected(layerName) {
-    // Don't extract if already extracted
-    const existingSelected = groups.find(g => g.name === "__selected__");
-    if (existingSelected) {
-      console.log("extractLayerToSelected: __selected__ already exists, aborting extraction", { 
-        existing: existingSelected.originalLayerName 
-      });
-      return null;
-    }
-    
-    const layer = groups.find(g => g.name === layerName);
-    if (!layer) {
-      console.log("extractLayerToSelected: Layer not found", { layerName });
-      return null;
-    }
-
-    // RESTORE FROM LOCALSTORAGE FIRST to get the original pixel colors
-    // But DON'T restore the selection area - recalculate it from current positions
-    let restoredPixels = null;
-    try {
-      const storedGroups = localStorage.getItem("pixelgrid_groups");
-      if (storedGroups) {
-        const parsedGroups = JSON.parse(storedGroups);
-        const storedLayer = parsedGroups.find(g => g.name === layerName);
-        if (storedLayer) {
-          restoredPixels = storedLayer.pixels || {};
-          console.log("extractLayerToSelected: Restored pixel colors from localStorage", {
-            layerName,
-            pixelCount: Object.keys(restoredPixels).length
-          });
-        }
-      }
-    } catch (error) {
-      console.error("extractLayerToSelected: Failed to restore from localStorage", error);
-    }
-
-    // Get pixels from pixelGroups (the actual source of truth for current positions)
-    const layerPixelIndices = Object.keys(pixelGroups)
-      .filter(pixelIndex => pixelGroups[pixelIndex]?.group === layerName)
-      .map(idx => parseInt(idx));
-
-    if (layerPixelIndices.length === 0) {
-      console.log("extractLayerToSelected: Layer has no pixels in pixelGroups", { layerName });
-      return null;
-    }
-
-    console.log("extractLayerToSelected: Extracting layer", { layerName, pixelCount: layerPixelIndices.length });
-
-    // Store the pixel colors from this layer - prefer restored data from localStorage
-    const layerPixelColors = {};
-    layerPixelIndices.forEach(pixelIndex => {
-      // Priority: localStorage restored pixels > layer's pixels > pixelColors
-      layerPixelColors[pixelIndex] = (restoredPixels && restoredPixels[pixelIndex]) || 
-                                     (layer.pixels && layer.pixels[pixelIndex]) || 
-                                     pixelColors[pixelIndex] || null;
-    });
-    
-    console.log("extractLayerToSelected: Stored pixel colors", {
-      layerName,
-      pixelCount: Object.keys(layerPixelColors).length,
-      sampleColors: layerPixelIndices.slice(0, 3).map(idx => ({
-        index: idx,
-        color: layerPixelColors[idx]
-      }))
-    });
-
-    // Copy layer data to __selected__
-    // Store BOTH the pixels object AND a frozen copy of original colors to prevent contamination
-    const originalColors = new Map();
-    const pixelIdentifiers = new Map(); // Map pixel index to HTML ID based on position
-    
-    layerPixelIndices.forEach(pixelIndex => {
-      // Get color from restored localStorage data or layer's FROZEN pixels
-      const color = (restoredPixels && restoredPixels[pixelIndex]) || 
-                    (layer.pixels && layer.pixels[pixelIndex]) || 
-                    pixelColors[pixelIndex] || null;
-      originalColors.set(pixelIndex, color);
-      // Create unique identifier based on row/col position
-      const row = Math.floor(pixelIndex / 200);
-      const col = pixelIndex % 200;
-      const pixelId = `pixel-r${row}-c${col}`;
-      pixelIdentifiers.set(pixelIndex, pixelId);
-    });
-    
-    // Freeze the originalColors Map to prevent modifications
-    Object.freeze(originalColors);
-    Object.freeze(pixelIdentifiers);
-    
-    // Commit the layer's pixel data to __selected__ immediately
-    // This ensures ONLY this layer's data is in the selection
-    const committedPixels = {};
-    layerPixelIndices.forEach(pixelIndex => {
-      committedPixels[pixelIndex] = originalColors.get(pixelIndex);
-    });
-    
-    // Calculate the selection area as a rectangle from the current pixel positions
-    // This ensures the selection is always a rectangle, not a scattered shape
-    const currentSelectionArea = calculateRectangleFromPixels(layerPixelIndices);
-    
-    // Validate that the selection area is actually a valid rectangle
-    if (!isValidRectangle(currentSelectionArea)) {
-      console.error("extractLayerToSelected: Calculated selection area is not a valid rectangle!", {
-        layerName,
-        selectionAreaLength: currentSelectionArea.length,
-        pixelIndicesLength: layerPixelIndices.length
-      });
-      // Abort extraction to prevent corruption
-      return null;
-    }
-    
-    // Create pixels object with ONLY actual colors (no nulls)
-    // Nulls in the rectangle are just for selection visualization, not stored data
-    const completeRectanglePixels = {};
-    currentSelectionArea.forEach(pixelIndex => {
-      const color = originalColors.get(pixelIndex);
-      // Only include pixels with actual colors (skip nulls/undefined)
-      if (color !== undefined && color !== null) {
-        completeRectanglePixels[pixelIndex] = color;
-      }
-    });
-    
-    console.log("extractLayerToSelected: Created complete rectangle", {
-      layerName,
-      originalPixelCount: layerPixelIndices.length,
-      rectanglePixelCount: currentSelectionArea.length,
-      completePixelCount: Object.keys(completeRectanglePixels).length,
-      isValidRectangle: true
-    });
-    
-    const selectedLayer = {
-      name: "__selected__",
-      zIndex: 9999, // Highest z-index for moving
-      pixels: Object.freeze(completeRectanglePixels), // Complete rectangle with all pixels
-      originalLayerName: layerName,
-      originalZIndex: layer.zIndex,
-      originalPixelIndices: Object.freeze([...layerPixelIndices]), // Only actual pixels that existed
-      originalColors: originalColors, // Frozen map of original colors to prevent contamination
-      pixelIdentifiers: pixelIdentifiers, // HTML IDs for each pixel based on position
-      originalSelectionArea: currentSelectionArea // Current rectangle selection area (full rectangle)
-    };
-
-    // Update groups: add __selected__ but KEEP original layer's pixels (don't clear them)
-    // AND restore the original layer's complete pixel data from localStorage to force re-render
-    setGroups(prevGroups => {
-      const updated = prevGroups
-        .filter(g => g.name !== "__selected__")
-        .map(g => {
-          // If this is the layer being extracted, use its current pixel data
-          if (g.name === layerName) {
-            // Keep only the pixels that are in the current layer
-            // This removes any pixels that were part of __selected__
-            const layerPixels = restoredPixels || g.pixels || {};
-            console.log("extractLayerToSelected: Using current pixel data for original layer", {
-              layerName,
-              pixelCount: Object.keys(layerPixels).length
-            });
-            return {
-              ...g,
-              pixels: Object.freeze({ ...layerPixels }),
-              originalSelectionArea: currentSelectionArea
-            };
-          }
-          return g;
-        })
-        .concat([selectedLayer]);
-      console.log("extractLayerToSelected: Updated groups", { 
-        groupCount: updated.length, 
-        selectedPixels: layerPixelIndices.length,
-        pixelIdentifiers: Array.from(pixelIdentifiers.entries()).slice(0, 5).map(([idx, id]) => ({ index: idx, id }))
-      });
-      return updated;
-    });
-
-    // Update pixelGroups to ensure all restored pixels from localStorage are properly mapped
-    if (restoredPixels) {
-      setPixelGroups(prevPixelGroups => {
-        const updatedPixelGroups = { ...prevPixelGroups };
-        // Add all pixels from localStorage that aren't currently in pixelGroups
-        Object.keys(restoredPixels).forEach(pixelIndex => {
-          const idx = parseInt(pixelIndex);
-          if (!updatedPixelGroups[idx] || updatedPixelGroups[idx].group === layerName) {
-            updatedPixelGroups[idx] = { group: layerName, zIndex: layer.zIndex };
-          }
-        });
-        console.log("extractLayerToSelected: Updated pixelGroups with restored pixels", {
-          layerName,
-          restoredPixelCount: Object.keys(restoredPixels).length
-        });
-        return updatedPixelGroups;
-      });
-    }
-
-    // DON'T update pixelGroups during extraction - keep pixels pointing to original layer
-    // This way the original layer's pixels remain visible at their original positions
-    // pixelGroups will only be updated when the move is committed in restoreSelectedToLayer
-    
-    // Note: __selected__ layer exists but its pixels aren't in pixelGroups yet
-    // They'll only be moved to the new positions when the move is committed
-
-    return {
-      layerName,
-      pixelIndices: layerPixelIndices,
-      zIndex: layer.zIndex
-    };
-  }
-
-  // Extract only selected pixels from a layer to __selected__ for moving
-  function extractSelectionToSelected(layerName, selectedPixelIndices) {
-    const layer = groups.find(g => g.name === layerName);
-    if (!layer) return null;
-
-    // Filter selected pixels that actually belong to this layer
-    const layerSelectedPixels = selectedPixelIndices.filter(
-      pixelIndex => pixelGroups[pixelIndex]?.group === layerName
-    );
-
-    if (layerSelectedPixels.length === 0) {
-      console.log("extractSelectionToSelected: No selected pixels in layer", { layerName });
-      return null;
-    }
-
-    // Store the original pixel colors in a Map (for contamination prevention)
-    const originalColors = new Map();
-    const pixelIdentifiers = new Map(); // Map pixel index to HTML ID based on position
-    
-    layerSelectedPixels.forEach(pixelIndex => {
-      // Get color from layer's FROZEN pixels (immutable source)
-      const color = (layer.pixels && layer.pixels[pixelIndex]) || pixelColors[pixelIndex] || null;
-      originalColors.set(pixelIndex, color);
-      // Create unique identifier based on row/col position
-      const row = Math.floor(pixelIndex / 200);
-      const col = pixelIndex % 200;
-      const pixelId = `pixel-r${row}-c${col}`;
-      pixelIdentifiers.set(pixelIndex, pixelId);
-    });
-    
-    // Freeze the collections to prevent modifications
-    Object.freeze(originalColors);
-    Object.freeze(pixelIdentifiers);
-
-    console.log("extractSelectionToSelected: Extracting selection", { 
-      layerName, 
-      totalSelected: selectedPixelIndices.length,
-      inThisLayer: layerSelectedPixels.length,
-      pixelIdentifiers: Array.from(pixelIdentifiers.entries()).slice(0, 5).map(([idx, id]) => ({ index: idx, id }))
-    });
-
-    // Calculate selection bounds to prevent it from growing
-    const selectionBounds = calculateSelectionBounds(layerSelectedPixels);
-
-    // Commit the layer's pixel data for selected pixels to __selected__ immediately
-    // This ensures ONLY this layer's selected data is in the selection
-    const committedPixels = {};
-    layerSelectedPixels.forEach(pixelIndex => {
-      committedPixels[pixelIndex] = originalColors.get(pixelIndex);
-    });
-
-    // Create __selected__ layer metadata with committed pixel data
-    const selectedLayer = {
-      name: "__selected__",
-      zIndex: 9999,
-      pixels: Object.freeze(committedPixels), // Committed layer data - frozen to prevent changes
-      originalPixelIndices: Object.freeze([...layerSelectedPixels]), // Frozen array - cannot be modified
-      originalColors, // Store original colors to prevent contamination
-      originalLayerName: layerName,
-      originalZIndex: layer.zIndex,
-      locked: false,
-      selectionBounds, // Lock the selection area size
-      pixelIdentifiers: pixelIdentifiers // HTML IDs for each pixel based on position
-    };
-
-    // Update groups: add __selected__ WITHOUT clearing original layer
-    setGroups(prevGroups => {
-      return prevGroups
-        .filter(g => g.name !== "__selected__")
-        .concat([selectedLayer]);
-    });
-
-    // DON'T update pixelGroups during extraction - keep pixels pointing to original layer
-    // The CSS transform will handle the visual preview
-
-    return {
-      layerName,
-      pixelIndices: layerSelectedPixels,
-      zIndex: layer.zIndex
-    };
-  }
-
-  // Restore __selected__ back to original layer after move
-  // movedPixelIndices: optional array of pixel indices (after move) to restore
-  function restoreSelectedToLayer(movedPixelIndices = null) {
-    console.log("=== RESTORE SELECTED TO LAYER START ===", { providedIndices: movedPixelIndices?.length });
-    
-    const selectedLayer = groups.find(g => g.name === "__selected__");
-    if (!selectedLayer || !selectedLayer.originalLayerName) {
-      console.log("restoreSelectedToLayer: No __selected__ layer found or missing originalLayerName", { selectedLayer });
-      return;
-    }
-
-    const originalLayerName = selectedLayer.originalLayerName;
-    const originalZIndex = selectedLayer.originalZIndex;
-    
-    // Use provided indices OR fall back to originalPixelIndices (NOT pixelGroups)
-    // Because __selected__ pixels are NEVER in pixelGroups during preview
-    setPixelGroups(prevPixelGroups => {
-      const selectedPixelIndices = movedPixelIndices || selectedLayer.originalPixelIndices || [];
-
-      console.log("restoreSelectedToLayer: Restoring pixels", { 
-        originalLayerName, 
-        pixelCount: selectedPixelIndices.length,
-        originalZIndex,
-        usingProvidedIndices: !!movedPixelIndices,
-        samplePixels: selectedPixelIndices.slice(0, 5)
-      });
-
-      // Update pixelGroups: remap __selected__ pixels back to original layer
-      const updatedPixelGroups = { ...prevPixelGroups };
-      selectedPixelIndices.forEach(pixelIndex => {
-        updatedPixelGroups[pixelIndex] = { group: originalLayerName, zIndex: originalZIndex };
-      });
-      
-      console.log("restoreSelectedToLayer: Remapped pixels to original layer", { 
-        originalLayerName,
-        remappedCount: selectedPixelIndices.length 
-      });
-      
-      return updatedPixelGroups;
-    });
-
-    // Transfer pixel colors from __selected__ back to original layer and remove __selected__
-    // IMPORTANT: Get the CURRENT __selected__ pixels (after move) from groups state
-    setGroups(prevGroups => {
-      const selectedGroup = prevGroups.find(g => g.name === "__selected__");
-      if (!selectedGroup) {
-        console.log("restoreSelectedToLayer: Warning - __selected__ already removed from groups");
-        return prevGroups;
-      }
-      
-      // Get the UPDATED pixels from __selected__ (these have the NEW positions after move)
-      const selectedGroupPixels = selectedGroup.pixels || {};
-      
-      console.log("restoreSelectedToLayer: Getting updated __selected__ pixels", {
-        totalPixelsInSelected: Object.keys(selectedGroupPixels).length,
-        movedPixelCount: movedPixelIndices ? movedPixelIndices.length : 0,
-        samplePixels: Object.keys(selectedGroupPixels).slice(0, 3).map(idx => ({
-          index: idx,
-          color: selectedGroupPixels[idx]
-        }))
-      });
-      
-      // Restore pixels using the mapping from original to new positions
-      // We must use originalColors as the source of truth to prevent contamination
-      const filteredPixels = {};
-      if (movedPixelIndices && movedPixelIndices.length > 0) {
-        // Movement occurred - map original pixels to new positions
-        // Calculate the delta from the move
-        const originalIndices = selectedGroup.originalPixelIndices || [];
-        
-        if (originalIndices.length > 0 && movedPixelIndices.length > 0) {
-          // For each moved pixel, find its corresponding original pixel and use the original color
-          const firstOriginalIdx = originalIndices[0];
-          const firstMovedIdx = movedPixelIndices[0];
-          const deltaRow = Math.floor(firstMovedIdx / 200) - Math.floor(firstOriginalIdx / 200);
-          const deltaCol = (firstMovedIdx % 200) - (firstOriginalIdx % 200);
-          
-          console.log("restoreSelectedToLayer: Calculated delta", { deltaRow, deltaCol });
-          
-          // For each original pixel, calculate its new position and use original color
-          originalIndices.forEach(originalIdx => {
-            const originalColor = selectedGroup.originalColors.get(originalIdx);
-            if (originalColor !== undefined) {
-              const row = Math.floor(originalIdx / 200);
-              const col = originalIdx % 200;
-              const newRow = row + deltaRow;
-              const newCol = col + deltaCol;
-              
-              // Bounds check
-              if (newRow >= 0 && newRow < 200 && newCol >= 0 && newCol < 200) {
-                const newIdx = newRow * 200 + newCol;
-                filteredPixels[newIdx] = originalColor;
-              }
-            }
-          });
-        }
-      } else {
-        // No movement - restore from originalColors at original positions
-        // This handles click-without-drag case
-        if (selectedGroup.originalColors && selectedGroup.originalPixelIndices) {
-          selectedGroup.originalPixelIndices.forEach(pixelIndex => {
-            const color = selectedGroup.originalColors.get(pixelIndex);
-            if (color !== undefined) {
-              filteredPixels[pixelIndex] = color;
-            }
-          });
-        }
-      }
-      
-      console.log("restoreSelectedToLayer: Filtered to moved pixels only", {
-        beforeFilter: Object.keys(selectedGroupPixels).length,
-        afterFilter: Object.keys(filteredPixels).length,
-        movedIndicesProvided: movedPixelIndices ? movedPixelIndices.length : 0
-      });
-      
-      const updatedGroups = prevGroups
-        .filter(g => g.name !== "__selected__")
-        .map(g => {
-          if (g.name === originalLayerName) {
-            // Recalculate selection area as rectangle from the NEW pixel positions
-            // This ensures the selection stays as a rectangle at the moved location
-            const movedPixelIndices = Object.keys(filteredPixels).map(idx => parseInt(idx));
-            
-            if (movedPixelIndices.length === 0) {
-              console.error("restoreSelectedToLayer: No pixels to restore!", { originalLayerName });
-              // Return unchanged layer to prevent data loss
-              return g;
-            }
-            
-            const newSelectionArea = calculateRectangleFromPixels(movedPixelIndices);
-            
-            // Validate that the selection area is a valid rectangle before proceeding
-            if (!isValidRectangle(newSelectionArea)) {
-              console.error("restoreSelectedToLayer: New selection area is not a valid rectangle!", {
-                layerName: originalLayerName,
-                movedPixelCount: movedPixelIndices.length,
-                selectionAreaLength: newSelectionArea.length
-              });
-              // Return unchanged layer to prevent corruption
-              return g;
-            }
-            
-            // Create pixels object with ONLY actual colors (no nulls)
-            // Filter out null/undefined to prevent background corruption
-            const completeRectanglePixels = {};
-            newSelectionArea.forEach(pixelIndex => {
-              const color = filteredPixels[pixelIndex];
-              // Only include pixels with actual colors (skip nulls/undefined)
-              if (color !== undefined && color !== null) {
-                completeRectanglePixels[pixelIndex] = color;
-              }
-            });
-            
-            console.log("restoreSelectedToLayer: Created complete rectangle at new position", {
-              layerName: originalLayerName,
-              movedPixelCount: Object.keys(filteredPixels).length,
-              rectanglePixelCount: newSelectionArea.length,
-              completePixelCount: Object.keys(completeRectanglePixels).length,
-              isValidRectangle: true
-            });
-            
-            // Use the complete rectangle (all pixels in bounding box)
-            const basePixels = { ...completeRectanglePixels };
-            
-            console.log("restoreSelectedToLayer: Updating layer with moved pixels", {
-              layerName: g.name,
-              oldPixelCount: Object.keys(g.pixels || {}).length,
-              addedCount: Object.keys(completeRectanglePixels).length,
-              finalCount: Object.keys(basePixels).length
-            });
-            
-            // Create updated layer with all preserved data
-            const updatedLayer = { 
-              ...g, 
-              pixels: Object.freeze(basePixels),
-              originalSelectionArea: newSelectionArea
-            };
-            
-            // NOTE: Do NOT save to localStorage here - only save on draw operations
-            // Moves should not persist until explicitly saved via draw tools
-            
-            // Return new immutable layer object with all data preserved
-            return Object.freeze(updatedLayer);
-          }
-          // Return existing layers as frozen objects
-          return Object.freeze({ ...g, pixels: Object.freeze({ ...g.pixels }) });
-        });
-      
-      console.log("restoreSelectedToLayer: Removed __selected__ from groups", {
-        remainingGroups: updatedGroups.map(g => g.name)
-      });
-      
-      return updatedGroups;
-    });
-
-    // Keep layer active and clear __selected__ from activeGroup if needed
-    setActiveGroup(prevActive => {
-      if (prevActive === "__selected__") {
-        return originalLayerName;
-      }
-      return prevActive;
-    });
-    
-    console.log("=== RESTORE SELECTED TO LAYER COMPLETE ===");
-  }
-
-  // Move group pixels (works with __selected__ and regular layers)
-  // Returns the new pixel indices after moving
+  // Move group pixels
   function moveGroup(groupName, deltaRow, deltaCol) {
-    console.log("=== MOVE GROUP START ===", { groupName, deltaRow, deltaCol });
-    const group = groups.find(g => g.name === groupName);
-    if (!group) {
-      console.log("moveGroup: Group not found", { groupName });
-      return [];
-    }
+    const groupPixels = Object.keys(pixelGroups)
+      .filter(idx => pixelGroups[idx].group === groupName)
+      .map(idx => parseInt(idx));
     
-    // For __selected__, verify pixels match localStorage layer data
-    if (groupName === "__selected__" && group.originalLayerName) {
-      try {
-        const storedGroups = localStorage.getItem("pixelgrid_groups");
-        if (storedGroups) {
-          const parsedGroups = JSON.parse(storedGroups);
-          const storedLayer = parsedGroups.find(g => g.name === group.originalLayerName);
-          
-          if (storedLayer && group.originalColors) {
-            // Verify each pixel color matches localStorage and enforce corrections
-            const correctedColors = new Map();
-            let correctionCount = 0;
-            
-            group.originalPixelIndices.forEach(pixelIndex => {
-              const currentColor = group.originalColors.get(pixelIndex);
-              const storedColor = storedLayer.pixels[pixelIndex];
-              
-              if (storedColor !== undefined) {
-                if (storedColor !== currentColor) {
-                  console.warn("moveGroup: Correcting pixel from localStorage", {
-                    pixelIndex,
-                    incorrectColor: currentColor,
-                    correctColor: storedColor
-                  });
-                  correctionCount++;
-                }
-                // Always use localStorage as source of truth
-                correctedColors.set(pixelIndex, storedColor);
-              } else {
-                // Pixel not in localStorage - keep current
-                correctedColors.set(pixelIndex, currentColor);
-              }
-            });
-            
-            if (correctionCount > 0) {
-              console.warn("moveGroup: Corrected pixels from localStorage", {
-                total: group.originalColors.size,
-                corrections: correctionCount
-              });
-              // Update the group's originalColors with corrected data
-              group.originalColors = Object.freeze(correctedColors);
-            } else {
-              console.log("moveGroup: All pixels verified against localStorage ✓");
-            }
-          }
+    if (groupPixels.length === 0) return;
+    
+    // Get colors and clear old positions
+    const pixelData = groupPixels.map(idx => ({
+      oldIndex: idx,
+      color: pixelColors[idx],
+      row: Math.floor(idx / 200),
+      col: idx % 200
+    }));
+    
+    setPixelColors(prev => {
+      const copy = [...prev];
+      // Clear old positions
+      pixelData.forEach(p => {
+        copy[p.oldIndex] = "#ffffff";
+      });
+      // Set new positions
+      pixelData.forEach(p => {
+        const newRow = p.row + deltaRow;
+        const newCol = p.col + deltaCol;
+        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
+          const newIndex = newRow * 200 + newCol;
+          copy[newIndex] = p.color;
         }
-      } catch (error) {
-        console.error("moveGroup: Failed to verify against localStorage", error);
-      }
-    }
-    
-    // Get current pixel positions
-    // For __selected__, use ONLY the originalPixelIndices to prevent contamination
-    let currentPixels;
-    if (groupName === "__selected__" && group.originalPixelIndices) {
-      currentPixels = group.originalPixelIndices;
-      console.log("moveGroup: Using originalPixelIndices for __selected__", { count: currentPixels.length });
-    } else {
-      // For regular layers, get from pixelGroups
-      currentPixels = Object.keys(pixelGroups)
-        .filter(pixelIndex => pixelGroups[pixelIndex]?.group === groupName)
-        .map(idx => parseInt(idx));
-    }
-    
-    if (currentPixels.length === 0) {
-      console.log("moveGroup: No pixels to move", { groupName });
-      return [];
-    }
-    
-    console.log("moveGroup: Current pixels", { 
-      groupName, 
-      deltaRow, 
-      deltaCol, 
-      pixelCount: currentPixels.length,
-      sampleOldPixels: currentPixels.slice(0, 5)
+      });
+      return copy;
     });
     
-    // Calculate new positions with bounds checking
-    const pixelMoves = [];
-    currentPixels.forEach(pixelIndex => {
-      const row = Math.floor(pixelIndex / 200);
-      const col = pixelIndex % 200;
-      const newRow = row + deltaRow;
-      const newCol = col + deltaCol;
-      
-      // Bounds check - only move pixels that stay within grid
+    // Update pixel groups mapping
+    const newPixelGroups = { ...pixelGroups };
+    pixelData.forEach(p => {
+      delete newPixelGroups[p.oldIndex];
+      const newRow = p.row + deltaRow;
+      const newCol = p.col + deltaCol;
       if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
         const newIndex = newRow * 200 + newCol;
-        // For __selected__, verify the pixel is actually in originalPixelIndices
-        if (groupName === "__selected__" && group.originalPixelIndices) {
-          if (group.originalPixelIndices.includes(pixelIndex)) {
-            pixelMoves.push({ oldIndex: pixelIndex, newIndex });
-          }
-        } else {
-          pixelMoves.push({ oldIndex: pixelIndex, newIndex });
-        }
+        newPixelGroups[newIndex] = pixelGroups[p.oldIndex] || { group: groupName, zIndex: 0 };
       }
     });
-    
-    console.log("moveGroup: Calculated moves", { 
-      moveCount: pixelMoves.length,
-      sampleMoves: pixelMoves.slice(0, 5).map(m => `${m.oldIndex} -> ${m.newIndex}`)
-    });
-    
-    // Store the pixel colors that are being moved
-    // For __selected__ layer, use originalColors to prevent contamination
-    const movedColors = new Map();
-    pixelMoves.forEach(({ oldIndex, newIndex }) => {
-      let color = null;
-      
-      // If this is __selected__ and we have originalColors, use those (prevents contamination)
-      if (groupName === "__selected__" && group.originalColors) {
-        // STRICT: Only get color from originalColors Map - never from pixelColors or other sources
-        color = group.originalColors.get(oldIndex);
-        // Verify the oldIndex was actually in our original selection
-        if (color === undefined) {
-          console.warn("moveGroup: Attempted to move pixel not in originalColors", { oldIndex, newIndex });
-          return; // Skip this pixel
-        }
-      } else {
-        // For regular layers, use pixels or fall back to pixelColors
-        color = (group.pixels && group.pixels[oldIndex]) || pixelColors[oldIndex] || null;
-      }
-      
-      movedColors.set(newIndex, color);
-    });
-    
-    console.log("moveGroup: Storing colors for move", {
-      groupName,
-      sampleColors: pixelMoves.slice(0, 3).map(({ oldIndex, newIndex }) => ({
-        oldIndex,
-        newIndex,
-        color: movedColors.get(newIndex)
-      }))
-    });
-    
-    // Update the group's pixels object with new positions
-    setGroups(prevGroups => {
-      return prevGroups.map(g => {
-        if (g.name === groupName) {
-          // Start fresh - only include the moved pixels, nothing else
-          const newPixels = {};
-          
-          // ONLY add the pixels we're moving (with their original colors)
-          movedColors.forEach((color, newIndex) => {
-            newPixels[newIndex] = color;
-          });
-          
-          // Calculate new selection area as rectangle from new positions
-          const newPixelIndices = Array.from(movedColors.keys());
-          const newSelectionArea = calculateRectangleFromPixels(newPixelIndices);
-          
-          console.log("moveGroup: Calculated new selection area", {
-            groupName,
-            movedPixelCount: newPixelIndices.length,
-            newSelectionAreaCount: newSelectionArea.length
-          });
-          
-          // Preserve originalColors, originalPixelIndices, and pixelIdentifiers if this is __selected__
-          const updatedGroup = { 
-            ...g, 
-            pixels: newPixels,
-            originalSelectionArea: newSelectionArea // Update selection area to new position
-          };
-          if (g.originalColors) {
-            updatedGroup.originalColors = g.originalColors;
-          }
-          if (g.originalPixelIndices) {
-            updatedGroup.originalPixelIndices = g.originalPixelIndices;
-          }
-          if (g.pixelIdentifiers) {
-            updatedGroup.pixelIdentifiers = g.pixelIdentifiers;
-          }
-          
-          return updatedGroup;
-        }
-        return g;
-      });
-    });
-    
-    // Update pixelGroups with new positions
-    // IMPORTANT: When overlapping, preserve the underlying layer's pixel data in its pixels object
-    setPixelGroups(prevPixelGroups => {
-      const newPixelGroups = { ...prevPixelGroups };
-      
-      // Before removing old positions or adding new ones, preserve any underlying layer data
-      const overlappedLayers = new Map(); // Map of layer name to array of pixel indices that will be covered
-      pixelMoves.forEach(({ newIndex }) => {
-        if (newPixelGroups[newIndex] && newPixelGroups[newIndex].group !== groupName) {
-          const layerName = newPixelGroups[newIndex].group;
-          if (!overlappedLayers.has(layerName)) {
-            overlappedLayers.set(layerName, []);
-          }
-          overlappedLayers.get(layerName).push(newIndex);
-        }
-      });
-      
-      // Preserve underlying layer pixel data and restore from localStorage
-      if (overlappedLayers.size > 0) {
-        try {
-          const storedGroups = localStorage.getItem("pixelgrid_groups");
-          const parsedGroups = storedGroups ? JSON.parse(storedGroups) : null;
-          
-          setGroups(prevGroups => {
-            return prevGroups.map(g => {
-              if (overlappedLayers.has(g.name)) {
-                // Get the stored layer data from localStorage
-                const storedLayer = parsedGroups ? parsedGroups.find(sg => sg.name === g.name) : null;
-                
-                // Start with current pixels or restore from localStorage
-                const preservedPixels = storedLayer ? { ...storedLayer.pixels } : { ...g.pixels };
-                const coveredIndices = overlappedLayers.get(g.name);
-                
-                coveredIndices.forEach((pixelIndex) => {
-                  // Ensure the pixel is preserved from localStorage or current state
-                  if (!preservedPixels[pixelIndex]) {
-                    preservedPixels[pixelIndex] = g.pixels[pixelIndex] || null;
-                  }
-                });
-                
-                console.log(`Preserving ${coveredIndices.length} pixels for layer ${g.name} before overlap`);
-                
-                // Restore originalSelectionArea from localStorage if available
-                const originalSelectionArea = storedLayer?.originalSelectionArea || g.originalSelectionArea || [];
-                
-                return { 
-                  ...g, 
-                  pixels: Object.freeze(preservedPixels),
-                  originalSelectionArea: originalSelectionArea
-                };
-              }
-              return g;
-            });
-          });
-        } catch (error) {
-          console.error("Failed to restore layer data from localStorage:", error);
-          // Fallback to current preservation logic
-          setGroups(prevGroups => {
-            return prevGroups.map(g => {
-              if (overlappedLayers.has(g.name)) {
-                const preservedPixels = { ...g.pixels };
-                const coveredIndices = overlappedLayers.get(g.name);
-                
-                coveredIndices.forEach((pixelIndex) => {
-                  if (!preservedPixels[pixelIndex]) {
-                    preservedPixels[pixelIndex] = g.pixels[pixelIndex] || null;
-                  }
-                });
-                
-                return { ...g, pixels: Object.freeze(preservedPixels) };
-              }
-              return g;
-            });
-          });
-        }
-      }
-      
-      // Now remove pixels from old positions
-      pixelMoves.forEach(({ oldIndex }) => {
-        delete newPixelGroups[oldIndex];
-      });
-      
-      // Then, add pixels at new positions (this may cover other layers)
-      pixelMoves.forEach(({ newIndex }) => {
-        newPixelGroups[newIndex] = { group: groupName, zIndex: group.zIndex };
-      });
-      
-      console.log("moveGroup: Updated pixelGroups", {
-        groupName,
-        newPositionsCount: pixelMoves.length,
-        overlappedLayers: Array.from(overlappedLayers.keys())
-      });
-      
-      return newPixelGroups;
-    });
-    
-    console.log("=== MOVE GROUP COMPLETE ===");
-    
-    // Return the new pixel indices
-    return pixelMoves.map(m => m.newIndex);
+    setPixelGroups(newPixelGroups);
   }
 
   // Move selected pixels (not in a group)
@@ -2985,7 +1710,7 @@ const savedData = ${dataString};
               <div
                 onClick={() => {
                   if (window.confirm("Clear all pixels, groups, and layers? This will also clear localStorage.")) {
-                    setPixelColors(Array(totalPixels).fill(null));
+                    setPixelColors(Array(totalPixels).fill("#ffffff"));
                     setPixelGroups({});
                     setGroups([]);
                     setActiveGroup(null);
@@ -3131,205 +1856,187 @@ const savedData = ${dataString};
         <div style={{ width: "100%", textAlign: "center", paddingTop: "1vw" }}>
           <div style={{ color: "#000000", fontSize: "1.5vw", marginBottom: "0.5vw" }}><b>Tools</b></div>
           <div style={{ display: "flex", gap: "0.5vw", justifyContent: "center", flexWrap: "wrap", padding: "0 0.5vw" }}>
-            {/* Pencil Tool */}
-            <button
-              onClick={() => {
-                setActiveDrawingTool("pencil");
-                setViewMode("drawing");
-                setActiveGroup(null);
-                setLineStartPixel(null);
-              }}
-              style={{
-                width: size.w <= 1024 ? "8vw" : "6vw",
-                height: size.w <= 1024 ? "8vw" : "6vw",
-                background: activeDrawingTool === "pencil" ? "#333" : "#fefefe",
-                color: activeDrawingTool === "pencil" ? "#fff" : "#000",
-                border: "0.3vw solid #000000",
-                cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : "3vw",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: activeDrawingTool === "pencil" ? "0px 0px .2vw .2vw #000000" : "none",
-              }}
-            >
-              <i className="fas fa-paintbrush"></i>
-            </button>
-            
-            {/* Eraser Tool */}
-            <button
-              onClick={() => {
-                setActiveDrawingTool("eraser");
-                setViewMode("drawing");
-                setActiveGroup(null);
-                setLineStartPixel(null);
-              }}
-              style={{
-                width: size.w <= 1024 ? "8vw" : "6vw",
-                height: size.w <= 1024 ? "8vw" : "6vw",
-                background: activeDrawingTool === "eraser" ? "#333" : "#fefefe",
-                color: activeDrawingTool === "eraser" ? "#fff" : "#000",
-                border: "0.3vw solid #000000",
-                cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : "3vw",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: activeDrawingTool === "eraser" ? "0px 0px .2vw .2vw #000000" : "none",
-              }}
-            >
-              <i className="fas fa-eraser"></i>
-            </button>
-            
-            {/* Line Tool */}
-            <button
-              onClick={() => {
-                setActiveDrawingTool("line");
-                setViewMode("drawing");
-                setActiveGroup(null);
-                setLineStartPixel(null);
-              }}
-              style={{
-                width: size.w <= 1024 ? "8vw" : "6vw",
-                height: size.w <= 1024 ? "8vw" : "6vw",
-                background: activeDrawingTool === "line" ? "#333" : "#fefefe",
-                color: activeDrawingTool === "line" ? "#fff" : "#000",
-                border: "0.3vw solid #000000",
-                cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : "3vw",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: activeDrawingTool === "line" ? "0px 0px .2vw .2vw #000000" : "none",
-              }}
-            >
-              <i className="fas fa-slash"></i>
-            </button>
-            
-            {/* Curve Tool */}
-            <button
-              onClick={() => {
-                setActiveDrawingTool("curve");
-                setViewMode("drawing");
-                setActiveGroup(null);
-                setLineStartPixel(null);
-                setCurveEndPixel(null);
-                setCurveCurveAmount(0);
-              }}
-              style={{
-                width: size.w <= 1024 ? "8vw" : "6vw",
-                height: size.w <= 1024 ? "8vw" : "6vw",
-                background: activeDrawingTool === "curve" ? "#333" : "#fefefe",
-                color: activeDrawingTool === "curve" ? "#fff" : "#000",
-                border: "0.3vw solid #000000",
-                cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : "3vw",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: activeDrawingTool === "curve" ? "0px 0px .2vw .2vw #000000" : "none",
-              }}
-            >
-              <i className="fas fa-bezier-curve"></i>
-            </button>
-            
-            {/* Bucket Tool */}
-            <button
-              onClick={() => {
-                setActiveDrawingTool("bucket");
-                setViewMode("drawing");
-                setActiveGroup(null);
-                setLineStartPixel(null);
-              }}
-              style={{
-                width: size.w <= 1024 ? "8vw" : "6vw",
-                height: size.w <= 1024 ? "8vw" : "6vw",
-                background: activeDrawingTool === "bucket" ? "#333" : "#fefefe",
-                color: activeDrawingTool === "bucket" ? "#fff" : "#000",
-                border: "0.3vw solid #000000",
-                cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : "3vw",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: activeDrawingTool === "bucket" ? "0px 0px .2vw .2vw #000000" : "none",
-              }}
-            >
-              <i className="fas fa-fill-drip"></i>
-            </button>
-            
-            {/* Move Tool */}
-            <button
-              onClick={() => {
-                setActiveDrawingTool("movegroup");
-                setViewMode("layers");
-                setLineStartPixel(null);
-                setSelectionStart(null);
-                setSelectionEnd(null);
-              }}
-              style={{
-                width: size.w <= 1024 ? "8vw" : "6vw",
-                height: size.w <= 1024 ? "8vw" : "6vw",
-                background: activeDrawingTool === "movegroup" ? "#333" : "#fefefe",
-                color: activeDrawingTool === "movegroup" ? "#fff" : "#000",
-                border: "0.3vw solid #000000",
-                cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : "4vw",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: activeDrawingTool === "movegroup" ? "0px 0px .2vw .2vw #000000" : "none",
-              }}
-            >
-              <i className="fas fa-arrows-alt"></i>
-            </button>
-            
-            {/* Select Tool */}
-            <button
-              onClick={() => {
-                setActiveDrawingTool("select");
-                setViewMode("layers");
-                setActiveGroup(null);
-                setLineStartPixel(null);
-                setSelectionStart(null);
-                setSelectionEnd(null);
-              }}
-              style={{
-                width: size.w <= 1024 ? "8vw" : "6vw",
-                height: size.w <= 1024 ? "8vw" : "6vw",
-                background: activeDrawingTool === "select" ? "#333" : "#fefefe",
-                color: activeDrawingTool === "select" ? "#fff" : "#000",
-                border: "0.3vw solid #000000",
-                cursor: "pointer",
-                fontSize: size.w <= 1024 ? "3vw" : "3vw",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: activeDrawingTool === "select" ? "0px 0px .2vw .2vw #000000" : "none",
-              }}
-            >
-              <i className="fas fa-vector-square"></i>
-            </button>
-            
-            {/* Layers Menu Toggle */}
-            <button
-              onClick={() => setShowLayersMenu(!showLayersMenu)}
-              style={{
-                width: size.w <= 1024 ? "8vw" : "6vw",
-                height: size.w <= 1024 ? "8vw" : "6vw",
-                background: showLayersMenu ? "#333" : "#fefefe",
-                color: showLayersMenu ? "#fff" : "#000",
-                border: "0.3vw solid #000000",
-                cursor: "pointer",
-                fontSize: size.w <= 1024 ? "3vw" : "3vw",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: showLayersMenu ? "0px 0px .2vw .2vw #000000" : "none",
-              }}
-            >
-              <i className="fas fa-layer-group"></i>
-            </button>
+            {viewMode === "drawing" && (
+              <>
+                <button
+                  onClick={() => {
+                    setActiveDrawingTool("pencil");
+                    setActiveGroup(null);
+                    setLineStartPixel(null);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: activeDrawingTool === "pencil" ? "#333" : "#fefefe",
+                    color: activeDrawingTool === "pencil" ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: activeDrawingTool === "pencil" ? "0px 0px .2vw .2vw #000000" : "none",
+                  }}
+                >
+                  <i className="fas fa-paintbrush"></i>
+                </button>
+                <button
+                  onClick={async () => {
+                    await loadTool("line");
+                    setActiveDrawingTool("line");
+                    setActiveGroup(null);
+                    setLineStartPixel(null);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: activeDrawingTool === "line" ? "#333" : "#fefefe",
+                    color: activeDrawingTool === "line" ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: activeDrawingTool === "line" ? "0px 0px .2vw .2vw #000000" : "none",
+                  }}
+                >
+                  <i className="fas fa-slash"></i>
+                </button>
+                <button
+                  onClick={async () => {
+                    await loadTool("curve");
+                    setActiveDrawingTool("curve");
+                    setActiveGroup(null);
+                    setLineStartPixel(null);
+                    setCurveEndPixel(null);
+                    setCurveCurveAmount(0);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: activeDrawingTool === "curve" ? "#333" : "#fefefe",
+                    color: activeDrawingTool === "curve" ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: activeDrawingTool === "curve" ? "0px 0px .2vw .2vw #000000" : "none",
+                  }}
+                >
+                  <i className="fas fa-bezier-curve"></i>
+                </button>
+                <button
+                  onClick={async () => {
+                    await loadTool("bucket");
+                    setActiveDrawingTool("bucket");
+                    setActiveGroup(null);
+                    setLineStartPixel(null);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: activeDrawingTool === "bucket" ? "#333" : "#fefefe",
+                    color: activeDrawingTool === "bucket" ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: activeDrawingTool === "bucket" ? "0px 0px .2vw .2vw #000000" : "none",
+                  }}
+                >
+                  <i className="fas fa-fill-drip"></i>
+                </button>
+                <button
+                  onClick={async () => {
+                    await loadTool("select");
+                    setViewMode("layers");
+                    setActiveDrawingTool("select");
+                    setActiveGroup(null);
+                    setLineStartPixel(null);
+                    setSelectionStart(null);
+                    setSelectionEnd(null);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: "#fefefe",
+                    color: "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "4vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    position: "relative",
+                  }}
+                >
+                  <i className="fas fa-arrows-alt" style={{
+                    position: "absolute",
+                    fontSize: size.w <= 1024 ? "1.5vw" : "1.5vw",
+                    opacity: 0.3,
+                  }}></i>
+                  <i className="fas fa-vector-square"></i>
+                </button>
+              </>
+            )}
+            {viewMode === "layers" && (
+              <>
+                <button
+                  onClick={async () => {
+                    await loadTool("select");
+                    setActiveDrawingTool("select");
+                    setActiveGroup(null);
+                    setLineStartPixel(null);
+                    setSelectionStart(null);
+                    setSelectionEnd(null);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: activeDrawingTool === "select" ? "#333" : "#fefefe",
+                    color: activeDrawingTool === "select" ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "4vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: activeDrawingTool === "select" ? "0px 0px .2vw .2vw #000000" : "none",
+                    position: "relative",
+                  }}
+                >
+                  <i className="fas fa-arrows-alt" style={{
+                    position: "absolute",
+                    fontSize: size.w <= 1024 ? "1.5vw" : "1.5vw",
+                    opacity: 0.3,
+                  }}></i>
+                  <i className="fas fa-vector-square"></i>
+                </button>
+                <button
+                  onClick={() => setShowLayersMenu(!showLayersMenu)}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: showLayersMenu ? "#333" : "#fefefe",
+                    color: showLayersMenu ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "3vw" : "3vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: showLayersMenu ? "0px 0px .2vw .2vw #000000" : "none",
+                  }}
+                >
+                  <i className="fas fa-layer-group"></i>
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -3672,15 +2379,6 @@ const savedData = ${dataString};
         />
         
         {(pixelColors || []).map((c, i) => {
-          // Get the actual display color based on highest z-index from localStorage
-          const displayC = getPixelDisplayColor(i);
-          
-          // Check if this pixel should be transformed (part of __selected__ layer being moved)
-          const selectedLayer = groups.find(g => g.name === "__selected__");
-          
-          const isInSelectedLayer = selectedLayer && selectedLayer.originalSelectionArea && 
-                                    selectedLayer.originalSelectionArea.includes(i);
-          
           // Completely isolate drawing mode from layer calculations for performance
           if (viewMode === "drawing") {
             // DRAWING MODE - Minimal calculations for maximum performance
@@ -3718,7 +2416,7 @@ const savedData = ${dataString};
             // Use ref values to get immediate updates, not state (which updates async)
             const dragState = dragStateRef.current;
             let isInDragPreview = false;
-            let dragPreviewColor = displayC;
+            let dragPreviewColor = c;
             
             if (dragState.groupDragStart !== null && dragState.activeGroup === "__selected__" && dragState.isDrawing) {
               // Calculate which source pixel should appear at this position
@@ -3733,13 +2431,15 @@ const savedData = ${dataString};
               isInDragPreview = dragState.selectedPixels.includes(sourceIndex);
               
               if (isInDragPreview) {
-                // Use source pixel display color
-                dragPreviewColor = getPixelDisplayColor(sourceIndex);
+                // Use source pixel color, defaulting to white if null/undefined
+                dragPreviewColor = pixelColors[sourceIndex] !== null && pixelColors[sourceIndex] !== undefined
+                  ? pixelColors[sourceIndex] 
+                  : '#ffffff';
               }
             }
             
             // Make white pixels transparent when background image is loaded
-            const displayColor = isInDragPreview ? dragPreviewColor : displayC;
+            const displayColor = isInDragPreview ? dragPreviewColor : c;
             const pixelColor = (backgroundImage && displayColor === '#ffffff') ? 'transparent' : displayColor;
             
             return (
@@ -3761,13 +2461,40 @@ const savedData = ${dataString};
                 onPointerDown={(e) => {
                   console.log("=== POINTER DOWN ===", { pixel: i, tool: activeDrawingTool, width: size.w, isSelected: selectedPixels.includes(i) });
                   if (activeDrawingTool === "select") {
-                    // Select tool only creates rectangular selections - no moving
+                    // Check for mobile two-click mode first
                     if (size.w <= 1024) {
-                      // Mobile two-click selection mode
-                      if (selectionStart === null) {
+                      console.log("Clicked pixel", i, "isSelected:", selectedPixels.includes(i), "selectedPixels.length:", selectedPixels.length);
+                      if (selectedPixels.includes(i)) {
+                        // Clicking on already selected pixel - enable drag-to-move
+                        e.preventDefault(); // Prevent default touch behavior
+                        console.log("Mobile: Starting drag on selected pixel", i);
+                        const startRow = Math.floor(i / 200);
+                        const startCol = i % 200;
+                        const dragState = { pixelIndex: i, startRow, startCol, clientX: e.clientX, clientY: e.clientY };
+                        
+                        console.log("DRAG INIT DEBUG:", { 
+                          clickedPixel: i, 
+                          startRow, 
+                          startCol, 
+                          selectedPixels: selectedPixels.slice(0, 5),
+                          selectedPixelsLength: selectedPixels.length
+                        });
+                        
+                        setActiveGroup("__selected__");
+                        setGroupDragStart(dragState);
+                        setGroupDragCurrent(null); // Will be set on first pointer move
+                        setIsDrawing(true);
+                        
+                        // Also update ref immediately for event handlers
+                        dragStateRef.current.activeGroup = "__selected__";
+                        dragStateRef.current.groupDragStart = dragState;
+                        dragStateRef.current.groupDragCurrent = null;
+                        dragStateRef.current.isDrawing = true;
+                        
+                        console.log("Mobile drag initialized:", { startRow, startCol, activeGroup: "__selected__" });
+                      } else if (selectionStart === null) {
                         // First click: set selection start
                         console.log("Mobile first click - setting selection start to", i);
-                        setActiveGroup(null);
                         setSelectionStart(i);
                         setSelectionEnd(null);
                         setSelectedPixels([]);
@@ -3782,40 +2509,58 @@ const savedData = ${dataString};
                         setSelectionEnd(null);
                       }
                     } else {
-                      // Desktop mode - drag to create rectangular selection
-                      setActiveGroup(null);
-                      setSelectionStart(i);
-                      setSelectionEnd(i);
-                      setSelectedPixels([]);
-                      setIsDrawing(true);
-                    }
-                  } else if (activeDrawingTool === "movegroup") {
-                    // Move tool: click and drag to move selected pixels or grouped layers
-                    if (selectedPixels.includes(i)) {
-                      // Clicking on selected pixel - start drag to move
-                      const startRow = Math.floor(i / 200);
-                      const startCol = i % 200;
-                      const dragState = { pixelIndex: i, startRow, startCol, clientX: e.clientX, clientY: e.clientY };
+                      // Desktop mode - use modular tool if available, otherwise fallback
+                      const context = {
+                        pixelGroups,
+                        activeGroup,
+                        selectionStart,
+                        selectionEnd,
+                        selectedPixels,
+                        size,
+                        setActiveGroup,
+                        setGroupDragStart,
+                        setSelectionStart,
+                        setSelectionEnd,
+                        setSelectedPixels,
+                        setIsDrawing,
+                        getSelectionPixels: (start, end) => getSelectionPixels(start, end),
+                        getSelectionRectangle: (start, end) => getSelectionRectangle(start, end)
+                      };
                       
-                      setActiveGroup("__selected__");
-                      setGroupDragStart(dragState);
-                      setGroupDragCurrent(null);
-                      setIsDrawing(true);
-                      
-                      // Update ref for immediate access
-                      dragStateRef.current.activeGroup = "__selected__";
-                      dragStateRef.current.groupDragStart = dragState;
-                      dragStateRef.current.groupDragCurrent = null;
-                      dragStateRef.current.isDrawing = true;
-                    } else if (pixelGroups[i]) {
-                      // Clicking on a grouped pixel - start drag to move that layer
-                      const pixelGroup = pixelGroups[i];
-                      const startRow = Math.floor(i / 200);
-                      const startCol = i % 200;
-                      
-                      setActiveGroup(pixelGroup.group);
-                      setGroupDragStart({ pixelIndex: i, startRow, startCol, clientX: e.clientX, clientY: e.clientY });
-                      setIsDrawing(true);
+                      if (loadedTools.select) {
+                        loadedTools.select.onPointerDown(context, i);
+                      } else {
+                        // Desktop fallback
+                        if (selectedPixels.includes(i)) {
+                          const startRow = Math.floor(i / 200);
+                          const startCol = i % 200;
+                          const dragState = { pixelIndex: i, startRow, startCol, clientX: e.clientX, clientY: e.clientY };
+                          
+                          console.log("DRAG INIT DEBUG (Desktop):", { 
+                            clickedPixel: i, 
+                            startRow, 
+                            startCol, 
+                            selectedPixels: selectedPixels.slice(0, 5),
+                            selectedPixelsLength: selectedPixels.length
+                          });
+                          
+                          setActiveGroup("__selected__");
+                          setGroupDragStart(dragState);
+                          setGroupDragCurrent(null); // Will be set on first pointer move
+                          setIsDrawing(true);
+                          
+                          // Also update ref immediately for event handlers
+                          dragStateRef.current.activeGroup = "__selected__";
+                          dragStateRef.current.groupDragStart = dragState;
+                          dragStateRef.current.groupDragCurrent = null;
+                          dragStateRef.current.isDrawing = true;
+                        } else {
+                          setSelectionStart(i);
+                          setSelectionEnd(i);
+                          setSelectedPixels([]);
+                          setIsDrawing(true);
+                        }
+                      }
                     }
                   } else if (activeDrawingTool === "pencil") {
                     setIsDrawing(true);
@@ -3849,42 +2594,34 @@ const savedData = ${dataString};
                 onPointerUp={() => {
                   if (activeDrawingTool === "select") {
                     // Desktop mode - finalize drag selection
-                    if (size.w > 1024 && selectionStart !== null && selectionEnd !== null) {
-                      const selected = getSelectionPixels(selectionStart, selectionEnd);
-                      setSelectedPixels(selected);
-                      setSelectionStart(null);
-                      setSelectionEnd(null);
-                      setIsDrawing(false);
-                    }
-                  } else if (activeDrawingTool === "movegroup" && groupDragStart !== null && activeGroup !== null) {
-                    // Finalize movegroup tool drag
-                    // Use groupDragCurrent if available, otherwise use current pixel position
-                    let deltaRow, deltaCol;
-                    if (groupDragCurrent) {
-                      deltaRow = groupDragCurrent.row - groupDragStart.startRow;
-                      deltaCol = groupDragCurrent.col - groupDragStart.startCol;
-                    } else {
-                      const currentRow = Math.floor(i / 200);
-                      const currentCol = i % 200;
-                      deltaRow = currentRow - groupDragStart.startRow;
-                      deltaCol = currentCol - groupDragStart.startCol;
-                    }
-                    
-                    if (deltaRow !== 0 || deltaCol !== 0) {
-                      if (activeGroup === "__selected__") {
-                        // Move selected pixels
-                        moveSelectedPixels(deltaRow, deltaCol, selectedPixels);
+                    if (size.w > 1024) {
+                      const context = {
+                        selectionStart,
+                        selectionEnd,
+                        size,
+                        getSelectionPixels: (start, end) => getSelectionPixels(start, end),
+                        setSelectedPixels,
+                        setSelectionStart,
+                        setSelectionEnd,
+                        setGroupDragStart
+                      };
+                      
+                      if (loadedTools.select) {
+                        loadedTools.select.onPointerUp(context);
                       } else {
-                        // Move grouped layer
-                        moveGroup(activeGroup, deltaRow, deltaCol);
+                        // Desktop fallback - only finalize selection rectangle, not move
+                        if (selectionStart !== null && selectionEnd !== null && activeGroup !== "__selected__") {
+                          const selected = getSelectionPixels(selectionStart, selectionEnd);
+                          setSelectedPixels(selected);
+                          setSelectionStart(null);
+                          setSelectionEnd(null);
+                        }
                       }
                     }
-                    
-                    setGroupDragStart(null);
-                    setGroupDragCurrent(null);
-                    setIsDrawing(false);
-                    // Keep layer selected after move
+                    // Mobile mode - selection and move are handled in onPointerDown and global stopDrawing
                   }
+                  // Note: Selected pixels move finalization is handled in the global stopDrawing handler
+                  // Don't clear isDrawing or groupDragStart here - let global handler do it
                 }}
                 onPointerEnter={() => {
                   if (activeDrawingTool === "select") {
@@ -3892,46 +2629,32 @@ const savedData = ${dataString};
                     if (size.w <= 1024 && selectionStart !== null && selectionEnd === null) {
                       setSelectionEnd(i);
                     }
-                    // Desktop drag selection
+                    // Desktop mode
                     else if (size.w > 1024 && isDrawing && selectionStart !== null) {
+                      // Only update selectionEnd during active drag
                       setSelectionEnd(i);
-                    }
-                  } else if (activeDrawingTool === "movegroup" && groupDragStart !== null && activeGroup !== null && isDrawing) {
-                    // Track current drag position for visual feedback (only in ref, no re-render)
-                    const currentRow = Math.floor(i / 200);
-                    const currentCol = i % 200;
-                    let deltaRow = currentRow - groupDragStart.startRow;
-                    let deltaCol = currentCol - groupDragStart.startCol;
-                    
-                    // Clamp delta to prevent moving outside bounds
-                    const selectedLayer = groups.find(g => g.name === "__selected__");
-                    if (selectedLayer && selectedLayer.originalPixelIndices) {
-                      // Calculate min/max row/col from originalPixelIndices
-                      let minRow = rows, maxRow = 0, minCol = 200, maxCol = 0;
-                      selectedLayer.originalPixelIndices.forEach(idx => {
-                        const r = Math.floor(idx / 200);
-                        const c = idx % 200;
-                        minRow = Math.min(minRow, r);
-                        maxRow = Math.max(maxRow, r);
-                        minCol = Math.min(minCol, c);
-                        maxCol = Math.max(maxCol, c);
-                      });
+                    } else if (size.w > 1024 && groupDragStart !== null) {
+                      const context = {
+                        isDrawing,
+                        selectionStart,
+                        selectionEnd,
+                        groupDragStart,
+                        activeGroup,
+                        size,
+                        setSelectionEnd,
+                        moveGroup,
+                        setGroupDragStart
+                      };
                       
-                      // Clamp deltaRow and deltaCol to keep selection within bounds
-                      const maxDeltaRowUp = -minRow;
-                      const maxDeltaRowDown = rows - 1 - maxRow;
-                      const maxDeltaColLeft = -minCol;
-                      const maxDeltaColRight = 200 - 1 - maxCol;
-                      
-                      deltaRow = Math.max(maxDeltaRowUp, Math.min(maxDeltaRowDown, deltaRow));
-                      deltaCol = Math.max(maxDeltaColLeft, Math.min(maxDeltaColRight, deltaCol));
+                      if (loadedTools.select) {
+                        loadedTools.select.onPointerEnter(context, i);
+                      } else {
+                        // Desktop fallback
+                        if (isDrawing) {
+                          setSelectionEnd(i);
+                        }
+                      }
                     }
-                    
-                    // Update ref for onPointerUp
-                    dragStateRef.current.groupDragCurrent = { row: currentRow, col: currentCol };
-                    
-                    // Update transform for CSS preview
-                    setSelectionTransform({ deltaRow, deltaCol, active: true });
                   } else if (isDrawing && activeDrawingTool === "pencil") {
                     paintPixel(null, i);
                   }
@@ -3946,22 +2669,17 @@ const savedData = ${dataString};
                     setHoveredPixel(i);
                   }
                   
-                  // Track current drag position for movegroup tool (only in ref, no re-render)
-                  if (activeDrawingTool === "movegroup" && groupDragStart !== null && activeGroup !== null && isDrawing) {
+                  // Track current drag position for visual feedback and mobile support
+                  // On mobile, onPointerEnter doesn't fire reliably during touch drag
+                  if (groupDragStart !== null && activeGroup === "__selected__" && isDrawing) {
                     const currentRow = Math.floor(i / 200);
                     const currentCol = i % 200;
-                    const deltaRow = currentRow - groupDragStart.startRow;
-                    const deltaCol = currentCol - groupDragStart.startCol;
-                    
-                    // Update ref for onPointerUp
-                    dragStateRef.current.groupDragCurrent = { row: currentRow, col: currentCol };
-                    
-                    // Update transform for CSS preview
-                    setSelectionTransform({ deltaRow, deltaCol, active: true });
+                    console.log("onPointerMove: Setting groupDragCurrent:", { row: currentRow, col: currentCol });
+                    setGroupDragCurrent({ row: currentRow, col: currentCol });
                   }
                   
-                  // Mobile-specific: update selection rectangle during drag (select tool only)
-                  if (activeDrawingTool === "select" && size.w <= 1024 && isDrawing && selectionStart !== null) {
+                  // Mobile-specific: update selection rectangle during drag
+                  if (activeDrawingTool === "select" && size.w <= 1024 && isDrawing && selectionStart !== null && activeGroup !== "__selected__") {
                     setSelectionEnd(i);
                   }
                 }}
@@ -3998,16 +2716,12 @@ const savedData = ${dataString};
           })();
           const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
           const isInActiveGroup = (pixelGroup && pixelGroup.group === activeGroup) || (activeGroup === "__selected__" && selectedPixels.includes(i));
+          const isMoveGroupHover = activeDrawingTool === "movegroup" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i;
+          const isSelectGroupHover = activeDrawingTool === "select" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i && !isDrawing;
           
-          // Hover styles - ONLY for move tool (select tool should not show hover on pixels)
-          const isMoveGroupHover = activeDrawingTool === "movegroup" && !isDrawing && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i;
-          
-          // Select tool should NOT show any hover effects on individual pixels
-          
-          // Calculate preview position during group drag (only for non-__selected__ layers or when transform is not active)
+          // Calculate preview position during group drag
           let isInDragPreview = false;
-          if (groupDragStart !== null && groupDragCurrent !== null && activeGroup !== null && isDrawing && !selectionTransform.active) {
-            // Legacy preview for layers that don't use dynamic CSS transforms
+          if (groupDragStart !== null && groupDragCurrent !== null && activeGroup !== null && isDrawing) {
             const deltaRow = groupDragCurrent.row - groupDragStart.startRow;
             const deltaCol = groupDragCurrent.col - groupDragStart.startCol;
             const currentRow = Math.floor(i / 200);
@@ -4045,69 +2759,31 @@ const savedData = ${dataString};
           let boxShadow = 'none';
           let opacity = 1;
           
-          // Highlight active layer area when movegroup tool is active (shows clickable area)
-          const shouldHighlightActiveLayer = activeDrawingTool === "movegroup" && 
-                                             activeGroup && 
-                                             activeGroup !== "__selected__" && 
-                                             pixelGroup?.group === activeGroup &&
-                                             !isDrawing;
-          
           // Dim original position during drag preview
-          if (isInActiveGroup && groupDragStart !== null && groupDragCurrent !== null && isDrawing && !selectionTransform.active) {
-            // Legacy dimming for non-dynamic transforms
+          if (isInActiveGroup && groupDragStart !== null && groupDragCurrent !== null && isDrawing) {
             opacity = 0.3;
           }
-          // Don't dim __selected__ pixels - they move dynamically with CSS transform
-          // Other layer pixels that are in the source area of a drag should dim
           
           // Show preview at new position
           if (isInDragPreview) {
             borderColor = '#9C27B0';
             borderWidth = `${0.2 * zoomFactor}vw`;
             boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
-          } 
-          // __selected__ layer pixels being moved with CSS transform get purple highlighting (only when actually moving)
-          else if (selectionTransform.active && isInSelectedLayer && (selectionTransform.deltaRow !== 0 || selectionTransform.deltaCol !== 0)) {
-            borderColor = '#9C27B0';
-            borderWidth = `${0.2 * zoomFactor}vw`;
-            boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
-          }
-          // Highlight active layer area to show clickable region
-          else if (shouldHighlightActiveLayer) {
-            borderColor = 'rgba(76, 175, 80, 0.5)'; // Green tint
-            borderWidth = `${0.15 * zoomFactor}vw`;
-            boxShadow = `0 0 ${0.3 * zoomFactor}vw rgba(76, 175, 80, 0.3)`;
-          }
-          // __selected__ pixels at rest (clicked but not yet dragged) - show as active group
-          else if (isInSelectedLayer && activeGroup === "__selected__") {
-            const isLight = (() => {
-              if (!displayC || displayC.length < 7) return true;
-              const r = parseInt(displayC.substring(1, 3), 16);
-              const g = parseInt(displayC.substring(3, 5), 16);
-              const b = parseInt(displayC.substring(5, 7), 16);
-              const brightness = (r + g + b) / 3;
-              return brightness > 127;
-            })();
-            borderColor = isLight ? '#000000' : '#CCCCCC';
-            borderWidth = `${0.2 * zoomFactor}vw`;
-            boxShadow = `0 0 0.5vw ${borderColor}`;
-          }
-          else if (isSelectionStartPoint) {
+          } else if (isSelectionStartPoint) {
             // Use same contrast detection as line/curve previews
             const isLight = (() => {
               // If no color is set, pixel appears white, so treat as light
-              if (!displayC || displayC.length < 7) return true;
-              const r = parseInt(displayC.substring(1, 3), 16);
-              const g = parseInt(displayC.substring(3, 5), 16);
-              const b = parseInt(displayC.substring(5, 7), 16);
+              if (!c || c.length < 7) return true;
+              const r = parseInt(c.substring(1, 3), 16);
+              const g = parseInt(c.substring(3, 5), 16);
+              const b = parseInt(c.substring(5, 7), 16);
               const brightness = (r + g + b) / 3;
               return brightness > 127;
             })();
             borderColor = isLight ? '#000000' : '#CCCCCC';
             borderWidth = `${0.2 * zoomFactor}vw`;
             boxShadow = `0 0 ${0.6 * zoomFactor}vw ${0.3 * zoomFactor}vw ${borderColor}`;
-          } else if (isMoveGroupHover) {
-            // Move tool hover - purple glow on layers and selections
+          } else if (isMoveGroupHover || isSelectGroupHover) {
             borderColor = '#9C27B0';
             borderWidth = `${0.2 * zoomFactor}vw`;
             boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
@@ -4115,10 +2791,10 @@ const savedData = ${dataString};
             // Use same contrast detection as line/curve previews
             const isLight = (() => {
               // If no color is set, pixel appears white, so treat as light
-              if (!displayC || displayC.length < 7) return true;
-              const r = parseInt(displayC.substring(1, 3), 16);
-              const g = parseInt(displayC.substring(3, 5), 16);
-              const b = parseInt(displayC.substring(5, 7), 16);
+              if (!c || c.length < 7) return true;
+              const r = parseInt(c.substring(1, 3), 16);
+              const g = parseInt(c.substring(3, 5), 16);
+              const b = parseInt(c.substring(5, 7), 16);
               const brightness = (r + g + b) / 3;
               return brightness > 127;
             })();
@@ -4129,40 +2805,26 @@ const savedData = ${dataString};
             // Use same contrast detection as line/curve previews
             const isLight = (() => {
               // If no color is set, pixel appears white, so treat as light
-              if (!displayC || displayC.length < 7) return true;
-              const r = parseInt(displayC.substring(1, 3), 16);
-              const g = parseInt(displayC.substring(3, 5), 16);
-              const b = parseInt(displayC.substring(5, 7), 16);
+              if (!c || c.length < 7) return true;
+              const r = parseInt(c.substring(1, 3), 16);
+              const g = parseInt(c.substring(3, 5), 16);
+              const b = parseInt(c.substring(5, 7), 16);
               const brightness = (r + g + b) / 3;
               return brightness > 127;
             })();
             borderColor = isLight ? '#000000' : '#CCCCCC';
             borderWidth = `${0.2 * zoomFactor}vw`;
           } else if (isCurveEnd) {
-            borderColor = getContrastBorderColor(displayC);
+            borderColor = getContrastBorderColor(c);
             borderWidth = `${0.2 * zoomFactor}vw`;
           } else if (isLineStart || isInLinePreview) {
-            borderColor = getContrastBorderColor(displayC);
+            borderColor = getContrastBorderColor(c);
             borderWidth = `${0.2 * zoomFactor}vw`;
           }
           
           // Get the display color (either current pixel or preview from dragged group)
-          let displayColor = displayC;
-          let dynamicTransform = '';
-          let isDynamicTransformed = false;
-          
-          // Apply dynamic CSS transform to __selected__ layer pixels during drag
-          if (isInSelectedLayer) {
-            if (selectionTransform.active && (selectionTransform.deltaRow !== 0 || selectionTransform.deltaCol !== 0)) {
-              const translateX = selectionTransform.deltaCol * displayPixelSize;
-              const translateY = selectionTransform.deltaRow * displayPixelSize;
-              dynamicTransform = `translate(${translateX}vw, ${translateY}vw)`;
-              isDynamicTransformed = true;
-            }
-          }
-          
-          // Legacy preview for non-__selected__ layer moves (if any)
-          if (isInDragPreview && !isDynamicTransformed) {
+          let displayColor = c;
+          if (isInDragPreview) {
             const deltaRow = groupDragCurrent.row - groupDragStart.startRow;
             const deltaCol = groupDragCurrent.col - groupDragStart.startCol;
             const currentRow = Math.floor(i / 200);
@@ -4170,48 +2832,54 @@ const savedData = ${dataString};
             const sourceRow = currentRow - deltaRow;
             const sourceCol = currentCol - deltaCol;
             const sourceIndex = sourceRow * 200 + sourceCol;
-            displayColor = getPixelDisplayColor(sourceIndex);
+            displayColor = pixelColors[sourceIndex] || c;
           }
           
-          // Make transparent pixels when there's no color (null) or when background image is loaded with white
-          const pixelBackground = (!displayColor || displayColor === null) ? 'transparent' : 
-                                  (backgroundImage && displayColor === '#ffffff') ? 'transparent' : displayColor;
-          
-          // Get HTML ID if this pixel is in the selected layer
-          let pixelHtmlId = undefined;
-          if (isInSelectedLayer && selectedLayer.pixelIdentifiers) {
-            pixelHtmlId = selectedLayer.pixelIdentifiers.get(i);
-          }
+          // Make white pixels transparent when background image is loaded
+          const pixelBackground = (backgroundImage && displayColor === '#ffffff') ? 'transparent' : displayColor;
           
           return (
             <div
               key={i}
-              id={pixelHtmlId}
               style={{ 
                 background: pixelBackground, 
                 boxSizing: 'border-box',
                 border: `${borderWidth} solid ${borderColor}`,
                 boxShadow,
                 position: 'relative',
-                zIndex: isInSelectedLayer ? 9999 : (pixelGroup ? pixelGroup.zIndex : 0),
-                opacity,
-                transform: dynamicTransform,
-                transition: isDynamicTransformed ? 'none' : 'transform 0.1s ease-out',
-                willChange: isDynamicTransformed ? 'transform' : 'auto',
-                pointerEvents: isDynamicTransformed ? 'none' : 'auto'
+                zIndex: pixelGroup ? pixelGroup.zIndex : 0,
+                opacity
               }}
               onPointerDown={(e) => {
-                // SELECT TOOL - Only creates rectangular selections (no movement)
-                if (activeDrawingTool === "select") {
+                // Check if clicking on a grouped pixel with movegroup tool and group is already selected
+                if (activeDrawingTool === "movegroup" && pixelGroup && activeGroup === pixelGroup.group) {
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
+                  setIsDrawing(true);
+                } else if (activeDrawingTool === "movegroup" && selectedPixels.includes(i)) {
+                  // Moving selected pixels (not in a group yet)
+                  setActiveGroup("__selected__");
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
+                  setIsDrawing(true);
+                } else if (activeDrawingTool === "select" && pixelGroup && activeGroup === pixelGroup.group) {
+                  // Select tool: clicking on already selected group enables drag-to-move
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
+                  setIsDrawing(true);
+                } else if (activeDrawingTool === "select" && selectedPixels.includes(i)) {
+                  // Select tool: clicking on a selected pixel enables drag-to-move
+                  setActiveGroup("__selected__");
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
+                  setIsDrawing(true);
+                } else if (activeDrawingTool === "select") {
+                  // Mobile two-click selection mode
                   if (size.w <= 1024) {
-                    // Mobile: two-click selection mode
                     if (selectionStart === null) {
                       // First click: set selection start
                       console.log("Mobile first click - setting selection start to", i);
-                      setActiveGroup(null);
+                      setActiveGroup(null); // Close any layer selection
                       setSelectionStart(i);
                       setSelectionEnd(null);
                       setSelectedPixels([]);
+                      // Don't set isDrawing for mobile mode
                     } else {
                       // Second click: finalize selection
                       console.log("Mobile second click - finalizing selection from", selectionStart, "to", i);
@@ -4223,52 +2891,13 @@ const savedData = ${dataString};
                       setSelectionEnd(null);
                     }
                   } else {
-                    // Desktop: drag to create rectangular selection
-                    setActiveGroup(null);
+                    // Desktop drag selection mode
+                    setActiveGroup(null); // Close any layer selection
                     setSelectionStart(i);
                     setSelectionEnd(i);
-                    setSelectedPixels([]);
                     setIsDrawing(true);
                   }
-                }
-                // MOVE TOOL - Only handles dragging layers/selections (no selection creation)
-                else if (activeDrawingTool === "movegroup") {
-                  // Priority 1: If there's an active selection, move only those pixels
-                  if (selectedPixels.length > 0 && selectedPixels.includes(i)) {
-                    // Clicking on a selected pixel - extract selection to __selected__
-                    const clickedPixelGroup = pixelGroups[i];
-                    if (clickedPixelGroup && clickedPixelGroup.group !== "__selected__") {
-                      // Extract only the selected pixels from the layer
-                      extractSelectionToSelected(clickedPixelGroup.group, selectedPixels);
-                    }
-                    setActiveGroup("__selected__");
-                    setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
-                    setGroupDragCurrent(null);
-                    setSelectionTransform({ deltaRow: 0, deltaCol: 0, active: true });
-                    setIsDrawing(true);
-                  }
-                  // Priority 2: No selection - move entire layer
-                  else if (pixelGroup) {
-                    // Clicking on a layer pixel - extract entire layer to __selected__
-                    extractLayerToSelected(pixelGroup.group);
-                    setActiveGroup("__selected__");
-                    setSelectedPixels([]); // Clear any rectangular selection
-                    setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
-                    setGroupDragCurrent(null);
-                    setSelectionTransform({ deltaRow: 0, deltaCol: 0, active: true });
-                    setIsDrawing(true);
-                  }
-                  // Priority 3: __selected__ layer exists (from previous operation)
-                  else if (activeGroup === "__selected__") {
-                    // Clicking on __selected__ layer - enable drag
-                    setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
-                    setGroupDragCurrent(null);
-                    setSelectionTransform({ deltaRow: 0, deltaCol: 0, active: true });
-                    setIsDrawing(true);
-                  }
-                }
-                // LINE TOOL
-                else if (activeDrawingTool === "line") {
+                } else if (activeDrawingTool === "line") {
                   if (lineStartPixel === null) {
                     // First click: set start point
                     setLineStartPixel(i);
@@ -4294,161 +2923,35 @@ const savedData = ${dataString};
                 }
               }}
               onPointerUp={(e) => {
-                // SELECT TOOL - Finalize rectangular selection
                 if (activeDrawingTool === "select") {
+                  // Desktop mode - finalize drag selection
                   if (size.w > 1024 && selectionStart !== null) {
-                    // Desktop: finalize drag selection
                     const selected = getSelectionPixels(selectionStart, selectionEnd || selectionStart);
                     setSelectedPixels(selected);
                     setSelectionStart(null);
                     setSelectionEnd(null);
                     setIsDrawing(false);
                   }
-                  // Mobile: selection finalized in onPointerDown
-                }
-                // MOVE TOOL - Finalize layer/selection movement
-                else if (activeDrawingTool === "movegroup" && groupDragStart !== null && activeGroup !== null) {
-                  console.log("=== POINTER UP: MOVE TOOL ===");
-                  // Check if __selected__ layer exists
-                  const selectedLayer = groups.find(g => g.name === "__selected__");
+                  // Mobile mode - selection is handled in onPointerDown
+                } else if (groupDragStart !== null && activeGroup !== null) {
+                  // Finalize group move
+                  const currentRow = Math.floor(i / 200);
+                  const currentCol = i % 200;
+                  const deltaRow = currentRow - groupDragStart.startRow;
+                  const deltaCol = currentCol - groupDragStart.startCol;
                   
-                  // Calculate movement delta from transform state (most accurate)
-                  const deltaRow = selectionTransform.deltaRow || 0;
-                  const deltaCol = selectionTransform.deltaCol || 0;
-                  
-                  console.log("onPointerUp: Movement delta", { 
-                    deltaRow, 
-                    deltaCol, 
-                    hasSelectedLayer: !!selectedLayer,
-                    activeGroup,
-                    selectionTransform
-                  });
-                  
-                  // Detect overlaps before moving
-                  let overlappedLayerNames = [];
                   if (deltaRow !== 0 || deltaCol !== 0) {
-                    if (selectedLayer && selectedLayer.originalPixelIndices) {
-                      // Calculate new positions
-                      const newPositions = selectedLayer.originalPixelIndices.map(idx => {
-                        const row = Math.floor(idx / 200);
-                        const col = idx % 200;
-                        const newRow = row + deltaRow;
-                        const newCol = col + deltaCol;
-                        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
-                          return newRow * 200 + newCol;
-                        }
-                        return null;
-                      }).filter(idx => idx !== null);
-                      
-                      // Check for overlaps
-                      const overlappedLayers = new Set();
-                      newPositions.forEach(newIdx => {
-                        const pixelGroup = pixelGroups[newIdx];
-                        if (pixelGroup && pixelGroup.group !== "__selected__" && pixelGroup.group !== selectedLayer.originalLayerName) {
-                          overlappedLayers.add(pixelGroup.group);
-                        }
-                      });
-                      
-                      overlappedLayerNames = Array.from(overlappedLayers);
-                      
-                      if (overlappedLayerNames.length > 0) {
-                        const layerList = overlappedLayerNames.join(", ");
-                        const confirmed = window.confirm(
-                          `This layer will move on top of: ${layerList}\n\n` +
-                          `The underlying layer pixels will be preserved but hidden.\n\n` +
-                          `Continue with move?`
-                        );
-                        
-                        if (!confirmed) {
-                          console.log("onPointerUp: Move cancelled by user");
-                          setGroupDragStart(null);
-                          dragStateRef.current.groupDragCurrent = null;
-                          setSelectionTransform({ deltaRow: 0, deltaCol: 0, active: false });
-                          setIsDrawing(false);
-                          return;
-                        }
-                      }
-                    }
-                  }
-                  
-                  // Apply movement if there was a delta
-                  let movedPixelIndices = null;
-                  if (deltaRow !== 0 || deltaCol !== 0) {
-                    console.log("onPointerUp: Applying movement", { deltaRow, deltaCol });
-                    if (selectedLayer) {
-                      movedPixelIndices = moveGroup("__selected__", deltaRow, deltaCol);
-                      console.log("onPointerUp: Got moved pixel indices", { count: movedPixelIndices?.length });
-                    } else if (activeGroup === "__selected__") {
-                      movedPixelIndices = moveGroup("__selected__", deltaRow, deltaCol);
-                      console.log("onPointerUp: Got moved pixel indices", { count: movedPixelIndices?.length });
+                    if (activeGroup === "__selected__") {
+                      moveSelectedPixels(deltaRow, deltaCol);
                     } else {
                       moveGroup(activeGroup, deltaRow, deltaCol);
                     }
-                  } else {
-                    console.log("onPointerUp: No movement delta, skipping moveGroup");
                   }
                   
-                  // Always restore __selected__ back to original layer if it exists
-                  if (selectedLayer) {
-                    console.log("onPointerUp: Restoring __selected__ to original layer");
-                    restoreSelectedToLayer(movedPixelIndices);
-                  } else {
-                    console.log("onPointerUp: No __selected__ layer to restore");
-                  }
-                  
-                  // Clear drag state and transform
-                  console.log("onPointerUp: Clearing drag state");
                   setGroupDragStart(null);
-                  dragStateRef.current.groupDragCurrent = null;
-                  setSelectionTransform({ deltaRow: 0, deltaCol: 0, active: false });
+                  setGroupDragCurrent(null);
+                  setActiveGroup(null);
                   setIsDrawing(false);
-                  // Keep layer selected after move
-                  
-                  // Force a complete UI refresh after move completes
-                  setTimeout(() => {
-                    setRenderTrigger(prev => prev + 1);
-                    setSelectionTransform({ deltaRow: 0, deltaCol: 0, active: false }); // Double-clear to ensure preview is gone
-                    console.log("onPointerUp: Forced render refresh and preview clear");
-                    
-                    // Reload all layers from localStorage to ensure original data is displayed
-                    setTimeout(() => {
-                      console.log("Reloading all layers from localStorage");
-                      try {
-                        const storedGroups = localStorage.getItem("pixelgrid_groups");
-                        if (storedGroups) {
-                          const parsedGroups = JSON.parse(storedGroups);
-                          
-                          // Reload groups from localStorage
-                          setGroups(parsedGroups.map(g => ({
-                            ...g,
-                            pixels: Object.freeze({ ...g.pixels }),
-                            originalSelectionArea: g.originalSelectionArea || []
-                          })));
-                          
-                          // Rebuild pixelGroups from localStorage layer data
-                          const newPixelGroups = {};
-                          parsedGroups.forEach(layer => {
-                            if (layer.pixels) {
-                              Object.keys(layer.pixels).forEach(pixelIndex => {
-                                const idx = parseInt(pixelIndex, 10);
-                                newPixelGroups[idx] = {
-                                  group: layer.name,
-                                  zIndex: layer.zIndex || 0
-                                };
-                              });
-                            }
-                          });
-                          setPixelGroups(newPixelGroups);
-                          
-                          console.log("Layers reloaded from localStorage");
-                        }
-                      } catch (error) {
-                        console.error("Failed to reload layers from localStorage:", error);
-                      }
-                    }, 100);
-                  }, 0);
-                  
-                  console.log("=== POINTER UP: MOVE TOOL COMPLETE ===");
                 }
               }}
               onClick={(e) => {
@@ -4457,98 +2960,30 @@ const savedData = ${dataString};
                 }
               }}
               onPointerEnter={() => {
-                // SELECT TOOL - Update selection rectangle preview
                 if (activeDrawingTool === "select") {
+                  // Mobile preview - show rectangle when hovering after first click
                   if (size.w <= 1024 && selectionStart !== null && selectionEnd === null) {
-                    // Mobile: show preview rectangle while hovering
-                    setSelectionEnd(i);
-                  } else if (size.w > 1024 && isDrawing && selectionStart !== null) {
-                    // Desktop: update selection during drag
                     setSelectionEnd(i);
                   }
-                }
-                // MOVE TOOL - Update drag preview position
-                else if (activeDrawingTool === "movegroup" && groupDragStart !== null && activeGroup !== null && isDrawing) {
-                  const currentRow = Math.floor(i / 200);
-                  const currentCol = i % 200;
-                  let deltaRow = currentRow - groupDragStart.startRow;
-                  let deltaCol = currentCol - groupDragStart.startCol;
-                  
-                  // Clamp delta to prevent moving outside bounds
-                  const selectedLayer = groups.find(g => g.name === "__selected__");
-                  if (selectedLayer && selectedLayer.originalPixelIndices) {
-                    // Calculate min/max row/col from originalPixelIndices
-                    let minRow = rows, maxRow = 0, minCol = 200, maxCol = 0;
-                    selectedLayer.originalPixelIndices.forEach(idx => {
-                      const r = Math.floor(idx / 200);
-                      const c = idx % 200;
-                      minRow = Math.min(minRow, r);
-                      maxRow = Math.max(maxRow, r);
-                      minCol = Math.min(minCol, c);
-                      maxCol = Math.max(maxCol, c);
-                    });
-                    
-                    // Clamp deltaRow and deltaCol to keep selection within bounds
-                    const maxDeltaRowUp = -minRow;
-                    const maxDeltaRowDown = rows - 1 - maxRow;
-                    const maxDeltaColLeft = -minCol;
-                    const maxDeltaColRight = 200 - 1 - maxCol;
-                    
-                    deltaRow = Math.max(maxDeltaRowUp, Math.min(maxDeltaRowDown, deltaRow));
-                    deltaCol = Math.max(maxDeltaColLeft, Math.min(maxDeltaColRight, deltaCol));
+                  // Desktop drag selection
+                  else if (size.w > 1024 && isDrawing) {
+                    setSelectionEnd(i);
                   }
-                  
-                  setSelectionTransform({ deltaRow, deltaCol, active: true });
-                  // Store current position in ref for onPointerUp (no re-render)
-                  dragStateRef.current.groupDragCurrent = { row: currentRow, col: currentCol };
                 }
                 setHoveredPixel(i);
               }}
               onPointerMove={(e) => {
                 setHoveredPixel(i);
                 
-                // SELECT TOOL - Update selection rectangle during desktop drag
-                if (activeDrawingTool === "select" && size.w > 1024 && isDrawing && selectionStart !== null) {
-                  setSelectionEnd(i);
-                }
-                // MOVE TOOL - Track drag position for visual preview
-                else if (activeDrawingTool === "movegroup" && groupDragStart !== null && activeGroup !== null && isDrawing) {
+                // Track current drag position for visual feedback (no actual move yet)
+                if (groupDragStart !== null && activeGroup !== null && isDrawing) {
                   const currentRow = Math.floor(i / 200);
                   const currentCol = i % 200;
-                  let deltaRow = currentRow - groupDragStart.startRow;
-                  let deltaCol = currentCol - groupDragStart.startCol;
-                  
-                  // Clamp delta to prevent moving outside bounds
-                  const selectedLayer = groups.find(g => g.name === "__selected__");
-                  if (selectedLayer && selectedLayer.originalPixelIndices) {
-                    // Calculate min/max row/col from originalPixelIndices
-                    let minRow = rows, maxRow = 0, minCol = 200, maxCol = 0;
-                    selectedLayer.originalPixelIndices.forEach(idx => {
-                      const r = Math.floor(idx / 200);
-                      const c = idx % 200;
-                      minRow = Math.min(minRow, r);
-                      maxRow = Math.max(maxRow, r);
-                      minCol = Math.min(minCol, c);
-                      maxCol = Math.max(maxCol, c);
-                    });
-                    
-                    // Clamp deltaRow and deltaCol to keep selection within bounds
-                    const maxDeltaRowUp = -minRow;
-                    const maxDeltaRowDown = rows - 1 - maxRow;
-                    const maxDeltaColLeft = -minCol;
-                    const maxDeltaColRight = 200 - 1 - maxCol;
-                    
-                    deltaRow = Math.max(maxDeltaRowUp, Math.min(maxDeltaRowDown, deltaRow));
-                    deltaCol = Math.max(maxDeltaColLeft, Math.min(maxDeltaColRight, deltaCol));
-                  }
-                  
-                  setSelectionTransform({ deltaRow, deltaCol, active: true });
-                  // Store current position in ref for onPointerUp (no re-render)
-                  dragStateRef.current.groupDragCurrent = { row: currentRow, col: currentCol };
+                  setGroupDragCurrent({ row: currentRow, col: currentCol });
                 }
               }}
               onPointerLeave={() => {
-                // SELECT TOOL - Clear mobile preview when leaving pixel
+                // Clear mobile selection preview when leaving pixel
                 if (activeDrawingTool === "select" && size.w <= 1024 && selectionStart !== null && selectedPixels.length === 0) {
                   setSelectionEnd(null);
                 }
@@ -4912,49 +3347,13 @@ const savedData = ${dataString};
                   drawLine(lineStartPixel, curveEndPixel);
                 } else {
                   const curvePixels = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount);
-                  
-                  if (activeGroup && activeGroup !== "__selected__") {
-                    // Draw curve on layer
-                    setGroups(prevGroups => {
-                      const updated = prevGroups.map(g => {
-                        if (g.name === activeGroup) {
-                          const newPixels = { ...g.pixels };
-                          curvePixels.forEach(idx => {
-                            const pixelGroup = pixelGroups[idx];
-                            if (!pixelGroup || pixelGroup.group === activeGroup) {
-                              newPixels[idx] = color;
-                            }
-                          });
-                          return Object.freeze({ ...g, pixels: Object.freeze(newPixels) });
-                        }
-                        return g;
-                      });
-                      
-                      // Save to localStorage
-                      try {
-                        const frozenGroups = updated.filter(g => g.name !== "__selected__").map(g => ({
-                          name: g.name,
-                          zIndex: g.zIndex,
-                          pixels: { ...g.pixels },
-                          locked: g.locked
-                        }));
-                        localStorage.setItem("pixelgrid_groups", JSON.stringify(frozenGroups));
-                      } catch (error) {
-                        console.error("Failed to save to localStorage:", error);
-                      }
-                      
-                      return updated;
+                  setPixelColors((prev) => {
+                    const copy = [...prev];
+                    curvePixels.forEach(idx => {
+                      copy[idx] = color;
                     });
-                  } else {
-                    // Draw curve on base pixelColors
-                    setPixelColors((prev) => {
-                      const copy = [...prev];
-                      curvePixels.forEach(idx => {
-                        copy[idx] = color;
-                      });
-                      return copy;
-                    });
-                  }
+                    return copy;
+                  });
                 }
                 setLineStartPixel(null);
                 setCurveEndPixel(null);
@@ -4978,7 +3377,7 @@ const savedData = ${dataString};
       )}
 
       {/* RIGHT SIDEBAR CONTAINER - Desktop Grid Layout */}
-      {size.w > 1024 && (activeDrawingTool === "select" || showLayersMenu) && (
+      {viewMode === "layers" && size.w > 1024 && (activeDrawingTool === "select" || showLayersMenu) && (
         <div style={{
           position: "fixed",
           top: 0,
@@ -4986,7 +3385,7 @@ const savedData = ${dataString};
           width: "25vw",
           height: "100vh",
           display: "grid",
-          gridTemplateRows: (activeDrawingTool === "select" && showLayersMenu) ? "auto 1fr" : showLayersMenu ? "1fr" : "1fr",
+          gridTemplateRows: activeDrawingTool === "select" && showLayersMenu ? "auto 1fr" : "1fr",
           zIndex: 1000
         }}>
           {/* SELECT MENU - Row 1 */}
@@ -5095,60 +3494,16 @@ const savedData = ${dataString};
             <div style={{
               background: "#ffffff",
               color: "#000000",
-              padding: "0px",
+              padding: "0.8vw",
               display: "flex",
               flexDirection: "column",
-              gap: "0px",
+              gap: "0.5vw",
               borderLeft: "0.3vw solid #000000",
-              overflow: "hidden",
-              position: "relative"
+              overflowY: "auto"
             }}>
               
-              {/* Scrollable Content Container */}
-              <div 
-                ref={(el) => {
-                  if (el) {
-                    el.layersScrollContainer = true;
-                  }
-                }}
-                style={{
-                  padding: "0px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0px",
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  scrollbarWidth: "none", // Hide default scrollbar for Firefox
-                  msOverflowStyle: "none", // Hide default scrollbar for IE/Edge
-                  flex: 1,
-                  position: "relative"
-                }}
-                onScroll={(e) => {
-                  const container = e.target;
-                  const scrollbar = container.parentElement?.querySelector('[data-vertical-scrollbar="true"]');
-                  if (scrollbar) {
-                    const maxScroll = container.scrollHeight - container.clientHeight;
-                    const scrollPercent = maxScroll > 0 ? container.scrollTop / maxScroll : 0;
-                    const trackHeight = scrollbar.offsetHeight;
-                    const thumbHeight = Math.max(20, (container.clientHeight / container.scrollHeight) * trackHeight);
-                    const maxThumbTop = trackHeight - thumbHeight;
-                    const thumbTop = scrollPercent * maxThumbTop;
-                    const thumb = scrollbar.querySelector('[data-vertical-scrollbar-thumb="true"]');
-                    if (thumb) {
-                      thumb.style.top = `${thumbTop}px`;
-                    }
-                  }
-                }}
-              >
-                {/* Add CSS to hide webkit scrollbar */}
-                <style>{`
-                  [ref*="layersScrollContainer"]::-webkit-scrollbar {
-                    display: none;
-                  }
-                `}</style>
-              
               {/* Layers Menu Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5vw" }}>
                 <div style={{ fontSize: "2vw", fontWeight: "bold", color: "#000000" }}>
                   Layers
                 </div>
@@ -5157,13 +3512,13 @@ const savedData = ${dataString};
                   style={{
                     background: "#666",
                     color: "white",
-                    border: "0.2vw solid #000",
-                    padding: "0px",
+                    border: "0.15vw solid #000",
+                    padding: "0",
                     cursor: "pointer",
                     fontSize: "1.5vw",
                     fontWeight: "bold",
-                    width: "10vw",
-                    height: "10vw",
+                    width: "5vw",
+                    height: "5vw",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center"
@@ -5174,7 +3529,7 @@ const savedData = ${dataString};
               </div>
               
               {/* Group Creation Section */}
-              <div style={{ display: "flex", gap: "0px", alignItems: "center", marginBottom: "0px" }}>
+              <div style={{ display: "flex", gap: "0.5vw", alignItems: "center", marginBottom: "0.3vw" }}>
                 <input
                   type="text"
                   placeholder="Group name"
@@ -5185,14 +3540,14 @@ const savedData = ${dataString};
                     }
                   }}
                   style={{
-                    padding: "0px",
+                    padding: "0.3vw 0.5vw",
                     fontSize: "1.5vw",
-                    border: "0.2vw solid #000",
+                    border: "0.2vw solid #4CAF50",
                     textAlign: "center",
-                    background: "#fff",
-                    color: "#fff",
+                    background: "#222",
+                    color: "white",
                     flex: 1,
-                    lineHeight: "10vw"
+                    lineHeight: "5vw"
                   }}
                 />
                 <button
@@ -5204,9 +3559,9 @@ const savedData = ${dataString};
                     }
                   }}
                   style={{
-                    background: "#fff",
-                    color: "#fff",
-                    border: "0.2vw solid #000",
+                    background: "#000000",
+                    color: "white",
+                    border: "0.15vw solid #000",
                     cursor: "pointer",
                     fontSize: "1.5vw",
                     fontWeight: "bold",
@@ -5214,8 +3569,8 @@ const savedData = ${dataString};
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: "10vw",
-                    height: "10vw",
+                    width: "2.5vw",
+                    height: "2.5vw",
                     borderRadius: "0"
                   }}
                 >
@@ -5223,27 +3578,89 @@ const savedData = ${dataString};
                 </button>
               </div>
               
+              {/* Active Layer Editing Section */}
+              {activeGroup && (
+                <>
+                  <div style={{ fontSize: "2vw", fontWeight: "bold", color: "#000000", marginBottom: "0.3vw" }}>
+                    Rename
+                  </div>
+                  <div style={{ display: "flex", gap: "0.5vw", alignItems: "center", marginBottom: "0.3vw" }}>
+                    <input
+                      type="text"
+                      value={groups.find(g => g.name === activeGroup)?.name || activeGroup}
+                      onChange={(e) => {
+                        if (e.target.value.trim()) {
+                          const newGroups = groups.map(g => 
+                            g.name === activeGroup ? { ...g, name: e.target.value.trim() } : g
+                          );
+                          setGroups(newGroups);
+                          
+                          const newPixelGroups = {};
+                          Object.keys(pixelGroups).forEach(idx => {
+                            const pg = pixelGroups[idx];
+                            newPixelGroups[idx] = pg.group === activeGroup 
+                              ? { ...pg, group: e.target.value.trim() }
+                              : pg;
+                          });
+                          setPixelGroups(newPixelGroups);
+                          setActiveGroup(e.target.value.trim());
+                        }
+                      }}
+                      placeholder="Rename layer"
+                      style={{
+                        padding: "0.3vw 0.5vw",
+                        fontSize: "1.5vw",
+                        border: "0.2vw solid #FFD700",
+                        textAlign: "center",
+                        background: "#222",
+                        color: "white",
+                        flex: 1,
+                        lineHeight: "5vw"
+                      }}
+                    />
+                    <button
+                      onClick={() => setActiveGroup(null)}
+                      style={{
+                        background: "#666",
+                        color: "white",
+                        border: "0.2vw solid #000",
+                        cursor: "pointer",
+                        fontSize: "1.3vw",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "2.5vw",
+                        height: "2.5vw",
+                        borderRadius: "0"
+                      }}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </>
+              )}
               
               {/* Layers Grid - Desktop */}
               <div style={{
                 display: "grid",
                 gridTemplateColumns: "auto 1fr auto auto auto",
-                gap: "0px",
+                gap: "0.3vw",
                 alignItems: "center",
                 background: "#1a1a1a",
-                padding: "0px",
+                padding: "0.3vw",
                 borderRadius: "0",
                 fontSize: "0.7vw"
               }}>
                 {/* Header Row */}
-                <div style={{ fontWeight: "bold", padding: "0px", color: "white" }}>Z</div>
-                <div style={{ fontWeight: "bold", padding: "0px", color: "white" }}>Name</div>
-                <div style={{ fontWeight: "bold", padding: "0px", color: "white" }}>Up</div>
-                <div style={{ fontWeight: "bold", padding: "0px", color: "white" }}>Down</div>
-                <div style={{ fontWeight: "bold", padding: "0px", color: "white" }}>Del</div>
+                <div style={{ fontWeight: "bold", padding: "0.2vw", color: "white" }}>Z</div>
+                <div style={{ fontWeight: "bold", padding: "0.2vw", color: "white" }}>Name</div>
+                <div style={{ fontWeight: "bold", padding: "0.2vw", color: "white" }}>Up</div>
+                <div style={{ fontWeight: "bold", padding: "0.2vw", color: "white" }}>Down</div>
+                <div style={{ fontWeight: "bold", padding: "0.2vw", color: "white" }}>Del</div>
                 
                 {/* Layer Rows - Sorted by z-index descending */}
-                {groups.filter(g => g.name !== "__selected__").sort((a, b) => b.zIndex - a.zIndex).map((group, index) => (
+                {groups.sort((a, b) => b.zIndex - a.zIndex).map((group, index) => (
                   <div
                     key={group.name}
                     draggable
@@ -5300,107 +3717,43 @@ const savedData = ${dataString};
                   >
                     {/* Z-Index */}
                     <div style={{
-                      fontSize: "3vw",
+                      fontSize: "0.8vw",
                       fontWeight: "bold",
-                      padding: "0px",
-                      background: "#000",
-                      color: "#fff",
+                      padding: "0.3vw",
+                      background: dragOverLayer === group.name ? "#333" : (activeGroup === group.name ? "#2196F3" : "#222"),
                       borderRadius: "0",
                       textAlign: "center",
-                      border: "0.15vw solid #fff",
-                      cursor: "grab",
-                      width: "10vw",
-                      height: "10vw",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center"
+                      border: dragOverLayer === group.name ? "0.15vw dashed #FFD700" : "0.15vw solid #444",
+                      cursor: "grab"
                     }}>
                       {group.zIndex}
                     </div>
                     
                     {/* Layer Name */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0px", flex: 1 }}>
-                      <div style={{ position: "relative", display: "flex" }}>
-                        <div
-                          onClick={() => {
-                            const isActivating = activeGroup !== group.name;
-                            setActiveGroup(activeGroup === group.name ? null : group.name);
-                            setSelectedPixels([]); // Clear green selection preview
-                            setSelectionStart(null); // Clear selection state
-                            setSelectionEnd(null);
-                            // If activating this layer, restore original selection from localStorage
-                            if (isActivating) {
-                              try {
-                                const storedGroups = localStorage.getItem("pixelgrid_groups");
-                                if (storedGroups) {
-                                  const parsedGroups = JSON.parse(storedGroups);
-                                  const storedLayer = parsedGroups.find(g => g.name === group.name);
-                                  if (storedLayer && storedLayer.originalSelectionArea && storedLayer.originalSelectionArea.length > 0) {
-                                    setSelectedPixels(storedLayer.originalSelectionArea);
-                                  }
-                                }
-                              } catch (error) {
-                                console.error("Failed to restore selection from localStorage:", error);
-                              }
-                            }
-                          }}
-                          style={{
-                            fontSize: "3vw",
-                            padding: "0px",
-                            background: "#000",
-                            borderRadius: "0",
-                            color: "#fff",
-                            cursor: "pointer",
-                            border: "0.15vw solid #fff",
-                            fontWeight: "normal",
-                            overflow: "hidden",
-                            lineHeight: "10vw",
-                            height: "10vw",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            flex: 1
-                          }}
-                        >
-                          {group.name}
-                        </div>
-                        <button
-                          onClick={() => {
-                            const newName = prompt("Enter new name for layer:", group.name);
-                            if (newName && newName.trim() && newName !== group.name) {
-                              const newGroups = groups.map(g => 
-                                g.name === group.name ? { ...g, name: newName.trim() } : g
-                              );
-                              setGroups(newGroups);
-                              const newPixelGroups = {};
-                              Object.keys(pixelGroups).forEach(idx => {
-                                const pg = pixelGroups[idx];
-                                newPixelGroups[idx] = pg.group === group.name 
-                                  ? { ...pg, group: newName.trim() }
-                                  : pg;
-                              });
-                              setPixelGroups(newPixelGroups);
-                              if (activeGroup === group.name) {
-                                setActiveGroup(newName.trim());
-                              }
-                            }
-                          }}
-                          style={{
-                            width: "5vw",
-                            height: "10vw",
-                            background: "#000",
-                            color: "#fff",
-                            border: "0.15vw solid #fff",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "2.5vw",
-                            fontWeight: "bold",
-                            borderRadius: "0"
-                          }}
-                        >
-                          ✎
-                        </button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.2vw", flex: 1 }}>
+                      <div
+                        onClick={() => {
+                          setActiveGroup(activeGroup === group.name ? null : group.name);
+                          setSelectedPixels([]); // Clear green selection preview
+                          setSelectionStart(null); // Clear selection state
+                          setSelectionEnd(null);
+                        }}
+                        style={{
+                          fontSize: "0.8vw",
+                          padding: "0.3vw",
+                          background: "#000",
+                          color: "white",
+                          borderRadius: "0",
+                          cursor: "pointer",
+                          border: "0.15vw solid white",
+                          fontWeight: activeGroup === group.name ? "bold" : "normal",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          lineHeight: "5vw"
+                        }}
+                      >
+                        {group.name}
                       </div>
                       
                       {/* Directional Movement Buttons - Show when movegroup tool is active and this layer is active */}
@@ -5497,6 +3850,52 @@ const savedData = ${dataString};
                       )}
                     </div>
                     
+                    {/* Edit Button */}
+                    <button
+                      onClick={() => setActiveGroup(group.name)}
+                      style={{
+                        background: activeGroup === group.name ? "#FFD700" : "#444",
+                        color: activeGroup === group.name ? "#000" : "white",
+                        border: "0.1vw solid #000",
+                        width: "2.5vw",
+                      height: "2.5vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "0.7vw",
+                        fontWeight: "bold",
+                        borderRadius: "0"
+                      }}
+                    >
+                      {activeGroup === group.name ? "✓" : "✎"}
+                    </button>
+                    
+                    {/* Move Layer Button */}
+                    <button
+                      onClick={() => {
+                        setActiveGroup(group.name);
+                        setActiveDrawingTool("movegroup");
+                      }}
+                      style={{
+                        background: activeGroup === group.name && activeDrawingTool === "movegroup" ? "#9C27B0" : "#555",
+                        color: "white",
+                        border: "0.2vw solid #000",
+                        width: "2.5vw",
+                      height: "2.5vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "1.2vw",
+                        fontWeight: "bold",
+                        borderRadius: "0"
+                      }}
+                      title="Click to enable move mode, then drag pixels on canvas"
+                    >
+                      ☩
+                    </button>
+                    
                     {/* Move Up Button */}
                     <button
                       onClick={() => {
@@ -5514,16 +3913,16 @@ const savedData = ${dataString};
                         setPixelGroups(newPixelGroups);
                       }}
                       style={{
-                        background: "#fff",
-                        color: "#000",
+                        background: "#444",
+                        color: "white",
                         border: "0.2vw solid #000",
-                        width: "10vw",
-                        height: "10vw",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        width: "2.5vw",
+                      height: "2.5vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                         cursor: "pointer",
-                        fontSize: "2.5vw",
+                        fontSize: "1vw",
                         fontWeight: "bold",
                         borderRadius: "0"
                       }}
@@ -5548,16 +3947,16 @@ const savedData = ${dataString};
                         setPixelGroups(newPixelGroups);
                       }}
                       style={{
-                        background: "#fff",
-                        color: "#000",
+                        background: "#444",
+                        color: "white",
                         border: "0.2vw solid #000",
-                        width: "10vw",
-                        height: "10vw",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        width: "2.5vw",
+                      height: "2.5vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                         cursor: "pointer",
-                        fontSize: "2.5vw",
+                        fontSize: "1vw",
                         fontWeight: "bold",
                         borderRadius: "0"
                       }}
@@ -5568,10 +3967,6 @@ const savedData = ${dataString};
                     {/* Delete Button */}
                     <button
                       onClick={() => {
-                        if (group.locked) {
-                          alert("Background layer is locked and cannot be deleted.");
-                          return;
-                        }
                         if (window.confirm(`Delete layer "${group.name}"? This will ungroup all pixels.`)) {
                           // Remove group
                           setGroups(groups.filter(g => g.name !== group.name));
@@ -5592,16 +3987,16 @@ const savedData = ${dataString};
                         }
                       }}
                       style={{
-                        background: "#fff",
-                        color: "#000",
+                        background: "#f44336",
+                        color: "white",
                         border: "0.2vw solid #000",
-                        width: "10vw",
-                        height: "10vw",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        width: "2.5vw",
+                      height: "2.5vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                         cursor: "pointer",
-                        fontSize: "2.5vw",
+                        fontSize: "1vw",
                         fontWeight: "bold",
                         borderRadius: "0"
                       }}
@@ -5610,48 +4005,6 @@ const savedData = ${dataString};
                     </button>
                   </div>
                 ))}
-              </div>
-              </div>
-              
-              {/* Custom Vertical Scrollbar */}
-              <div
-                data-vertical-scrollbar="true"
-                style={{
-                  position: "absolute",
-                  right: "0",
-                  top: "0",
-                  bottom: "0",
-                  width: "2vw",
-                  background: "#ddd",
-                  borderLeft: "0.2vw solid #000",
-                  pointerEvents: "auto"
-                }}
-                onPointerDown={(e) => {
-                  const scrollbar = e.currentTarget;
-                  const container = scrollbar.parentElement?.querySelector('[ref*="layersScrollContainer"]');
-                  if (!container) return;
-                  
-                  const rect = scrollbar.getBoundingClientRect();
-                  const y = e.clientY - rect.top;
-                  const percent = y / rect.height;
-                  const maxScroll = container.scrollHeight - container.clientHeight;
-                  container.scrollTop = percent * maxScroll;
-                }}
-              >
-                <div
-                  data-vertical-scrollbar-thumb="true"
-                  style={{
-                    position: "absolute",
-                    left: "0",
-                    right: "0",
-                    top: "0",
-                    height: "20px",
-                    background: "#000",
-                    border: "0.1vw solid #fff",
-                    cursor: "pointer",
-                    minHeight: "20px"
-                  }}
-                />
               </div>
             </div>
           )}
@@ -5765,37 +4118,27 @@ const savedData = ${dataString};
       )}
 
       {/* LAYERS MENU - Mobile Only */}
-      {showLayersMenu && size.w <= 1024 && (
+      {viewMode === "layers" && showLayersMenu && size.w <= 1024 && (
         <div style={{
           position: "fixed",
           bottom: "10vw",
+          top: activeDrawingTool === "select" ? "auto" : "20vw",
           left: "10vw",
           right: 0,
           background: "#ffffff",
-          color: "#ffffff",
+          color: "#000000",
+          padding: "0.8vw",
           zIndex: 1000,
-          display: "grid",
-          gridTemplateColumns: "1fr 10vw",
-          gap: "0px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5vw",
           borderTop: "0.3vw solid #000000",
-          height: "35vw"
+          height: activeDrawingTool === "select" ? "35vw" : "auto",
+          overflowY: "auto"
         }}>
-          {/* Main Content Area */}
-          <div 
-            data-mobile-layers-scroll-container="true"
-            onScroll={(e) => setVerticalScrollPosition(e.target.scrollTop)}
-            style={{
-            padding: "0px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0px",
-            overflowY: "auto",
-            scrollbarWidth: "none",
-            msOverflowStyle: "none"
-          }}>
           
           {/* Layers Menu Header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5vw" }}>
             <div style={{ fontSize: "2vw", fontWeight: "bold", color: "#000000" }}>
               Layers
             </div>
@@ -5804,13 +4147,13 @@ const savedData = ${dataString};
               style={{
                 background: "#666",
                 color: "white",
-                border: "0.2vw solid #000",
-                padding: "0px",
+                border: "0.15vw solid #000",
+                padding: "0",
                 cursor: "pointer",
                 fontSize: "1.5vw",
                 fontWeight: "bold",
-                width: "10vw",
-                height: "10vw",
+                width: "5vw",
+                height: "5vw",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center"
@@ -5821,7 +4164,7 @@ const savedData = ${dataString};
           </div>
           
           {/* Group Creation Section */}
-          <div style={{ display: "flex", gap: "0px", alignItems: "center", marginBottom: "0px" }}>
+          <div style={{ display: "flex", gap: "0.5vw", alignItems: "center", marginBottom: "0.3vw" }}>
             <input
               type="text"
               placeholder="Group name"
@@ -5832,14 +4175,14 @@ const savedData = ${dataString};
                 }
               }}
               style={{
-                padding: "0px",
+                padding: "0.3vw 0.5vw",
                 fontSize: "1.5vw",
-                border: "0.2vw solid #000",
+                border: "0.2vw solid #4CAF50",
                 textAlign: "center",
-                background: "#fff",
-                color: "#fff",
+                background: "#222",
+                color: "white",
                 flex: 1,
-                lineHeight: "10vw"
+                lineHeight: "5vw"
               }}
             />
             <button
@@ -5851,9 +4194,9 @@ const savedData = ${dataString};
                 }
               }}
               style={{
-                background: "#fff",
-                color: "#fff",
-                border: "0.2vw solid #000",
+                background: "#000000",
+                color: "white",
+                border: "0.15vw solid #000",
                 cursor: "pointer",
                 fontSize: "1.5vw",
                 fontWeight: "bold",
@@ -5861,8 +4204,8 @@ const savedData = ${dataString};
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: "10vw",
-                height: "10vw",
+                width: "2.5vw",
+                height: "2.5vw",
                 borderRadius: "0"
               }}
             >
@@ -5870,25 +4213,90 @@ const savedData = ${dataString};
             </button>
           </div>
           
+          {/* Active Layer Editing Section */}
+          {activeGroup && (
+            <>
+              <div style={{ fontSize: "2vw", fontWeight: "bold", color: "#000000", marginBottom: "0.3vw" }}>
+                Rename
+              </div>
+              <div style={{ display: "flex", gap: "0.5vw", alignItems: "center", marginBottom: "0.3vw" }}>
+                <input
+                  type="text"
+                  value={groups.find(g => g.name === activeGroup)?.name || activeGroup}
+                  onChange={(e) => {
+                    if (e.target.value.trim()) {
+                      const newGroups = groups.map(g => 
+                        g.name === activeGroup ? { ...g, name: e.target.value.trim() } : g
+                      );
+                      setGroups(newGroups);
+                      
+                      const newPixelGroups = {};
+                      Object.keys(pixelGroups).forEach(idx => {
+                        const pg = pixelGroups[idx];
+                        newPixelGroups[idx] = pg.group === activeGroup 
+                          ? { ...pg, group: e.target.value.trim() }
+                          : pg;
+                      });
+                      setPixelGroups(newPixelGroups);
+                      setActiveGroup(e.target.value.trim());
+                    }
+                  }}
+                  placeholder="Rename layer"
+                  style={{
+                    padding: "0.3vw 0.5vw",
+                    fontSize: "1.5vw",
+                    border: "0.2vw solid #FFD700",
+                    textAlign: "center",
+                    background: "#222",
+                    color: "white",
+                    flex: 1,
+                    lineHeight: "5vw"
+                  }}
+                />
+                <button
+                  onClick={() => setActiveGroup(null)}
+                  style={{
+                    background: "#666",
+                    color: "white",
+                    border: "0.2vw solid #000",
+                    cursor: "pointer",
+                    fontSize: "1.3vw",
+                    fontWeight: "bold",
+                    width: "2.5vw",
+                    height: "2.5vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "0"
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            </>
+          )}
+          
               <div style={{
                 display: "grid",
-                gridTemplateColumns: "auto 1fr auto auto auto",
-                gap: "0px",
+                gridTemplateColumns: "auto 1fr auto auto auto auto auto",
+                gap: "0.3vw",
                 alignItems: "center",
                 background: "#1a1a1a",
-                padding: "0px",
+                padding: "0.3vw",
                 borderRadius: "0",
                 fontSize: "0.7vw"
               }}>
                 {/* Header Row */}
-                <div style={{ fontWeight: "bold", padding: "0px", color: "white" }}>Z</div>
-                <div style={{ fontWeight: "bold", padding: "0px", color: "white" }}>Name</div>
-                <div style={{ fontWeight: "bold", padding: "0px", color: "white" }}>Up</div>
-                <div style={{ fontWeight: "bold", padding: "0px", color: "white" }}>Down</div>
-                <div style={{ fontWeight: "bold", padding: "0px", color: "white" }}>Del</div>
+                <div style={{ fontWeight: "bold", padding: "0.2vw" }}>Z</div>
+                <div style={{ fontWeight: "bold", padding: "0.2vw" }}>Name</div>
+                <div style={{ fontWeight: "bold", padding: "0.2vw" }}>Edit</div>
+                <div style={{ fontWeight: "bold", padding: "0.2vw" }}>Move</div>
+                <div style={{ fontWeight: "bold", padding: "0.2vw" }}>Up</div>
+                <div style={{ fontWeight: "bold", padding: "0.2vw" }}>Down</div>
+                <div style={{ fontWeight: "bold", padding: "0.2vw" }}>Del</div>
                 
                 {/* Layer Rows - Sorted by z-index descending */}
-                {groups.filter(g => g.name !== "__selected__").sort((a, b) => b.zIndex - a.zIndex).map((group, index) => (
+                {groups.sort((a, b) => b.zIndex - a.zIndex).map((group, index) => (
                   <div
                     key={group.name}
                     draggable
@@ -5945,96 +4353,184 @@ const savedData = ${dataString};
                   >
                     {/* Z-Index */}
                     <div style={{
-                      fontSize: "3vw",
+                      fontSize: "0.8vw",
                       fontWeight: "bold",
-                      padding: "0px",
-                      background: "#000",
-                      color: "#fff",
+                      padding: "0.3vw",
+                      background: dragOverLayer === group.name ? "#333" : (activeGroup === group.name ? "#2196F3" : "#222"),
                       borderRadius: "0",
                       textAlign: "center",
-                      border: "0.15vw solid #fff",
-                      cursor: "grab",
-                      width: "10vw",
-                      height: "10vw",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center"
+                      border: dragOverLayer === group.name ? "0.15vw dashed #FFD700" : "0.15vw solid #444",
+                      cursor: "grab"
                     }}>
                       {group.zIndex}
                     </div>
                     
-                    {/* Layer Name with Edit Button */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0px", flex: 1 }}>
-                      <div style={{ position: "relative", display: "flex" }}>
-                        <div
-                          onClick={() => {
-                            setActiveGroup(activeGroup === group.name ? null : group.name);
-                            setSelectedPixels([]);
-                            setSelectionStart(null);
-                            setSelectionEnd(null);
-                          }}
-                          style={{
-                            fontSize: "3vw",
-                            padding: "0px",
-                            background: "#000",
-                            borderRadius: "0",
-                            color: "#fff",
-                            cursor: "pointer",
-                            border: "0.15vw solid #fff",
-                            fontWeight: "normal",
-                            overflow: "hidden",
-                            lineHeight: "10vw",
-                            height: "10vw",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            flex: 1
-                          }}
-                        >
-                          {group.name}
-                        </div>
-                        <button
-                          onClick={() => {
-                            const newName = prompt("Enter new name:", group.name);
-                            if (newName && newName.trim() && newName !== group.name) {
-                              const newGroups = groups.map(g => 
-                                g.name === group.name ? { ...g, name: newName.trim() } : g
-                              );
-                              setGroups(newGroups);
-                              
-                              const newPixelGroups = {};
-                              Object.keys(pixelGroups).forEach(idx => {
-                                const pg = pixelGroups[idx];
-                                newPixelGroups[idx] = pg.group === group.name 
-                                  ? { ...pg, group: newName.trim() }
-                                  : pg;
-                              });
-                              setPixelGroups(newPixelGroups);
-                              if (activeGroup === group.name) {
-                                setActiveGroup(newName.trim());
-                              }
-                            }
-                          }}
-                          style={{
-                            width: "5vw",
-                            height: "10vw",
-                            background: "#000",
-                            color: "#fff",
-                            border: "0.15vw solid #fff",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "2.5vw",
-                            fontWeight: "bold",
-                            borderRadius: "0"
-                          }}
-                        >
-                          ✎
-                        </button>
+                    {/* Layer Name */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.2vw", flex: 1 }}>
+                      <div
+                        onClick={() => {
+                          setActiveGroup(activeGroup === group.name ? null : group.name);
+                          setSelectedPixels([]); // Clear green selection preview
+                          setSelectionStart(null); // Clear selection state
+                          setSelectionEnd(null);
+                        }}
+                        style={{
+                          fontSize: "0.8vw",
+                          padding: "0.3vw",
+                          background: activeGroup === group.name ? "#2196F3" : "#222",
+                          borderRadius: "0",
+                          cursor: "pointer",
+                          border: activeGroup === group.name ? "0.15vw solid #FFD700" : "0.15vw solid #444",
+                          fontWeight: activeGroup === group.name ? "bold" : "normal",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        {group.name}
                       </div>
+                      
+                      {/* Directional Movement Buttons - Show when movegroup tool is active and this layer is active */}
+                      {activeDrawingTool === "movegroup" && activeGroup === group.name && (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.2vw" }}>
+                          {/* Left Button */}
+                          <button
+                            onClick={() => moveGroup(group.name, 0, -1)}
+                            style={{
+                              background: "#9C27B0",
+                              color: "white",
+                              border: "0.15vw solid #000",
+                              width: "2.5vw",
+                              height: "2.5vw",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "1vw",
+                              fontWeight: "900",
+                              borderRadius: "0"
+                            }}
+                            title="Move left"
+                          >
+                            ←
+                          </button>
+                          
+                          {/* Up Button */}
+                          <button
+                            onClick={() => moveGroup(group.name, -1, 0)}
+                            style={{
+                              background: "#9C27B0",
+                              color: "white",
+                              border: "0.15vw solid #000",
+                              width: "2.5vw",
+                              height: "2.5vw",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "1vw",
+                              fontWeight: "900",
+                              borderRadius: "0"
+                            }}
+                            title="Move up"
+                          >
+                            ↑
+                          </button>
+                          
+                          {/* Down Button */}
+                          <button
+                            onClick={() => moveGroup(group.name, 1, 0)}
+                            style={{
+                              background: "#9C27B0",
+                              color: "white",
+                              border: "0.15vw solid #000",
+                              width: "2.5vw",
+                              height: "2.5vw",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "1vw",
+                              fontWeight: "900",
+                              borderRadius: "0"
+                            }}
+                            title="Move down"
+                          >
+                            ↓
+                          </button>
+                          
+                          {/* Right Button */}
+                          <button
+                            onClick={() => moveGroup(group.name, 0, 1)}
+                            style={{
+                              background: "#9C27B0",
+                              color: "white",
+                              border: "0.15vw solid #000",
+                              width: "2.5vw",
+                              height: "2.5vw",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "1vw",
+                              fontWeight: "900",
+                              borderRadius: "0"
+                            }}
+                            title="Move right"
+                          >
+                            →
+                          </button>
+                        </div>
+                      )}
                     </div>
                     
-                    {/* Up Button */}
+                    {/* Edit Button */}
+                    <button
+                      onClick={() => setActiveGroup(group.name)}
+                      style={{
+                        background: activeGroup === group.name ? "#FFD700" : "#444",
+                        color: activeGroup === group.name ? "#000" : "white",
+                        border: "0.1vw solid #000",
+                        width: "2.5vw",
+                      height: "2.5vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "0.7vw",
+                        fontWeight: "bold",
+                        borderRadius: "0"
+                      }}
+                    >
+                      {activeGroup === group.name ? "✓" : "✎"}
+                    </button>
+                    
+                    {/* Move Layer Button */}
+                    <button
+                      onClick={() => {
+                        setActiveGroup(group.name);
+                        setActiveDrawingTool("movegroup");
+                      }}
+                      style={{
+                        background: activeGroup === group.name && activeDrawingTool === "movegroup" ? "#9C27B0" : "#555",
+                        color: "white",
+                        border: "0.2vw solid #000",
+                        width: "2.5vw",
+                      height: "2.5vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "1.2vw",
+                        fontWeight: "bold",
+                        borderRadius: "0"
+                      }}
+                      title="Click to enable move mode, then drag pixels on canvas"
+                    >
+                      ☩
+                    </button>
+                    
+                    {/* Move Up Button */}
                     <button
                       onClick={() => {
                         const newGroups = groups.map(g => 
@@ -6051,16 +4547,16 @@ const savedData = ${dataString};
                         setPixelGroups(newPixelGroups);
                       }}
                       style={{
-                        background: "#fff",
-                        color: "#000",
+                        background: "#444",
+                        color: "white",
                         border: "0.2vw solid #000",
-                        width: "10vw",
-                        height: "10vw",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        width: "2.5vw",
+                      height: "2.5vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                         cursor: "pointer",
-                        fontSize: "2.5vw",
+                        fontSize: "1vw",
                         fontWeight: "bold",
                         borderRadius: "0"
                       }}
@@ -6068,7 +4564,7 @@ const savedData = ${dataString};
                       ▲
                     </button>
                     
-                    {/* Down Button */}
+                    {/* Move Down Button */}
                     <button
                       onClick={() => {
                         const newGroups = groups.map(g => 
@@ -6085,16 +4581,16 @@ const savedData = ${dataString};
                         setPixelGroups(newPixelGroups);
                       }}
                       style={{
-                        background: "#fff",
-                        color: "#000",
+                        background: "#444",
+                        color: "white",
                         border: "0.2vw solid #000",
-                        width: "10vw",
-                        height: "10vw",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        width: "2.5vw",
+                      height: "2.5vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                         cursor: "pointer",
-                        fontSize: "2.5vw",
+                        fontSize: "1vw",
                         fontWeight: "bold",
                         borderRadius: "0"
                       }}
@@ -6105,8 +4601,11 @@ const savedData = ${dataString};
                     {/* Delete Button */}
                     <button
                       onClick={() => {
-                        if (window.confirm(`Delete layer "${group.name}"?`)) {
+                        if (window.confirm(`Delete layer "${group.name}"? This will ungroup all pixels.`)) {
+                          // Remove group
                           setGroups(groups.filter(g => g.name !== group.name));
+                          
+                          // Remove pixels from group
                           const newPixelGroups = {};
                           Object.keys(pixelGroups).forEach(idx => {
                             if (pixelGroups[idx].group !== group.name) {
@@ -6114,22 +4613,24 @@ const savedData = ${dataString};
                             }
                           });
                           setPixelGroups(newPixelGroups);
+                          
+                          // Clear active group if this was it
                           if (activeGroup === group.name) {
                             setActiveGroup(null);
                           }
                         }
                       }}
                       style={{
-                        background: "#fff",
-                        color: "#000",
+                        background: "#f44336",
+                        color: "white",
                         border: "0.2vw solid #000",
-                        width: "10vw",
-                        height: "10vw",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        width: "2.5vw",
+                      height: "2.5vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                         cursor: "pointer",
-                        fontSize: "2.5vw",
+                        fontSize: "1vw",
                         fontWeight: "bold",
                         borderRadius: "0"
                       }}
@@ -6139,127 +4640,6 @@ const savedData = ${dataString};
                   </div>
                 ))}
               </div>
-          </div>
-          
-          {/* Custom Scrollbar Column */}
-          <div style={{
-            width: "10vw",
-            background: "#fefefe",
-            borderLeft: "0.2vw solid #000",
-            display: "flex",
-            flexDirection: "column"
-          }}>
-            {/* Up Arrow */}
-            <div 
-              onClick={() => {
-                const scrollContainer = document.querySelector('[data-mobile-layers-scroll-container="true"]');
-                if (scrollContainer) {
-                  scrollContainer.scrollTop -= 100;
-                  setVerticalScrollPosition(scrollContainer.scrollTop);
-                }
-              }}
-              style={{
-                width: "10vw",
-                height: "10vw",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#fefefe",
-                borderBottom: "0.2vw solid #000",
-                cursor: "pointer",
-                fontSize: "5vw"
-              }}
-            >
-              ▲
-            </div>
-            
-            {/* Scrollbar Track */}
-            <div 
-              data-mobile-layers-scrollbar-track="true"
-              style={{
-                width: "10vw",
-                flex: 1,
-                background: "#fefefe",
-                position: "relative",
-                padding: "1vw",
-                display: "flex",
-                alignItems: "center"
-              }}
-            >
-              <div 
-                onPointerDown={(e) => {
-                  setIsDraggingVerticalSlider(true);
-                  const scrollContainer = document.querySelector('[data-mobile-layers-scroll-container="true"]');
-                  if (!scrollContainer) return;
-                  
-                  const rect = e.currentTarget.parentElement.getBoundingClientRect();
-                  const y = e.clientY - rect.top;
-                  const percent = y / rect.height;
-                  const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-                  const newScrollTop = percent * maxScroll;
-                  scrollContainer.scrollTop = newScrollTop;
-                  setVerticalScrollPosition(newScrollTop);
-                }}
-                style={{
-                width: "8vw",
-                height: "100%",
-                background: "#fff",
-                border: "0.2vw solid #000",
-                position: "relative",
-                cursor: "pointer",
-                touchAction: "none"
-              }}>
-                {/* Scrollbar thumb */}
-                <div style={{
-                  position: "absolute",
-                  top: (() => {
-                    const scrollContainer = document.querySelector('[data-mobile-layers-scroll-container="true"]');
-                    if (!scrollContainer) return "0%";
-                    const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-                    if (maxScroll <= 0) return "0%";
-                    const scrollPercent = verticalScrollPosition / maxScroll;
-                    const trackElement = document.querySelector('[data-mobile-layers-scrollbar-track="true"]');
-                    if (!trackElement) return "0%";
-                    const trackHeight = trackElement.offsetHeight - 2; // Account for padding
-                    const thumbHeight = 8; // 8vw in viewport units
-                    const thumbHeightPx = (thumbHeight / 100) * window.innerWidth;
-                    const maxThumbTop = trackHeight - thumbHeightPx;
-                    const thumbTop = scrollPercent * maxThumbTop;
-                    return `${thumbTop}px`;
-                  })(),
-                  left: 0,
-                  width: "8vw",
-                  height: "8vw",
-                  background: "#000",
-                  pointerEvents: "none"
-                }}></div>
-              </div>
-            </div>
-            
-            {/* Down Arrow */}
-            <div
-              onClick={() => {
-                const scrollContainer = document.querySelector('[data-mobile-layers-scroll-container="true"]');
-                if (scrollContainer) {
-                  scrollContainer.scrollTop += 100;
-                  setVerticalScrollPosition(scrollContainer.scrollTop);
-                }
-              }}
-              style={{
-                width: "10vw",
-                height: "10vw",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#fefefe",
-                borderTop: "0.2vw solid #000",
-                cursor: "pointer",
-                fontSize: "5vw"
-              }}
-            >
-              ▼
-            </div>
-          </div>
         </div>
       )}
     </div>
