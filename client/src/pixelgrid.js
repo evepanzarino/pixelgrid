@@ -235,10 +235,12 @@ export default function PixelGrid() {
   const [groupDragStart, setGroupDragStart] = useState(null); // { pixelIndex, startRow, startCol }
   const [groupDragCurrent, setGroupDragCurrent] = useState(null); // Current hover position during drag
   const [selectionTransform, setSelectionTransform] = useState({ deltaRow: 0, deltaCol: 0, active: false }); // Dynamic CSS transform for selection movement
+  // eslint-disable-next-line no-unused-vars
   const [renderTrigger, setRenderTrigger] = useState(0); // Force re-renders by incrementing
   
   // Layer drag-and-drop state
   const [draggedLayer, setDraggedLayer] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [dragOverLayer, setDragOverLayer] = useState(null);
   
   // Lazy-loaded tool modules
@@ -593,6 +595,7 @@ export default function PixelGrid() {
   
   // Save groups (layers) to localStorage - ONLY when explicitly called, not automatically
   // This prevents moves from persisting until user draws with that layer selected
+  // eslint-disable-next-line no-unused-vars
   const saveGroupsToLocalStorage = useCallback(() => {
     try {
       // Create frozen copies of layer data to prevent modification
@@ -1073,13 +1076,16 @@ export default function PixelGrid() {
           
           while (queue.length > 0) {
             const idx = queue.shift();
+            // eslint-disable-next-line no-unused-vars
             const row = Math.floor(idx / 200);
+            // eslint-disable-next-line no-unused-vars
             const col = idx % 200;
             
             const neighbors = [
               idx - 200, idx + 200, idx - 1, idx + 1
             ];
             
+            // eslint-disable-next-line no-loop-func
             neighbors.forEach(nIdx => {
               if (regionMap[nIdx] === undefined && activeLayerGroup.pixels[nIdx] === pixelColor) {
                 regionMap[nIdx] = regionId;
@@ -1150,6 +1156,7 @@ export default function PixelGrid() {
   }
 
   // Get all pixels in selection rectangle (for preview)
+  // eslint-disable-next-line no-unused-vars
   function getSelectionRectangle(start, end) {
     if (start === null || end === null) return [];
     
@@ -1368,6 +1375,7 @@ export default function PixelGrid() {
   }
 
   // Clean up corrupted layers by committing their data to background
+  // eslint-disable-next-line no-unused-vars
   function cleanupCorruptedLayers() {
     console.log("=== VALIDATING LAYER SELECTION AREAS ===");
     
