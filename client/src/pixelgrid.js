@@ -1857,10 +1857,10 @@ export default function PixelGrid() {
       console.error("Failed to reload layers from localStorage", error);
     }
     
-    // Don't extract if already extracted
-    const existingSelected = groups.find(g => g.name === "__selected__");
+    // Don't extract if already extracted (check in freshly loaded data)
+    const existingSelected = allLayersFromStorage.find(g => g.name === "__selected__");
     if (existingSelected) {
-      console.log("extractLayerToSelected: __selected__ already exists, aborting extraction", { 
+      console.log("extractLayerToSelected: __selected__ already exists in storage, aborting extraction", { 
         existing: existingSelected.originalLayerName 
       });
       return null;
@@ -2116,6 +2116,15 @@ export default function PixelGrid() {
       }
     } catch (error) {
       console.error("Failed to reload layers from localStorage", error);
+    }
+    
+    // Don't extract if already extracted (check in freshly loaded data)
+    const existingSelected = allLayersFromStorage.find(g => g.name === "__selected__");
+    if (existingSelected) {
+      console.log("extractSelectionToSelected: __selected__ already exists in storage, aborting extraction", { 
+        existing: existingSelected.originalLayerName 
+      });
+      return null;
     }
     
     // Use the freshly loaded data from localStorage
