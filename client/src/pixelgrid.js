@@ -718,11 +718,20 @@ export default function PixelGrid() {
     const stopDrawing = () => {
       const state = dragStateRef.current;
       
+      console.log("=== STOP DRAWING ===", {
+        hasGroupDragStart: !!state.groupDragStart,
+        activeGroup: state.activeGroup,
+        hasGroupDragCurrent: !!state.groupDragCurrent,
+        selectedPixelsCount: state.selectedPixels?.length || 0
+      });
+      
       // Finalize selected pixels move if dragging
       if (state.groupDragStart !== null && state.activeGroup === "__selected__") {
         const currentDragPos = state.groupDragCurrent || { row: state.groupDragStart.startRow, col: state.groupDragStart.startCol };
         const deltaRow = currentDragPos.row - state.groupDragStart.startRow;
         const deltaCol = currentDragPos.col - state.groupDragStart.startCol;
+        
+        console.log("=== FINALIZING __selected__ MOVE ===", { deltaRow, deltaCol, pixelsCount: state.selectedPixels?.length });
         
         if (deltaRow !== 0 || deltaCol !== 0) {
           moveSelectedPixels(deltaRow, deltaCol, state.selectedPixels);
@@ -3984,8 +3993,17 @@ const savedData = ${dataString};
             }
             
             // Make white pixels transparent when background image is loaded
+            // Also support transparent pixels in layers (null values)
             const displayColor = isInDragPreview ? dragPreviewColor : displayC;
-            const pixelColor = (backgroundImage && displayColor === '#ffffff') ? 'transparent' : displayColor;
+            let pixelColor = displayColor;
+            
+            // Check if this pixel should be transparent due to background or layer transparency
+            if (backgroundImage && displayColor === '#ffffff') {
+              pixelColor = 'transparent';
+            } else if (displayColor === null || displayColor === 'null') {
+              // null in layer means transparent but still clickable
+              pixelColor = 'transparent';
+            }
             
             return (
               <DrawingPixel
