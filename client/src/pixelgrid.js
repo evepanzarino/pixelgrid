@@ -675,7 +675,7 @@ export default function PixelGrid() {
           originalSelectionArea: selectedPixels // Used for transform preview
         };
         
-        // Add color data to pixels
+        // Add color data to pixels - ONLY from layers, never from pixelColors
         selectedPixels.forEach(idx => {
           const pixelGroup = pixelGroups[idx];
           if (pixelGroup && pixelGroup.group !== "__selected__") {
@@ -684,9 +684,18 @@ export default function PixelGrid() {
             if (sourceLayer && sourceLayer.pixels[idx]) {
               selectedLayer.pixels[idx] = sourceLayer.pixels[idx];
             }
-          } else if (pixelColors[idx]) {
-            // Get color from base canvas
-            selectedLayer.pixels[idx] = pixelColors[idx];
+          } else {
+            // Pixel not in any layer - check Background layer
+            const backgroundLayer = prevGroups.find(g => g.name === "Background");
+            if (backgroundLayer && backgroundLayer.pixels[idx]) {
+              selectedLayer.pixels[idx] = backgroundLayer.pixels[idx];
+            }
+            // If not in Background either, check pixelColors as last resort
+            // but this indicates the pixel should be added to Background
+            else if (pixelColors[idx]) {
+              selectedLayer.pixels[idx] = pixelColors[idx];
+              console.warn("Selected pixel not in any layer, using pixelColors:", idx);
+            }
           }
         });
         
@@ -728,6 +737,44 @@ export default function PixelGrid() {
       });
     }
   }, [selectedPixels, pixelGroups, pixelColors, activeDrawingTool, activeGroup]);
+
+  // Sync unassigned pixels from pixelColors to Background layer
+  useEffect(() => {
+    // Find pixels in pixelColors that aren't in any layer
+    const unassignedPixels = [];
+    pixelColors.forEach((color, idx) => {
+      if (color && color !== null && !pixelGroups[idx]) {
+        unassignedPixels.push(idx);
+      }
+    });
+    
+    if (unassignedPixels.length > 0) {
+      console.log("Syncing unassigned pixels to Background layer:", unassignedPixels.length);
+      
+      // Add to Background layer
+      setGroups(prevGroups => {
+        return prevGroups.map(g => {
+          if (g.name === "Background") {
+            const newPixels = { ...g.pixels };
+            unassignedPixels.forEach(idx => {
+              newPixels[idx] = pixelColors[idx];
+            });
+            return { ...g, pixels: Object.freeze(newPixels) };
+          }
+          return g;
+        });
+      });
+      
+      // Update pixelGroups to track these pixels
+      setPixelGroups(prevPixelGroups => {
+        const newPixelGroups = { ...prevPixelGroups };
+        unassignedPixels.forEach(idx => {
+          newPixelGroups[idx] = { group: "Background", zIndex: -1 };
+        });
+        return newPixelGroups;
+      });
+    }
+  }, [pixelColors, pixelGroups]);
 
   useEffect(() => {
     function handleResize() {
@@ -1720,13 +1767,14 @@ export default function PixelGrid() {
 
     console.log("extractLayerToSelected: Extracting layer", { layerName, pixelCount: layerPixelIndices.length });
 
-    // Store the pixel colors from this layer - prefer restored data from localStorage
+    // Store the pixel colors from this layer - ONLY from layer data, never pixelColors
     const layerPixelColors = {};
     layerPixelIndices.forEach(pixelIndex => {
-      // Priority: localStorage restored pixels > layer's pixels > pixelColors
+      // Priority: localStorage restored pixels > layer's pixels
+      // NEVER use pixelColors as it may contain pixels from other operations
       layerPixelColors[pixelIndex] = (restoredPixels && restoredPixels[pixelIndex]) || 
                                      (layer.pixels && layer.pixels[pixelIndex]) || 
-                                     pixelColors[pixelIndex] || null;
+                                     null; // Use null if pixel has no color in layer
     });
     
     console.log("extractLayerToSelected: Stored pixel colors", {
@@ -1745,9 +1793,10 @@ export default function PixelGrid() {
     
     layerPixelIndices.forEach(pixelIndex => {
       // Get color from restored localStorage data or layer's FROZEN pixels
+      // NEVER use pixelColors to prevent contamination
       const color = (restoredPixels && restoredPixels[pixelIndex]) || 
                     (layer.pixels && layer.pixels[pixelIndex]) || 
-                    pixelColors[pixelIndex] || null;
+                    null; // Use null if pixel has no color
       originalColors.set(pixelIndex, color);
       // Create unique identifier based on row/col position
       const row = Math.floor(pixelIndex / 200);
@@ -1898,8 +1947,8 @@ export default function PixelGrid() {
     const pixelIdentifiers = new Map(); // Map pixel index to HTML ID based on position
     
     layerSelectedPixels.forEach(pixelIndex => {
-      // Get color from layer's FROZEN pixels (immutable source)
-      const color = (layer.pixels && layer.pixels[pixelIndex]) || pixelColors[pixelIndex] || null;
+      // Get color from layer's FROZEN pixels ONLY - never from pixelColors
+      const color = (layer.pixels && layer.pixels[pixelIndex]) || null;
       originalColors.set(pixelIndex, color);
       // Create unique identifier based on row/col position
       const row = Math.floor(pixelIndex / 200);
