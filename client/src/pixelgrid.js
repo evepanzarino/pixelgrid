@@ -3284,20 +3284,13 @@ const savedData = ${dataString};
               <div
                 onClick={() => {
                   if (window.confirm("Clear all pixels, groups, and layers? This will also clear localStorage.")) {
-                    setPixelColors(Array(totalPixels).fill(null));
-                    setPixelGroups({});
-                    setGroups([]);
-                    setActiveGroup(null);
-                    setSelectedPixels([]);
-                    setSelectionStart(null);
-                    setSelectionEnd(null);
-                    // Clear localStorage
+                    // Clear localStorage FIRST before reload
                     try {
                       localStorage.clear();
                     } catch (err) {
                       console.error("Failed to clear localStorage:", err);
                     }
-                    // Reload page to ensure clean state
+                    // Reload page to ensure clean state - initialization will start fresh
                     window.location.reload();
                   }
                   setShowFileMenu(false);
