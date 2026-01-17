@@ -1803,19 +1803,25 @@ export default function PixelGrid() {
       return null;
     }
 
-    // RESTORE FROM LOCALSTORAGE FIRST to get the original pixel colors
-    // But DON'T restore the selection area - recalculate it from current positions
+    // ALWAYS RESTORE FROM LOCALSTORAGE to get the original saved state
+    let restoredLayer = null;
     let restoredPixels = null;
+    let restoredSelectionArea = null;
+    
     try {
       const storedGroups = localStorage.getItem("pixelgrid_groups");
       if (storedGroups) {
         const parsedGroups = JSON.parse(storedGroups);
         const storedLayer = parsedGroups.find(g => g.name === layerName);
         if (storedLayer) {
+          restoredLayer = storedLayer;
           restoredPixels = storedLayer.pixels || {};
-          console.log("extractLayerToSelected: Restored pixel colors from localStorage", {
+          restoredSelectionArea = storedLayer.originalSelectionArea || [];
+          console.log("extractLayerToSelected: Restored layer from localStorage", {
             layerName,
-            pixelCount: Object.keys(restoredPixels).length
+            pixelCount: Object.keys(restoredPixels).length,
+            selectionAreaLength: restoredSelectionArea.length,
+            hasOriginalData: true
           });
         }
       }
@@ -1823,73 +1829,46 @@ export default function PixelGrid() {
       console.error("extractLayerToSelected: Failed to restore from localStorage", error);
     }
 
-    // Get pixels from pixelGroups (the actual source of truth for current positions)
-    // This ensures we always use the CURRENT positions after any moves
-    const layerPixelIndices = Object.keys(pixelGroups)
-      .filter(pixelIndex => pixelGroups[pixelIndex]?.group === layerName)
-      .map(idx => parseInt(idx));
+    // If we have restored data from localStorage, use those original pixel indices
+    // Otherwise fall back to current pixelGroups positions
+    let layerPixelIndices;
+    let sourcePixels;
+    
+    if (restoredSelectionArea && restoredSelectionArea.length > 0) {
+      // Use the original selection area from localStorage
+      layerPixelIndices = restoredSelectionArea;
+      sourcePixels = restoredPixels;
+      console.log("extractLayerToSelected: Using original selection area from localStorage", {
+        layerName,
+        pixelCount: layerPixelIndices.length
+      });
+    } else {
+      // Fall back to current positions from pixelGroups
+      layerPixelIndices = Object.keys(pixelGroups)
+        .filter(pixelIndex => pixelGroups[pixelIndex]?.group === layerName)
+        .map(idx => parseInt(idx));
+      sourcePixels = layer.pixels || {};
+      console.log("extractLayerToSelected: Using current positions from pixelGroups", {
+        layerName,
+        pixelCount: layerPixelIndices.length
+      });
+    }
 
     if (layerPixelIndices.length === 0) {
-      console.log("extractLayerToSelected: Layer has no pixels in pixelGroups", { layerName });
+      console.log("extractLayerToSelected: Layer has no pixels", { layerName });
       return null;
     }
 
-    console.log("extractLayerToSelected: Extracting layer from current positions", { 
+    console.log("extractLayerToSelected: Extracting layer with original data", { 
       layerName, 
       pixelCount: layerPixelIndices.length,
       sampleIndices: layerPixelIndices.slice(0, 3)
     });
 
-    // Get pixel colors from the layer's pixels object
-    // The pixels object keys might be old positions, so we need to map them correctly
-    // Use the current pixel positions from pixelGroups as the source of truth
+    // Store the pixel colors - use restored pixels from localStorage as source of truth
     const layerPixelColors = {};
     layerPixelIndices.forEach(pixelIndex => {
-      // Get color from layer's pixels using current index
-      // If layer was moved, pixels object might have old indices, so check both
-      let color = null;
-      
-      // First try current index
-      if (layer.pixels && layer.pixels[pixelIndex] !== undefined) {
-        color = layer.pixels[pixelIndex];
-      } 
-      // If not found and we have restoredPixels from localStorage, try that
-      else if (restoredPixels && restoredPixels[pixelIndex] !== undefined) {
-        color = restoredPixels[pixelIndex];
-      }
-      // If still not found, check if originalSelectionArea exists and iterate through it
-      else if (layer.originalSelectionArea) {
-        // The layer might have been moved - find the color by position offset
-        const currentRow = Math.floor(pixelIndex / 200);
-        const currentCol = pixelIndex % 200;
-        
-        // Try to find this pixel in the layer's pixels by checking if it's in the rectangle
-        for (const [storedIdx, storedColor] of Object.entries(layer.pixels || {})) {
-          const storedIndex = parseInt(storedIdx);
-          const storedRow = Math.floor(storedIndex / 200);
-          const storedCol = storedIndex % 200;
-          
-          // If this pixel is at the same relative position in the rectangle
-          if (layer.originalSelectionArea.includes(storedIndex)) {
-            const firstOriginalIdx = layer.originalSelectionArea[0];
-            const firstOriginalRow = Math.floor(firstOriginalIdx / 200);
-            const firstOriginalCol = firstOriginalIdx % 200;
-            const firstCurrentIdx = layerPixelIndices[0];
-            const firstCurrentRow = Math.floor(firstCurrentIdx / 200);
-            const firstCurrentCol = firstCurrentIdx % 200;
-            
-            const deltaRow = firstCurrentRow - firstOriginalRow;
-            const deltaCol = firstCurrentCol - firstOriginalCol;
-            
-            if (storedRow + deltaRow === currentRow && storedCol + deltaCol === currentCol) {
-              color = storedColor;
-              break;
-            }
-          }
-        }
-      }
-      
-      layerPixelColors[pixelIndex] = color;
+      layerPixelColors[pixelIndex] = sourcePixels[pixelIndex] || null;
     });
     
     console.log("extractLayerToSelected: Stored pixel colors", {
@@ -2363,8 +2342,30 @@ export default function PixelGrid() {
               originalSelectionArea: newSelectionArea
             };
             
-            // NOTE: Do NOT save to localStorage here - only save on draw operations
-            // Moves should not persist until explicitly saved via draw tools
+            // SAVE TO LOCALSTORAGE after move to persist the new state
+            try {
+              const currentStorage = localStorage.getItem("pixelgrid_groups");
+              if (currentStorage) {
+                const storedGroups = JSON.parse(currentStorage);
+                const updatedStorage = storedGroups.map(sg => {
+                  if (sg.name === originalLayerName) {
+                    return {
+                      ...sg,
+                      pixels: basePixels,
+                      originalSelectionArea: newSelectionArea
+                    };
+                  }
+                  return sg;
+                });
+                localStorage.setItem("pixelgrid_groups", JSON.stringify(updatedStorage));
+                console.log("restoreSelectedToLayer: Saved updated layer to localStorage", {
+                  layerName: originalLayerName,
+                  pixelCount: Object.keys(basePixels).length
+                });
+              }
+            } catch (error) {
+              console.error("restoreSelectedToLayer: Failed to save to localStorage", error);
+            }
             
             // Return new immutable layer object with all data preserved
             return Object.freeze(updatedLayer);
