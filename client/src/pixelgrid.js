@@ -2142,24 +2142,42 @@ export default function PixelGrid() {
     // Because __selected__ pixels are NEVER in pixelGroups during preview
     setPixelGroups(prevPixelGroups => {
       const selectedPixelIndices = movedPixelIndices || selectedLayer.originalPixelIndices || [];
+      const originalPixelIndices = selectedLayer.originalPixelIndices || [];
 
       console.log("restoreSelectedToLayer: Restoring pixels", { 
         originalLayerName, 
         pixelCount: selectedPixelIndices.length,
+        originalPixelCount: originalPixelIndices.length,
         originalZIndex,
         usingProvidedIndices: !!movedPixelIndices,
-        samplePixels: selectedPixelIndices.slice(0, 5)
+        sampleNewPixels: selectedPixelIndices.slice(0, 5),
+        sampleOldPixels: originalPixelIndices.slice(0, 5)
       });
 
-      // Update pixelGroups: remap __selected__ pixels back to original layer
+      // Update pixelGroups: 
+      // 1. REMOVE old pixel positions from pixelGroups (if moved)
+      // 2. ADD new pixel positions to pixelGroups
       const updatedPixelGroups = { ...prevPixelGroups };
+      
+      // Remove old positions if this was a move
+      if (movedPixelIndices && movedPixelIndices.length > 0) {
+        originalPixelIndices.forEach(oldPixelIndex => {
+          // Only remove if it still points to this layer
+          if (updatedPixelGroups[oldPixelIndex]?.group === originalLayerName) {
+            delete updatedPixelGroups[oldPixelIndex];
+          }
+        });
+      }
+      
+      // Add new positions
       selectedPixelIndices.forEach(pixelIndex => {
         updatedPixelGroups[pixelIndex] = { group: originalLayerName, zIndex: originalZIndex };
       });
       
       console.log("restoreSelectedToLayer: Remapped pixels to original layer", { 
         originalLayerName,
-        remappedCount: selectedPixelIndices.length 
+        removedCount: movedPixelIndices ? originalPixelIndices.length : 0,
+        addedCount: selectedPixelIndices.length 
       });
       
       return updatedPixelGroups;
@@ -2278,17 +2296,47 @@ export default function PixelGrid() {
             
             // Create pixels object including ALL pixels (colored and transparent)
             // Include null values to preserve transparent pixels in selection area
+            // IMPORTANT: Use NEW indices as keys, not old ones
             const completeRectanglePixels = {};
-            newSelectionArea.forEach(pixelIndex => {
-              const color = filteredPixels[pixelIndex];
-              // Include ALL pixels from filteredPixels, including nulls for transparent areas
-              if (color !== undefined) {
-                completeRectanglePixels[pixelIndex] = color;
-              } else if (selectedGroup.originalColors.has(pixelIndex)) {
-                // Preserve transparent pixels that were in original selection
-                completeRectanglePixels[pixelIndex] = null;
+            
+            // Map from old indices to new indices based on the delta
+            if (movedPixelIndices && movedPixelIndices.length > 0) {
+              const originalIndices = selectedGroup.originalPixelIndices || [];
+              if (originalIndices.length > 0) {
+                const firstOriginalIdx = originalIndices[0];
+                const firstMovedIdx = movedPixelIndices[0];
+                const deltaRow = Math.floor(firstMovedIdx / 200) - Math.floor(firstOriginalIdx / 200);
+                const deltaCol = (firstMovedIdx % 200) - (firstOriginalIdx % 200);
+                
+                // For each pixel in the new selection area, map it to its color
+                newSelectionArea.forEach(newPixelIndex => {
+                  // Calculate what the original index was
+                  const newRow = Math.floor(newPixelIndex / 200);
+                  const newCol = newPixelIndex % 200;
+                  const oldRow = newRow - deltaRow;
+                  const oldCol = newCol - deltaCol;
+                  const oldIndex = oldRow * 200 + oldCol;
+                  
+                  // Get the color from originalColors using the OLD index
+                  const color = selectedGroup.originalColors.get(oldIndex);
+                  
+                  // Store using the NEW index
+                  if (color !== undefined) {
+                    completeRectanglePixels[newPixelIndex] = color;
+                  }
+                });
               }
-            });
+            } else {
+              // No movement - use original positions
+              newSelectionArea.forEach(pixelIndex => {
+                const color = filteredPixels[pixelIndex];
+                if (color !== undefined) {
+                  completeRectanglePixels[pixelIndex] = color;
+                } else if (selectedGroup.originalColors.has(pixelIndex)) {
+                  completeRectanglePixels[pixelIndex] = null;
+                }
+              });
+            }
             
             console.log("restoreSelectedToLayer: Created complete rectangle at new position", {
               layerName: originalLayerName,
