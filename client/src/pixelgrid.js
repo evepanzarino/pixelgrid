@@ -4331,11 +4331,10 @@ const savedData = ${dataString};
                       setLineStartPixel(null);
                       setLineEndPixel(null);
                     } else {
-                      // Second click: draw line (both mobile and desktop)
-                      console.log("Drawing line from", lineStartPixel, "to", i);
-                      drawLine(lineStartPixel, i);
-                      setLineStartPixel(null);
-                      setLineEndPixel(null);
+                      // Second click: set endpoint and show apply menu (both mobile and desktop)
+                      console.log("Setting line endpoint:", i, "- showing apply menu");
+                      setLineEndPixel(i);
+                      setHoveredPixel(i);
                     }
                   } else if (activeDrawingTool === "curve") {
                     console.log("=== CURVE TOOL CLICK ===", { 
@@ -4806,10 +4805,10 @@ const savedData = ${dataString};
                     console.log("Canceling line (same pixel)");
                     setLineStartPixel(null);
                   } else {
-                    // Second click: draw line immediately (both mobile and desktop)
-                    console.log("Drawing line from", lineStartPixel, "to", i);
-                    drawLine(lineStartPixel, i);
-                    setLineStartPixel(null);
+                    // Second click: set endpoint and show apply menu (both mobile and desktop)
+                    console.log("Setting line endpoint:", i, "- showing apply menu");
+                    setLineEndPixel(i);
+                    setHoveredPixel(i);
                   }
                 } else if (activeDrawingTool === "curve") {
                   console.log("=== CURVE TOOL CLICK (LAYERS) ===", { 
