@@ -12,10 +12,11 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Serve static files from React build
-app.use('/pixelgrid', express.static(path.join(__dirname, '../client/build')));
+// Define build path
+const buildPath = path.resolve(__dirname, '../client/build');
+console.log('Serving static files from:', buildPath);
 
-// Routes
+// Routes - API routes must come before static files
 app.use('/api/users', require('./routes/users'));
 app.use('/api/items', require('./routes/items'));
 
@@ -24,9 +25,13 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running' });
 });
 
-// Serve React app for all other routes under /pixelgrid
-app.get('/pixelgrid/*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+// Serve static files from React build
+app.use('/pixelgrid', express.static(buildPath));
+app.use(express.static(buildPath));
+
+// Serve React app for all other routes (SPA fallback)
+app.get('/*', (req, res) => {
+  res.sendFile(path.join(buildPath, 'index.html'));
 });
 
 const PORT = process.env.SERVER_PORT || 5000;
