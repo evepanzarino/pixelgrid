@@ -4241,15 +4241,7 @@ const savedData = ${dataString};
             if (backgroundImage && displayColor === '#ffffff') {
               pixelColor = 'transparent';
             } else if (displayColor === null || displayColor === 'null') {
-              // null/transparent pixels in higher layers should not render at all
-              // This prevents them from blocking lower layers visually
-              // However, they should still be selectable in "All" mode
-              // Only render selection indicators if pixel is selected/hovered
-              if (!isSelected && !isInSelectionRect && !isSelectionStartPoint && !isHovered && !isInLinePreview && !isLineStart && !isCurveEnd) {
-                // Don't render invisible pixels that aren't interacted with
-                return null;
-              }
-              // Render as transparent but with selection borders if needed
+              // null in layer means transparent but still clickable
               pixelColor = 'transparent';
             }
             
@@ -4765,15 +4757,6 @@ const savedData = ${dataString};
           // Make transparent pixels when there's no color (null) or when background image is loaded with white
           const pixelBackground = (!displayColor || displayColor === null) ? 'transparent' : 
                                   (backgroundImage && displayColor === '#ffffff') ? 'transparent' : displayColor;
-          
-          // Skip rendering transparent pixels from higher layers unless they need selection indicators
-          // This prevents transparent pixels from blocking lower layers visually
-          if (pixelBackground === 'transparent' && (!displayColor || displayColor === null)) {
-            if (!isMoveGroupHover && !isInSelectionRect && !isSelected && !isLineStart && !isCurveEnd && !isInLinePreview && !isSelectionStartPoint) {
-              // Don't render invisible pixels that aren't interacted with
-              return null;
-            }
-          }
           
           // Get HTML ID if this pixel is in the selected layer
           let pixelHtmlId = undefined;
