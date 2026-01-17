@@ -5738,7 +5738,9 @@ const savedData = ${dataString};
         <div
           style={{
             position: "fixed",
-            inset: size.w <= 1024 ? (showLayersMenu ? "auto 0px 45vw 10vw" : "auto 0px 10vw 10vw") : "auto 35vw 0px 7vw",
+            inset: size.w <= 1024 
+              ? (showLayersMenu ? "auto 0px 45vw 10vw" : "auto 0px 10vw 10vw") 
+              : (showLayersMenu ? "auto 35vw 0px 7vw" : "auto 0vw 0px 7vw"),
             background: "#ffffff",
             padding: "1vw",
             borderTop: "0.3vw solid #000000",
