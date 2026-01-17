@@ -170,7 +170,7 @@ export default function PixelGrid() {
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
   const [verticalScrollPosition, setVerticalScrollPosition] = useState(0);
   const [isDraggingVerticalSlider, setIsDraggingVerticalSlider] = useState(false);
-  const [activeDrawingTool, setActiveDrawingTool] = useState("movegroup"); // "pencil", "line", "curve", "bucket", "select", "movegroup"
+  const [activeDrawingTool, setActiveDrawingTool] = useState("movegroup"); // "pencil", "eraser", "line", "curve", "bucket", "select", "movegroup"
   const [lineStartPixel, setLineStartPixel] = useState(null); // For line/curve tool: first click position
   const [lineEndPixel, setLineEndPixel] = useState(null); // For line tool apply/preview
   const [curveEndPixel, setCurveEndPixel] = useState(null); // For curve tool adjustment mode
@@ -409,7 +409,7 @@ export default function PixelGrid() {
 
   // Handle touch drawing on mobile - track finger position to find pixel under touch
   useEffect(() => {
-    if (!isDrawing || activeDrawingTool !== "pencil") return;
+    if (!isDrawing || (activeDrawingTool !== "pencil" && activeDrawingTool !== "eraser")) return;
 
     const handleTouchMove = (e) => {
       if (e.touches.length > 0) {
@@ -420,13 +420,12 @@ export default function PixelGrid() {
           const pixelIndex = parseInt(element.getAttribute('data-pixel-index'), 10);
           if (!isNaN(pixelIndex) && pixelIndex !== hoveredPixel) {
             setHoveredPixel(pixelIndex);
-            // Paint directly by updating pixel colors
-            setPixelColors((prev) => {
-              if (prev[pixelIndex] === color) return prev;
-              const copy = [...prev];
-              copy[pixelIndex] = color;
-              return copy;
-            });
+            // Paint or erase directly by updating pixel colors
+            if (activeDrawingTool === "pencil") {
+              paintPixel(null, pixelIndex);
+            } else if (activeDrawingTool === "eraser") {
+              erasePixel(null, pixelIndex);
+            }
           }
         }
       }
@@ -773,11 +772,63 @@ export default function PixelGrid() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeDrawingTool]);
 
+  function erasePixel(e, index) {
+    // If there's an active group, erase from the layer's pixels
+    if (activeGroup && activeGroup !== "__selected__") {
+      // Check if pixel is in the active layer - restrict erasing to layer pixels only
+      const pixelGroup = pixelGroups[index];
+      if (pixelGroup && pixelGroup.group !== activeGroup) {
+        return; // Don't erase pixels from other layers
+      }
+      
+      setGroups(prevGroups => {
+        const updated = prevGroups.map(g => {
+          if (g.name === activeGroup) {
+            const newPixels = { ...g.pixels };
+            delete newPixels[index]; // Remove the pixel
+            return Object.freeze({ ...g, pixels: Object.freeze(newPixels) });
+          }
+          return g;
+        });
+        
+        // Save to localStorage immediately
+        try {
+          const frozenGroups = updated.filter(g => g.name !== "__selected__").map(g => ({
+            name: g.name,
+            zIndex: g.zIndex,
+            pixels: { ...g.pixels },
+            locked: g.locked
+          }));
+          localStorage.setItem("pixelgrid_groups", JSON.stringify(frozenGroups));
+        } catch (error) {
+          console.error("Failed to save to localStorage:", error);
+        }
+        
+        return updated;
+      });
+      
+      // Remove from pixelGroups tracking
+      setPixelGroups(prevPixelGroups => {
+        const newPixelGroups = { ...prevPixelGroups };
+        delete newPixelGroups[index];
+        return newPixelGroups;
+      });
+    } else {
+      // No active layer - erase from base pixelColors
+      setPixelColors((prev) => {
+        if (prev[index] === null) return prev; // Already erased
+        const copy = [...prev];
+        copy[index] = null; // Clear the pixel
+        return copy;
+      });
+    }
+  }
+
   function paintPixel(e, index) {
     // Only allow painting with drawing tools (pencil, bucket, line, curve)
     const isDrawingTool = ["pencil", "bucket", "line", "curve"].includes(activeDrawingTool);
     if (!isDrawingTool) {
-      return; // Don't paint if using select/movegroup tools
+      return; // Don't paint if using select/movegroup/eraser tools
     }
     
     // If there's an active group, paint into the layer's pixels
@@ -3977,6 +4028,9 @@ const savedData = ${dataString};
                   } else if (activeDrawingTool === "pencil") {
                     setIsDrawing(true);
                     paintPixel(e, i);
+                  } else if (activeDrawingTool === "eraser") {
+                    setIsDrawing(true);
+                    erasePixel(e, i);
                   } else if (activeDrawingTool === "bucket") {
                     paintBucket(i);
                   } else if (activeDrawingTool === "line") {
@@ -4091,6 +4145,8 @@ const savedData = ${dataString};
                     setSelectionTransform({ deltaRow, deltaCol, active: true });
                   } else if (isDrawing && activeDrawingTool === "pencil") {
                     paintPixel(null, i);
+                  } else if (isDrawing && activeDrawingTool === "eraser") {
+                    erasePixel(null, i);
                   }
                   
                   // Note: groupDragCurrent for selected pixels move is now handled by global pointermove handler
