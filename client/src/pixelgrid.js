@@ -1450,16 +1450,19 @@ export default function PixelGrid() {
             pixels.push(pixelIndex);
           }
         } else {
-          // No layer selected - select from background layer
-          if (selectAllPixels) {
-            // Select all pixels in rectangle that are NOT in any layer
-            if (!pixelGroups[pixelIndex]) {
+          // No layer selected - select from Background layer only
+          const pixelGroup = pixelGroups[pixelIndex];
+          if (pixelGroup && pixelGroup.group === "Background") {
+            // Pixel is in Background layer
+            if (selectAllPixels) {
+              // Select all pixels in Background layer (including transparent)
               pixels.push(pixelIndex);
-            }
-          } else {
-            // Only select background pixels that have a color and are not in any layer
-            if (pixelColors[pixelIndex] && !pixelGroups[pixelIndex]) {
-              pixels.push(pixelIndex);
+            } else {
+              // Only select Background pixels that have a color
+              const backgroundLayer = groups.find(g => g.name === "Background");
+              if (backgroundLayer && backgroundLayer.pixels[pixelIndex]) {
+                pixels.push(pixelIndex);
+              }
             }
           }
         }
