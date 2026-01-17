@@ -2039,20 +2039,30 @@ export default function PixelGrid() {
           
           console.log("restoreSelectedToLayer: Calculated delta", { deltaRow, deltaCol });
           
-          // For each original pixel, calculate its new position and use original color
+          // STRICT: For each original pixel, calculate its new position and use ONLY original color
+          // This prevents contamination from pixels that were dragged over during the move
           originalIndices.forEach(originalIdx => {
+            // CRITICAL: Only use originalColors Map - never trust selectedGroupPixels
             const originalColor = selectedGroup.originalColors.get(originalIdx);
-            if (originalColor !== undefined) {
-              const row = Math.floor(originalIdx / 200);
-              const col = originalIdx % 200;
-              const newRow = row + deltaRow;
-              const newCol = col + deltaCol;
-              
-              // Bounds check
-              if (newRow >= 0 && newRow < 200 && newCol >= 0 && newCol < 200) {
-                const newIdx = newRow * 200 + newCol;
-                filteredPixels[newIdx] = originalColor;
-              }
+            
+            // Verify this pixel was actually in our original selection
+            if (originalColor === undefined) {
+              console.warn("restoreSelectedToLayer: Skipping pixel not in originalColors", { 
+                pixelIndex: originalIdx 
+              });
+              return; // Skip pixels not in original selection
+            }
+            
+            const row = Math.floor(originalIdx / 200);
+            const col = originalIdx % 200;
+            const newRow = row + deltaRow;
+            const newCol = col + deltaCol;
+            
+            // Bounds check
+            if (newRow >= 0 && newRow < 200 && newCol >= 0 && newCol < 200) {
+              const newIdx = newRow * 200 + newCol;
+              // STRICT: Only store if we have a valid original color
+              filteredPixels[newIdx] = originalColor;
             }
           });
         }
