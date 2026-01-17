@@ -4318,6 +4318,7 @@ const savedData = ${dataString};
                       // First click: set start point
                       setLineStartPixel(i);
                       setLineEndPixel(null);
+                      setHoveredPixel(i);
                     } else if (lineStartPixel === i) {
                       // Clicking same pixel - cancel
                       setLineStartPixel(null);
@@ -4333,6 +4334,7 @@ const savedData = ${dataString};
                       // First click: set start point
                       setLineStartPixel(i);
                       setCurveEndPixel(null);
+                      setHoveredPixel(i);
                     } else if (lineStartPixel === i) {
                       // Clicking same pixel - cancel
                       setLineStartPixel(null);
@@ -4772,6 +4774,7 @@ const savedData = ${dataString};
                   if (lineStartPixel === null) {
                     // First click: set start point
                     setLineStartPixel(i);
+                    setHoveredPixel(i);
                   } else if (lineStartPixel === i) {
                     // Clicking same pixel - cancel
                     setLineStartPixel(null);
@@ -4784,6 +4787,7 @@ const savedData = ${dataString};
                   if (lineStartPixel === null) {
                     // First click: set start point
                     setLineStartPixel(i);
+                    setHoveredPixel(i);
                   } else if (lineStartPixel === i) {
                     // Clicking same pixel - cancel
                     setLineStartPixel(null);
@@ -5018,16 +5022,14 @@ const savedData = ${dataString};
                     setSelectionEnd(i);
                   }
                 }
-                // LINE TOOL - Update line preview on mobile
+                // LINE TOOL - Update line preview on hover
                 else if (activeDrawingTool === "line" && lineStartPixel !== null) {
-                  // Both mobile and desktop: update line preview when moving to different pixels
-                  setLineEndPixel(i);
+                  // Both mobile and desktop: update hover for line preview
                   setHoveredPixel(i);
                 }
-                // CURVE TOOL - Update curve preview on mobile
+                // CURVE TOOL - Update curve preview on hover
                 else if (activeDrawingTool === "curve" && lineStartPixel !== null && curveEndPixel === null) {
-                  // Both mobile and desktop: update curve endpoint preview when moving to different pixels
-                  setCurveEndPixel(i);
+                  // Both mobile and desktop: update hover for curve endpoint preview
                   setHoveredPixel(i);
                 }
                 // MOVE TOOL - Update drag preview position
