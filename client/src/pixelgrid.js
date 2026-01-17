@@ -735,11 +735,17 @@ export default function PixelGrid() {
         
         const dragPos = { row, col };
         
+        // Calculate delta for transform
+        const deltaRow = row - state.groupDragStart.startRow;
+        const deltaCol = col - state.groupDragStart.startCol;
+        
         // Update ref immediately for instant preview
         dragStateRef.current.groupDragCurrent = dragPos;
         
         flushSync(() => {
           setGroupDragCurrent(dragPos);
+          // Update transform for CSS preview
+          setSelectionTransform({ deltaRow, deltaCol, active: true });
         });
       }
     };
@@ -774,11 +780,17 @@ export default function PixelGrid() {
         
         console.log("=== TOUCH DRAG POS ===", dragPos);
         
+        // Calculate delta for transform
+        const deltaRow = row - state.groupDragStart.startRow;
+        const deltaCol = col - state.groupDragStart.startCol;
+        
         // Update ref immediately for instant preview
         dragStateRef.current.groupDragCurrent = dragPos;
         
         flushSync(() => {
           setGroupDragCurrent(dragPos);
+          // Update transform for CSS preview (enables live preview on mobile)
+          setSelectionTransform({ deltaRow, deltaCol, active: true });
         });
       }
     };
@@ -4856,8 +4868,52 @@ const savedData = ${dataString};
                     console.log("onPointerUp: No movement delta, skipping moveGroup");
                   }
                   
-                  // Always restore __selected__ back to original layer if it exists
-                  if (selectedLayer) {
+                  // Handle __selected__ layer: commit to base canvas instead of restoring to layer
+                  if (selectedLayer && activeGroup === "__selected__") {
+                    console.log("onPointerUp: Committing __selected__ pixels to base canvas");
+                    
+                    if (deltaRow !== 0 || deltaCol !== 0) {
+                      // Clear original positions from base canvas
+                      const newPixelColors = [...pixelColors];
+                      selectedLayer.originalPixelIndices.forEach(idx => {
+                        newPixelColors[idx] = null;
+                      });
+                      
+                      // Write to new positions on base canvas
+                      selectedLayer.originalPixelIndices.forEach(idx => {
+                        const row = Math.floor(idx / 200);
+                        const col = idx % 200;
+                        const newRow = row + deltaRow;
+                        const newCol = col + deltaCol;
+                        
+                        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
+                          const newIdx = newRow * 200 + newCol;
+                          const color = selectedLayer.pixels[idx];
+                          if (color) {
+                            newPixelColors[newIdx] = color;
+                          }
+                        }
+                      });
+                      
+                      setPixelColors(newPixelColors);
+                      console.log("onPointerUp: Committed pixels to base canvas");
+                      
+                      // Update selectedPixels to new positions
+                      const newSelectedPixels = selectedLayer.originalPixelIndices.map(idx => {
+                        const row = Math.floor(idx / 200);
+                        const col = idx % 200;
+                        const newRow = row + deltaRow;
+                        const newCol = col + deltaCol;
+                        
+                        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
+                          return newRow * 200 + newCol;
+                        }
+                        return null;
+                      }).filter(idx => idx !== null);
+                      
+                      setSelectedPixels(newSelectedPixels);
+                    }
+                  } else if (selectedLayer) {
                     console.log("onPointerUp: Restoring __selected__ to original layer");
                     restoreSelectedToLayer(movedPixelIndices);
                   } else {
