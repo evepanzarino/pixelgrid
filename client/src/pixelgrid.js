@@ -666,36 +666,60 @@ export default function PixelGrid() {
       // Create or update __selected__ layer
       setGroups(prevGroups => {
         const existingSelectedIndex = prevGroups.findIndex(g => g.name === "__selected__");
+        
+        // Store original pixel data with source layer information, including transparent pixels
+        const originalPixelData = new Map(); // Map of pixelIndex -> { color, sourceLayer }
+        const originalColors = new Map(); // Map of pixelIndex -> color (for restoration)
+        
+        selectedPixels.forEach(idx => {
+          const pixelGroup = pixelGroups[idx];
+          let color = null;
+          let sourceLayer = null;
+          
+          if (pixelGroup && pixelGroup.group !== "__selected__") {
+            // Get color from the layer the pixel belongs to
+            const layer = prevGroups.find(g => g.name === pixelGroup.group);
+            if (layer) {
+              sourceLayer = pixelGroup.group;
+              // Get color from layer pixels, or null for transparent
+              color = layer.pixels[idx] !== undefined ? layer.pixels[idx] : null;
+            }
+          } else {
+            // Pixel not in any layer - check Background layer
+            const backgroundLayer = prevGroups.find(g => g.name === "Background");
+            if (backgroundLayer) {
+              sourceLayer = "Background";
+              color = backgroundLayer.pixels[idx] !== undefined ? backgroundLayer.pixels[idx] : null;
+            }
+            // If not in Background either, check pixelColors as last resort
+            else if (pixelColors[idx]) {
+              sourceLayer = "Background";
+              color = pixelColors[idx];
+              console.warn("Selected pixel not in any layer, using pixelColors:", idx);
+            }
+          }
+          
+          // Store original data for restoration after move
+          originalPixelData.set(idx, { color, sourceLayer });
+          originalColors.set(idx, color);
+        });
+        
         const selectedLayer = {
           name: "__selected__",
           zIndex: 999, // Always on top
           pixels: {},
           locked: false,
           originalPixelIndices: selectedPixels,
-          originalSelectionArea: selectedPixels // Used for transform preview
+          originalSelectionArea: selectedPixels, // Used for transform preview
+          originalPixelData: originalPixelData, // Store for restoration
+          originalColors: originalColors // Store for move operation
         };
         
-        // Add color data to pixels - ONLY from layers, never from pixelColors
+        // Add color data to pixels - include transparent pixels as null
         selectedPixels.forEach(idx => {
-          const pixelGroup = pixelGroups[idx];
-          if (pixelGroup && pixelGroup.group !== "__selected__") {
-            // Get color from the layer the pixel belongs to
-            const sourceLayer = prevGroups.find(g => g.name === pixelGroup.group);
-            if (sourceLayer && sourceLayer.pixels[idx]) {
-              selectedLayer.pixels[idx] = sourceLayer.pixels[idx];
-            }
-          } else {
-            // Pixel not in any layer - check Background layer
-            const backgroundLayer = prevGroups.find(g => g.name === "Background");
-            if (backgroundLayer && backgroundLayer.pixels[idx]) {
-              selectedLayer.pixels[idx] = backgroundLayer.pixels[idx];
-            }
-            // If not in Background either, check pixelColors as last resort
-            // but this indicates the pixel should be added to Background
-            else if (pixelColors[idx]) {
-              selectedLayer.pixels[idx] = pixelColors[idx];
-              console.warn("Selected pixel not in any layer, using pixelColors:", idx);
-            }
+          const data = originalPixelData.get(idx);
+          if (data) {
+            selectedLayer.pixels[idx] = data.color;
           }
         });
         
@@ -878,6 +902,13 @@ export default function PixelGrid() {
         console.log("=== FINALIZING __selected__ MOVE ===", { deltaRow, deltaCol, pixelsCount: state.selectedPixels?.length });
         
         if (deltaRow !== 0 || deltaCol !== 0) {
+          // Get the __selected__ layer to access original pixel data
+          const selectedLayer = groups.find(g => g.name === "__selected__");
+          if (selectedLayer && selectedLayer.originalPixelData) {
+            // Restore original pixels to their source layers
+            restoreOriginalPixelsToLayers(selectedLayer.originalPixelData);
+          }
+          
           moveSelectedPixels(deltaRow, deltaCol, state.selectedPixels);
         }
         
@@ -1096,16 +1127,37 @@ export default function PixelGrid() {
 
   // Get the display color for a pixel based on highest z-index
   function getPixelDisplayColor(pixelIndex) {
-    // Check if pixel is in any group using pixelGroups mapping
+    // Find the highest zIndex layer that has this pixel with a color
+    let highestZIndex = -Infinity;
+    let highestColor = null;
+    
+    // Check all groups to find highest zIndex with a color at this pixel
+    groups.forEach(group => {
+      if (group.pixels && group.pixels[pixelIndex]) {
+        const color = group.pixels[pixelIndex];
+        // Only count pixels with actual colors (not null/transparent)
+        if (color !== null && color !== 'null' && group.zIndex > highestZIndex) {
+          highestZIndex = group.zIndex;
+          highestColor = color;
+        }
+      }
+    });
+    
+    // If we found a colored pixel in layers, return it
+    if (highestColor !== null) {
+      return String(highestColor);
+    }
+    
+    // Check for transparent pixels - return them but mark as lowest priority
     const pixelGroup = pixelGroups[pixelIndex];
     if (pixelGroup) {
-      // Find the group and get its pixel color
       const group = groups.find(g => g.name === pixelGroup.group);
-      if (group && group.pixels && group.pixels[pixelIndex]) {
-        // Return a copy of the color, not a reference (prevents modification)
-        return String(group.pixels[pixelIndex]);
+      if (group && group.pixels && group.pixels[pixelIndex] !== undefined) {
+        // This includes transparent (null) pixels
+        return group.pixels[pixelIndex];
       }
     }
+    
     // Fall back to base pixelColors
     return pixelColors[pixelIndex] || null;
   }
@@ -1496,12 +1548,14 @@ export default function PixelGrid() {
     const selectedLayer = groups.find(g => g.name === "__selected__");
     
     // Store pixel colors in the layer's pixels property
+    // Include ALL pixels in selection (both colored and transparent)
     const layerPixels = {};
     selectedPixels.forEach(pixelIndex => {
       // Try to get color from __selected__ layer first, then from base canvas
-      if (selectedLayer && selectedLayer.pixels[pixelIndex]) {
+      if (selectedLayer && selectedLayer.pixels[pixelIndex] !== undefined) {
         layerPixels[pixelIndex] = selectedLayer.pixels[pixelIndex];
       } else {
+        // Store null for transparent pixels to preserve selection area
         layerPixels[pixelIndex] = pixelColors[pixelIndex] || null;
       }
     });
@@ -1845,13 +1899,13 @@ export default function PixelGrid() {
       return null;
     }
     
-    // Create pixels object with ONLY actual colors (no nulls)
-    // Nulls in the rectangle are just for selection visualization, not stored data
+    // Create pixels object including ALL pixels (colored and transparent)
+    // Include null values to preserve transparent pixels in selection area
     const completeRectanglePixels = {};
     currentSelectionArea.forEach(pixelIndex => {
       const color = originalColors.get(pixelIndex);
-      // Only include pixels with actual colors (skip nulls/undefined)
-      if (color !== undefined && color !== null) {
+      // Include ALL pixels including transparent (null)
+      if (color !== undefined) {
         completeRectanglePixels[pixelIndex] = color;
       }
     });
@@ -2175,14 +2229,17 @@ export default function PixelGrid() {
               return g;
             }
             
-            // Create pixels object with ONLY actual colors (no nulls)
-            // Filter out null/undefined to prevent background corruption
+            // Create pixels object including ALL pixels (colored and transparent)
+            // Include null values to preserve transparent pixels in selection area
             const completeRectanglePixels = {};
             newSelectionArea.forEach(pixelIndex => {
               const color = filteredPixels[pixelIndex];
-              // Only include pixels with actual colors (skip nulls/undefined)
-              if (color !== undefined && color !== null) {
+              // Include ALL pixels from filteredPixels, including nulls for transparent areas
+              if (color !== undefined) {
                 completeRectanglePixels[pixelIndex] = color;
+              } else if (selectedGroup.originalColors.has(pixelIndex)) {
+                // Preserve transparent pixels that were in original selection
+                completeRectanglePixels[pixelIndex] = null;
               }
             });
             
@@ -2531,6 +2588,56 @@ export default function PixelGrid() {
     return pixelMoves.map(m => m.newIndex);
   }
 
+  // Restore original pixels to their source layers after selection move
+  function restoreOriginalPixelsToLayers(originalPixelData) {
+    console.log("Restoring original pixels to source layers", { count: originalPixelData.size });
+    
+    setGroups(prevGroups => {
+      return prevGroups.map(group => {
+        if (group.name === "__selected__") return group; // Skip __selected__ layer
+        
+        const newPixels = { ...group.pixels };
+        let hasChanges = false;
+        
+        // Restore pixels that belong to this layer
+        originalPixelData.forEach((data, pixelIndex) => {
+          if (data.sourceLayer === group.name) {
+            // Restore the original color (even if null/transparent)
+            if (data.color !== null && data.color !== undefined) {
+              newPixels[pixelIndex] = data.color;
+            } else {
+              // Restore transparent pixel
+              newPixels[pixelIndex] = null;
+            }
+            hasChanges = true;
+          }
+        });
+        
+        if (hasChanges) {
+          return { ...group, pixels: Object.freeze(newPixels) };
+        }
+        return group;
+      });
+    });
+    
+    // Update pixelGroups to restore original layer assignments
+    setPixelGroups(prevPixelGroups => {
+      const newPixelGroups = { ...prevPixelGroups };
+      
+      originalPixelData.forEach((data, pixelIndex) => {
+        if (data.sourceLayer) {
+          // Find the zIndex for this layer
+          const layer = groups.find(g => g.name === data.sourceLayer);
+          if (layer) {
+            newPixelGroups[pixelIndex] = { group: data.sourceLayer, zIndex: layer.zIndex };
+          }
+        }
+      });
+      
+      return newPixelGroups;
+    });
+  }
+  
   // Move selected pixels (not in a group)
   function moveSelectedPixels(deltaRow, deltaCol, pixelsToMove = null) {
     const selectedPixelsArray = pixelsToMove || selectedPixels;
