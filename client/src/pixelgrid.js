@@ -3939,7 +3939,8 @@ const savedData = ${dataString};
             let isInDragPreview = false;
             let dragPreviewColor = displayC;
             
-            if (dragState.groupDragStart !== null && dragState.activeGroup === "__selected__" && dragState.isDrawing) {
+            // Only show drag preview when using movegroup tool
+            if (activeDrawingTool === "movegroup" && dragState.groupDragStart !== null && dragState.activeGroup === "__selected__" && dragState.isDrawing) {
               // Calculate which source pixel should appear at this position
               const currentDragPos = dragState.groupDragCurrent || { row: dragState.groupDragStart.startRow, col: dragState.groupDragStart.startCol };
               const deltaRow = currentDragPos.row - dragState.groupDragStart.startRow;
@@ -4239,7 +4240,7 @@ const savedData = ${dataString};
           
           // Calculate preview position during group drag (only for non-__selected__ layers or when transform is not active)
           let isInDragPreview = false;
-          if (groupDragStart !== null && groupDragCurrent !== null && activeGroup !== null && isDrawing && !selectionTransform.active) {
+          if (activeDrawingTool === "movegroup" && groupDragStart !== null && groupDragCurrent !== null && activeGroup !== null && isDrawing && !selectionTransform.active) {
             // Legacy preview for layers that don't use dynamic CSS transforms
             const deltaRow = groupDragCurrent.row - groupDragStart.startRow;
             const deltaCol = groupDragCurrent.col - groupDragStart.startCol;
