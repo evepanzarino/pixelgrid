@@ -1003,7 +1003,8 @@ export default function PixelGrid() {
             name: g.name,
             zIndex: g.zIndex,
             pixels: { ...g.pixels },
-            locked: g.locked
+            locked: g.locked,
+            originalSelectionArea: g.originalSelectionArea || []
           }));
           localStorage.setItem("pixelgrid_groups", JSON.stringify(frozenGroups));
         } catch (error) {
@@ -1061,7 +1062,8 @@ export default function PixelGrid() {
             name: g.name,
             zIndex: g.zIndex,
             pixels: { ...g.pixels },
-            locked: g.locked
+            locked: g.locked,
+            originalSelectionArea: g.originalSelectionArea || []
           }));
           localStorage.setItem("pixelgrid_groups", JSON.stringify(frozenGroups));
         } catch (error) {
@@ -1268,7 +1270,8 @@ export default function PixelGrid() {
             name: g.name,
             zIndex: g.zIndex,
             pixels: { ...g.pixels },
-            locked: g.locked
+            locked: g.locked,
+            originalSelectionArea: g.originalSelectionArea || []
           }));
           localStorage.setItem("pixelgrid_groups", JSON.stringify(frozenGroups));
         } catch (error) {
@@ -1403,7 +1406,8 @@ export default function PixelGrid() {
             name: g.name,
             zIndex: g.zIndex,
             pixels: { ...g.pixels },
-            locked: g.locked
+            locked: g.locked,
+            originalSelectionArea: g.originalSelectionArea || []
           }));
           localStorage.setItem("pixelgrid_groups", JSON.stringify(frozenGroups));
         } catch (error) {
@@ -6179,7 +6183,8 @@ const savedData = ${dataString};
                           name: g.name,
                           zIndex: g.zIndex,
                           pixels: { ...g.pixels },
-                          locked: g.locked
+                          locked: g.locked,
+                          originalSelectionArea: g.originalSelectionArea || []
                         }));
                         localStorage.setItem("pixelgrid_groups", JSON.stringify(frozenGroups));
                       } catch (error) {
