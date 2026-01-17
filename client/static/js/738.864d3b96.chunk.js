@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunkreact_client=self.webpackChunkreact_client||[]).push([[738],{738:(e,l,t)=>{t.r(l),t.d(l,{lineTool:()=>n});const n={name:"line",icon:"fa-slash",onActivate:e=>{e.setLineStartPixel(null)},onPointerDown:(e,l)=>{const{lineStartPixel:t,setLineStartPixel:n,drawLine:i}=e;null===t?n(l):(t===l||i(t,l),n(null))},getPreview:(e,l)=>{const{lineStartPixel:t,hoveredPixel:n,getLinePixels:i}=e;return null!==t&&null!==n?i(t,n):[]},isStartPixel:(e,l)=>e.lineStartPixel===l}}}]);
-//# sourceMappingURL=738.864d3b96.chunk.js.map

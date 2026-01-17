@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunkreact_client=self.webpackChunkreact_client||[]).push([[897],{897:(n,e,i)=>{i.r(e),i.d(e,{pencilTool:()=>t});const t={name:"pencil",icon:"fa-paintbrush",onActivate:n=>{n.setLineStartPixel(null)},onPointerDown:(n,e,i)=>{n.setIsDrawing(!0),n.paintPixel(i,e)},onPointerEnter:(n,e)=>{n.isDrawing&&n.paintPixel(null,e)}}}}]);
-//# sourceMappingURL=897.f8716188.chunk.js.map
