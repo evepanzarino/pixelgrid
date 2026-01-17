@@ -3963,6 +3963,7 @@ const savedData = ${dataString};
                       dragStateRef.current.groupDragStart = dragState;
                       dragStateRef.current.groupDragCurrent = null;
                       dragStateRef.current.isDrawing = true;
+                      dragStateRef.current.selectedPixels = selectedPixels;
                     } else if (pixelGroups[i]) {
                       // Clicking on a grouped pixel - start drag to move that layer
                       const pixelGroup = pixelGroups[i];
