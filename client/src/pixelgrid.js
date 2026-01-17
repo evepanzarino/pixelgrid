@@ -678,6 +678,13 @@ export default function PixelGrid() {
     
     const handleTouchMove = (e) => {
       const state = dragStateRef.current;
+      console.log("=== TOUCH MOVE ===", { 
+        hasGroupDragStart: !!state.groupDragStart,
+        activeGroup: state.activeGroup,
+        isDrawing: state.isDrawing,
+        touchCount: e.touches ? e.touches.length : 0
+      });
+      
       // Handle touch drag for mobile
       if (state.groupDragStart !== null && state.activeGroup === "__selected__" && state.isDrawing && gridRef.current) {
         e.preventDefault(); // Prevent scrolling
@@ -696,6 +703,8 @@ export default function PixelGrid() {
         const row = Math.floor(y / pixelSizePx);
         
         const dragPos = { row, col };
+        
+        console.log("=== TOUCH DRAG POS ===", dragPos);
         
         // Update ref immediately for instant preview
         dragStateRef.current.groupDragCurrent = dragPos;
@@ -3253,6 +3262,14 @@ const savedData = ${dataString};
                   setViewMode("layers");
                   setShowViewMenu(false);
                   setActiveDrawingTool("select");
+                  // Clear drag state
+                  setGroupDragStart(null);
+                  setGroupDragCurrent(null);
+                  setIsDrawing(false);
+                  dragStateRef.current.groupDragStart = null;
+                  dragStateRef.current.groupDragCurrent = null;
+                  dragStateRef.current.isDrawing = false;
+                  dragStateRef.current.activeGroup = null;
                 }}
                 style={{
                   cursor: "pointer",
@@ -3516,6 +3533,14 @@ const savedData = ${dataString};
                 setSelectionStart(null);
                 setSelectionEnd(null);
                 setShowLayersMenu(true);
+                // Clear drag state
+                setGroupDragStart(null);
+                setGroupDragCurrent(null);
+                setIsDrawing(false);
+                dragStateRef.current.groupDragStart = null;
+                dragStateRef.current.groupDragCurrent = null;
+                dragStateRef.current.isDrawing = false;
+                dragStateRef.current.activeGroup = null;
               }}
               style={{
                 width: size.w <= 1024 ? "8vw" : "3vw",
@@ -4014,6 +4039,14 @@ const savedData = ${dataString};
                   } else if (activeDrawingTool === "movegroup") {
                     // Move tool: click and drag to move selected pixels or grouped layers
                     if (selectedPixels.includes(i)) {
+                      console.log("=== MOVEGROUP START (selected pixel) ===", { 
+                        pixel: i, 
+                        isMobile: size.w <= 1024,
+                        selectedPixelsCount: selectedPixels.length,
+                        hasTouch: !!e.touches,
+                        clientX: e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : undefined)
+                      });
+                      
                       // Clicking on selected pixel - start drag to move
                       const startRow = Math.floor(i / 200);
                       const startCol = i % 200;
@@ -4021,6 +4054,8 @@ const savedData = ${dataString};
                       const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
                       const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
                       const dragState = { pixelIndex: i, startRow, startCol, clientX, clientY };
+                      
+                      console.log("=== DRAG STATE CREATED ===", dragState);
                       
                       setActiveGroup("__selected__");
                       setGroupDragStart(dragState);
@@ -4033,6 +4068,8 @@ const savedData = ${dataString};
                       dragStateRef.current.groupDragCurrent = null;
                       dragStateRef.current.isDrawing = true;
                       dragStateRef.current.selectedPixels = selectedPixels;
+                      
+                      console.log("=== REF UPDATED ===", dragStateRef.current);
                     } else if (pixelGroups[i]) {
                       // Clicking on a grouped pixel - start drag to move that layer
                       const pixelGroup = pixelGroups[i];
