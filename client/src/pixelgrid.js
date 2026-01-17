@@ -706,7 +706,7 @@ export default function PixelGrid() {
         
         const selectedLayer = {
           name: "__selected__",
-          zIndex: 999, // Always on top
+          zIndex: 9999, // Always on top
           pixels: {},
           locked: false,
           originalPixelIndices: selectedPixels,
@@ -738,7 +738,7 @@ export default function PixelGrid() {
       setPixelGroups(prevPixelGroups => {
         const newPixelGroups = { ...prevPixelGroups };
         selectedPixels.forEach(idx => {
-          newPixelGroups[idx] = { group: "__selected__", zIndex: 999 };
+          newPixelGroups[idx] = { group: "__selected__", zIndex: 9999 };
         });
         return newPixelGroups;
       });
