@@ -2108,9 +2108,12 @@ export default function PixelGrid() {
             return g;
           })
           .concat([selectedLayer]);
-        console.log("extractLayerToSelected: Updated groups", { 
+        console.log("extractLayerToSelected: __selected__ layer created with complete selection area", { 
           groupCount: updated.length, 
           selectedPixels: layerPixelIndices.length,
+          selectionAreaLength: selectedLayer.originalSelectionArea.length,
+          selectedLayerPixelCount: Object.keys(selectedLayer.pixels).length,
+          selectedLayerZIndex: selectedLayer.zIndex,
           pixelIdentifiers: Array.from(pixelIdentifiers.entries()).slice(0, 5).map(([idx, id]) => ({ index: idx, id }))
         });
         return updated;
@@ -2134,6 +2137,14 @@ export default function PixelGrid() {
           return updatedPixelGroups;
         });
       }
+    });
+    
+    // Verify the selection area was loaded before proceeding
+    console.log("extractLayerToSelected: Extraction complete, selection area verified", {
+      layerName,
+      originalSelectionAreaLength: currentSelectionArea.length,
+      pixelCount: Object.keys(completeRectanglePixels).length,
+      readyForMove: true
     });
 
     // DON'T update pixelGroups during extraction - keep pixels pointing to original layer
@@ -2286,10 +2297,25 @@ export default function PixelGrid() {
     // Use flushSync to ensure this completes before drag starts
     flushSync(() => {
       setGroups(prevGroups => {
-        return prevGroups
+        const updated = prevGroups
           .filter(g => g.name !== "__selected__")
           .concat([selectedLayer]);
+        console.log("extractSelectionToSelected: __selected__ layer created with selection", {
+          groupCount: updated.length,
+          selectedPixelCount: layerSelectedPixels.length,
+          selectedLayerPixelCount: Object.keys(selectedLayer.pixels).length,
+          selectedLayerZIndex: selectedLayer.zIndex,
+          originalLayerName: layerName
+        });
+        return updated;
       });
+    });
+    
+    // Verify the selection was loaded before proceeding
+    console.log("extractSelectionToSelected: Extraction complete, selection verified", {
+      layerName,
+      selectedPixelCount: layerSelectedPixels.length,
+      readyForMove: true
     });
 
     // DON'T update pixelGroups during extraction - keep pixels pointing to original layer
