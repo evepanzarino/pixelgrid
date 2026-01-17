@@ -651,8 +651,8 @@ export default function PixelGrid() {
     
     const handlePointerMove = (e) => {
       const state = dragStateRef.current;
-      // Track drag position for selected pixels move on mobile/desktop
-      if (state.groupDragStart !== null && state.activeGroup === "__selected__" && state.isDrawing && gridRef.current) {
+      // Track drag position for any group move on mobile/desktop
+      if (state.groupDragStart !== null && state.activeGroup !== null && state.isDrawing && gridRef.current) {
         e.preventDefault(); // Prevent scrolling on mobile
         
         const rect = gridRef.current.getBoundingClientRect();
@@ -685,8 +685,8 @@ export default function PixelGrid() {
         touchCount: e.touches ? e.touches.length : 0
       });
       
-      // Handle touch drag for mobile
-      if (state.groupDragStart !== null && state.activeGroup === "__selected__" && state.isDrawing && gridRef.current) {
+      // Handle touch drag for any group move on mobile
+      if (state.groupDragStart !== null && state.activeGroup !== null && state.isDrawing && gridRef.current) {
         e.preventDefault(); // Prevent scrolling
         
         const touch = e.touches[0];
