@@ -665,8 +665,13 @@ export default function PixelGrid() {
         const col = Math.floor(x / pixelSizePx);
         const row = Math.floor(y / pixelSizePx);
         
+        const dragPos = { row, col };
+        
+        // Update ref immediately for instant preview
+        dragStateRef.current.groupDragCurrent = dragPos;
+        
         flushSync(() => {
-          setGroupDragCurrent({ row, col });
+          setGroupDragCurrent(dragPos);
         });
       }
     };
@@ -690,8 +695,13 @@ export default function PixelGrid() {
         const col = Math.floor(x / pixelSizePx);
         const row = Math.floor(y / pixelSizePx);
         
+        const dragPos = { row, col };
+        
+        // Update ref immediately for instant preview
+        dragStateRef.current.groupDragCurrent = dragPos;
+        
         flushSync(() => {
-          setGroupDragCurrent({ row, col });
+          setGroupDragCurrent(dragPos);
         });
       }
     };
