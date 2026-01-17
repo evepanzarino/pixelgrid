@@ -4764,6 +4764,19 @@ const savedData = ${dataString};
             pixelHtmlId = selectedLayer.pixelIdentifiers.get(i);
           }
           
+          // Calculate zIndex - transparent pixels always get minimum zIndex
+          let pixelZIndex;
+          if (isInSelectedLayer) {
+            pixelZIndex = 9999;
+          } else if (pixelBackground === 'transparent' && (!displayColor || displayColor === null)) {
+            // Blank/transparent pixels always at lowest zIndex to not block other layers
+            pixelZIndex = -999;
+          } else if (pixelGroup) {
+            pixelZIndex = pixelGroup.zIndex;
+          } else {
+            pixelZIndex = 0;
+          }
+          
           return (
             <div
               key={i}
@@ -4774,7 +4787,7 @@ const savedData = ${dataString};
                 border: `${borderWidth} solid ${borderColor}`,
                 boxShadow,
                 position: 'relative',
-                zIndex: isInSelectedLayer ? 9999 : (pixelGroup ? pixelGroup.zIndex : 0),
+                zIndex: pixelZIndex,
                 opacity,
                 transform: dynamicTransform,
                 transition: isDynamicTransformed ? 'none' : 'transform 0.1s ease-out',
