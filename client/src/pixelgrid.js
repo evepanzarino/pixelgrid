@@ -4457,10 +4457,11 @@ const savedData = ${dataString};
           width: size.w <= 1024 ? "10vw" : "100%",
           display: "grid",
           gridTemplateRows: size.w <= 1024 ? "1fr 1fr" : "auto auto",
-          gridTemplateColumns: size.w <= 1024 ? "1fr" : "7vw",
+          gridTemplateColumns: size.w <= 1024 ? "1fr" : "6.8vw",
           gap: "0",
           borderTop: "0.2vw solid #000000",
-          marginBottom: size.w <= 1024 ? "0" : "8vw",
+          borderRight: size.w <= 1024 ? "0.2vw solid #000000" : "none",
+          marginBottom: size.w <= 1024 ? "0" : "7.45vw",
           background: "#ffffff",
           zIndex: size.w <= 1024 ? 1002 : "auto"
         }}>
