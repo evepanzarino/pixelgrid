@@ -4505,7 +4505,7 @@ const savedData = ${dataString};
             onClick={() => setViewMode(viewMode === "edit" ? "drawing" : "edit")}
             style={{
               width: size.w <= 1024 ? "8vw" : "6.4vw",
-              height: size.w <= 1024 ? "8vw" : "3vw",
+              height: size.w <= 1024 ? "8vw" : "6.4vw",
               background: viewMode === "edit" ? "#000" : "#fff",
               color: viewMode === "edit" ? "white" : "black",
               border: "0.15vw solid #000000",
