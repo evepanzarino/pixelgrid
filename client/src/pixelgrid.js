@@ -163,10 +163,9 @@ export default function PixelGrid() {
   const [showColorMenu, setShowColorMenu] = useState(true);
   const [showFileMenu, setShowFileMenu] = useState(false);
   const [showViewMenu, setShowViewMenu] = useState(false);
-  const [viewMode, setViewMode] = useState("drawing"); // "drawing" or "layers"
+  const [viewMode, setViewMode] = useState("drawing"); // "drawing", "layers", or "edit"
   const [showColorEditor, setShowColorEditor] = useState(false);
   const [editingColor, setEditingColor] = useState(null); // "primary" or "secondary"
-  const [showCanvasSizeEditor, setShowCanvasSizeEditor] = useState(false);
   const [canvasCols, setCanvasCols] = useState(() => {
     try {
       const saved = localStorage.getItem("pixelgrid_canvasCols");
@@ -3518,8 +3517,8 @@ const savedData = ${dataString};
         <div className="logo" style={{
           display: "grid",
           position: "relative",
-          gridTemplateColumns: `repeat(7, ${logoPixelSize}vw)`,
-          gridTemplateRows: `repeat(7, ${logoPixelSize}vw)`,
+          gridTemplateColumns: `repeat(7, 1.0vw)`,
+          gridTemplateRows: `repeat(7, 1vw)`,
         }}>
 <div className="logo-pixels"></div>
 <div className="logo-pixels"></div>
@@ -4167,20 +4166,20 @@ const savedData = ${dataString};
               
               <div
                 onClick={() => {
+                  setViewMode("edit");
                   setShowViewMenu(false);
-                  setShowCanvasSizeEditor(true);
                 }}
                 style={{
                   cursor: "pointer",
-                  color: "white",
+                  color: viewMode === "edit" ? "#4CAF50" : "white",
                   textAlign: "center",
                   fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
                   width: size.w <= 1024 ? "10vw" : "7.5vw",
-                  borderBottom: "0.2vw solid #333",
-                  padding: "0.5vw"
+                  padding: "0.5vw",
+                  fontWeight: viewMode === "edit" ? "bold" : "normal"
                 }}
               >
-                Canvas Size
+                Edit Mode
               </div>
             </div>
           )}
@@ -4501,12 +4500,12 @@ const savedData = ${dataString};
           
           {/* Edit Button */}
           <button
-            onClick={() => setShowCanvasSizeEditor(!showCanvasSizeEditor)}
+            onClick={() => setViewMode(viewMode === "edit" ? "drawing" : "edit")}
             style={{
               width: size.w <= 1024 ? "8vw" : "6.4vw",
               height: size.w <= 1024 ? "8vw" : "3vw",
-              background: showCanvasSizeEditor ? "#000" : "#fff",
-              color: showCanvasSizeEditor ? "white" : "black",
+              background: viewMode === "edit" ? "#000" : "#fff",
+              color: viewMode === "edit" ? "white" : "black",
               border: "0.15vw solid #000000",
               marginTop: "0.5vw",
               cursor: "pointer",
@@ -6875,7 +6874,7 @@ const savedData = ${dataString};
       )}
 
       {/* CANVAS SIZE EDITOR DOCKED MENU */}
-      {showCanvasSizeEditor && (
+      {viewMode === "edit" && (
         <div
           style={{
             position: "fixed",
@@ -7026,7 +7025,7 @@ const savedData = ${dataString};
           <div style={{ display: "flex", gap: "1vw" }}>
             <button
               onClick={() => {
-                setShowCanvasSizeEditor(false);
+                setViewMode("drawing");
               }}
               style={{
                 background: "#fff",
