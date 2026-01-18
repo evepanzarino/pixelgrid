@@ -4451,13 +4451,18 @@ const savedData = ${dataString};
         
         {/* BOTTOM SECTION - Primary and Secondary Colors (Always Visible) */}
         <div style={{
+          position: size.w <= 1024 ? "fixed" : "relative",
+          bottom: size.w <= 1024 ? "0" : "auto",
+          left: size.w <= 1024 ? "0" : "auto",
+          width: size.w <= 1024 ? "10vw" : "100%",
           display: "grid",
-          gridTemplateRows: "auto auto",
-          gridTemplateColumns: size.w <= 1024 ? "10vw" : "7vw",
+          gridTemplateRows: size.w <= 1024 ? "1fr 1fr" : "auto auto",
+          gridTemplateColumns: size.w <= 1024 ? "1fr" : "7vw",
           gap: "0",
-          width: "100%",
           borderTop: "0.2vw solid #000000",
-          marginBottom: size.w <= 1024 ? "21vw" : "8vw"
+          marginBottom: size.w <= 1024 ? "0" : "8vw",
+          background: "#ffffff",
+          zIndex: size.w <= 1024 ? 1002 : "auto"
         }}>
           {/* PRIMARY COLOR */}
           <div style={{ 
