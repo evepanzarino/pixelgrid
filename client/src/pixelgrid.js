@@ -5078,12 +5078,13 @@ const savedData = ${dataString};
                     if (pickedColor) {
                       // Left click (or touch) sets primary color
                       if (e.button === 0 || e.type === "touchstart") {
-                        setColor(pickedColor);
                         setPrimaryColor(pickedColor);
+                        setActiveTool("primary");
                       }
                       // Right click sets secondary color
                       else if (e.button === 2) {
                         setSecondaryColor(pickedColor);
+                        setActiveTool("secondary");
                       }
                     }
                   } else if (activeDrawingTool === "bucket") {
@@ -5246,8 +5247,8 @@ const savedData = ${dataString};
                       }
                       
                       if (pickedColor) {
-                        setColor(pickedColor);
                         setPrimaryColor(pickedColor);
+                        setActiveTool("primary");
                       }
                     }
                   }
