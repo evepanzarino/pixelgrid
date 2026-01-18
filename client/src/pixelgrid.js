@@ -852,7 +852,7 @@ export default function PixelGrid() {
       setPixelGroups(prevPixelGroups => {
         const newPixelGroups = { ...prevPixelGroups };
         Object.keys(newPixelGroups).forEach(idx => {
-          if (newPixelGroups[idx].group === "__selected__") {
+          if (newPixelGroups[idx] && newPixelGroups[idx].group === "__selected__") {
             delete newPixelGroups[idx];
           }
         });
@@ -866,7 +866,7 @@ export default function PixelGrid() {
     // Find pixels in pixelColors that aren't in any layer
     const unassignedPixels = [];
     pixelColors.forEach((color, idx) => {
-      if (color && color !== null && !pixelGroups[idx]) {
+      if (color && color !== null && (!pixelGroups[idx] || pixelGroups[idx] === null)) {
         unassignedPixels.push(idx);
       }
     });
@@ -7006,12 +7006,12 @@ const savedData = ${dataString};
             <input
               type="range"
               min="7"
-              max="1000"
+              max="200"
               value={canvasRows}
               onChange={(e) => {
                 try {
                   const newRows = parseInt(e.target.value);
-                  if (isNaN(newRows) || newRows < 7 || newRows > 1000) return;
+                  if (isNaN(newRows) || newRows < 7 || newRows > 200) return;
                   
                   const oldRows = canvasRows;
                   const newTotal = canvasCols * newRows;
