@@ -3516,7 +3516,7 @@ const savedData = ${dataString};
         top: 0,
         left: 0,
         width: "100vw",
-        height: size.w > 1650 ? "7vw" : "auto",
+        height: size.w > 1650 ? "7.7vw" : "auto",
         background: "rgb(255, 255, 255)",
         borderBottomWidth: "0.3vw",
         borderBottomStyle: "solid",
