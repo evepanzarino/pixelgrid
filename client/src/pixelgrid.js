@@ -4452,7 +4452,7 @@ const savedData = ${dataString};
         {/* BOTTOM SECTION - Primary and Secondary Colors (Always Visible) */}
         <div style={{
           position: size.w <= 1024 ? "fixed" : "relative",
-          bottom: size.w <= 1024 ? "0" : "auto",
+          bottom: size.w <= 1024 ? "10vw" : "auto",
           left: size.w <= 1024 ? "0" : "auto",
           width: size.w <= 1024 ? "10vw" : "100%",
           display: "grid",
