@@ -6499,7 +6499,7 @@ const savedData = ${dataString};
               
               {/* Select Menu Header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0px" }}>
-                <div style={{ display: "flex", gap: "0.5vw", alignItems: "center" }}>
+                <div style={{ display: "flex", gap: "0px", alignItems: "center" }}>
                   <div style={{ fontSize: "1.5vw", fontWeight: "bold" }}>
                     Select Mode
                   </div>
@@ -6547,7 +6547,7 @@ const savedData = ${dataString};
                     Color
                   </button>
                 </div>
-                <div style={{ display: "flex", gap: "0.5vw" }}>
+                <div style={{ display: "flex", gap: "0px" }}>
                   <button
                     onClick={() => setShowLayersMenu(!showLayersMenu)}
                     style={{
