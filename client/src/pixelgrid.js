@@ -3927,10 +3927,10 @@ const savedData = ${dataString};
               background: showFileMenu ? "#000" : "#fff",
               color: showFileMenu ? "#fff" : "#000",
               border: "none",
-              borderBottom: "0.55vw solid #000",
+              borderBottom: "0.3vw solid #000",
               width: "100%",
               cursor: "pointer",
-              height: size.w <= 1024 ? "10vw" : "7vw",
+              height: size.w <= 1024 ? "10vw" : "7.7vw",
               fontSize: "3vw"
             }}
           >
@@ -4112,10 +4112,10 @@ const savedData = ${dataString};
               background: showViewMenu ? "#000" : "#fff",
               color: showViewMenu ? "#fff" : "#000",
               border: "none",
-              borderBottom: "0.55vw solid #000",
+              borderBottom: "0.3vw solid #000",
               width: "100%",
               cursor: "pointer",
-              height: size.w <= 1024 ? "10vw" : "7vw",
+              height: size.w <= 1024 ? "10vw" : "7.7vw",
               fontSize: "3vw"
             }}
           >
