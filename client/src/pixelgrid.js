@@ -4498,30 +4498,28 @@ const savedData = ${dataString};
             >
               <i className="fas fa-layer-group"></i>
             </button>
+            
+            {/* Edit/Canvas Resize Tool */}
+            <button
+              onClick={() => setViewMode(viewMode === "edit" ? "drawing" : "edit")}
+              style={{
+                width: size.w <= 1024 ? "8vw" : "3vw",
+                height: size.w <= 1024 ? "8vw" : "3vw",
+                background: viewMode === "edit" ? "#000" : "#fff",
+                color: viewMode === "edit" ? "white" : "black",
+                border: "0.15vw solid #000000",
+                padding: "0",
+                cursor: "pointer",
+                fontSize: size.w <= 1024 ? "3vw" : "1.2vw",
+                fontWeight: "bold",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <i className="fas fa-expand-arrows-alt"></i>
+            </button>
           </div>
-          
-          {/* Edit Button */}
-          <button
-            onClick={() => setViewMode(viewMode === "edit" ? "drawing" : "edit")}
-            style={{
-              width: size.w <= 1024 ? "8vw" : "6.4vw",
-              height: size.w <= 1024 ? "8vw" : "6.4vw",
-              background: viewMode === "edit" ? "#000" : "#fff",
-              color: viewMode === "edit" ? "white" : "black",
-              border: "0.15vw solid #000000",
-              marginTop: "0.5vw",
-              cursor: "pointer",
-              fontSize: size.w <= 1024 ? "3.5vw" : "1.2vw",
-              fontWeight: "bold",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.3vw"
-            }}
-          >
-            <i className="fas fa-edit"></i>
-            <span>Edit</span>
-          </button>
         </div>
         </div>
         
