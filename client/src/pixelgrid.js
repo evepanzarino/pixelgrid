@@ -3564,8 +3564,8 @@ const savedData = ${dataString};
         <div className="logo" style={{
           display: "grid",
           position: "relative",
-          gridTemplateColumns: `repeat(7, 1.0vw)`,
-          gridTemplateRows: `repeat(7, 1vw)`,
+          gridTemplateColumns: `repeat(7, ${logoPixelSize}vw)`,
+          gridTemplateRows: `repeat(7, ${logoPixelSize}vw)`,
         }}>
 <div className="logo-pixels"></div>
 <div className="logo-pixels"></div>
