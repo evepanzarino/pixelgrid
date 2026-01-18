@@ -194,6 +194,12 @@ export default function PixelGrid() {
       return saved ? parseFloat(saved) : 0.5;
     } catch { return 0.5; }
   });
+  const [backgroundScale, setBackgroundScale] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pixelgrid_backgroundScale");
+      return saved ? parseFloat(saved) : 1.0;
+    } catch { return 1.0; }
+  });
   const backgroundInputRef = useRef(null);
   
   // Image upload state
@@ -631,6 +637,14 @@ export default function PixelGrid() {
       console.error("Failed to save background opacity:", error);
     }
   }, [backgroundOpacity]);
+  
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_backgroundScale", backgroundScale.toString());
+    } catch (error) {
+      console.error("Failed to save background scale:", error);
+    }
+  }, [backgroundScale]);
   
   // Save groups (layers) to localStorage - ONLY when explicitly called, not automatically
   // This prevents moves from persisting until user draws with that layer selected
@@ -4465,9 +4479,39 @@ const savedData = ${dataString};
               textAlign: "center",
               fontSize: "1.2vw",
               color: "#666",
-              marginTop: "0.3vw"
+              marginTop: "0.3vw",
+              marginBottom: "1vw"
             }}>
               {Math.round(backgroundOpacity * 100)}%
+            </div>
+            
+            <div style={{ 
+              color: "#000000", 
+              fontSize: "1.5vw", 
+              marginBottom: "0.5vw",
+              textAlign: "center"
+            }}>
+              <b>Background Scale</b>
+            </div>
+            <input
+              type="range"
+              min="0.1"
+              max="3"
+              step="0.1"
+              value={backgroundScale}
+              onChange={(e) => setBackgroundScale(parseFloat(e.target.value))}
+              style={{
+                width: "100%",
+                cursor: "pointer"
+              }}
+            />
+            <div style={{
+              textAlign: "center",
+              fontSize: "1.2vw",
+              color: "#666",
+              marginTop: "0.3vw"
+            }}>
+              {Math.round(backgroundScale * 100)}%
             </div>
           </div>
         )}
@@ -4580,9 +4624,9 @@ const savedData = ${dataString};
               src={backgroundImage}
               alt="Background"
               style={{
-                maxWidth: "100%",
-                maxHeight: "100%",
-                width: "auto",
+                maxWidth: "none",
+                maxHeight: "none",
+                width: `${100 * backgroundScale}%`,
                 height: "auto",
                 objectFit: "contain",
                 objectPosition: "top left",
