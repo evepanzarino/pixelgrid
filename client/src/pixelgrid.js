@@ -1454,20 +1454,20 @@ export default function PixelGrid() {
       
       while (queue.length > 0) {
         const idx = queue.shift();
-        const row = Math.floor(idx / 200);
-        const col = idx % 200;
+        const row = Math.floor(idx / canvasCols);
+        const col = idx % canvasCols;
         
         // Check 4-directional neighbors (not diagonal)
         const neighbors = [
-          { idx: idx - 200, row: row - 1, col: col },     // up
-          { idx: idx + 200, row: row + 1, col: col },     // down
+          { idx: idx - canvasCols, row: row - 1, col: col },     // up
+          { idx: idx + canvasCols, row: row + 1, col: col },     // down
           { idx: idx - 1, row: row, col: col - 1 },       // left
           { idx: idx + 1, row: row, col: col + 1 }        // right
         ];
         
         for (const n of neighbors) {
-          if (n.row < 0 || n.row >= Math.floor(totalPixels / 200)) continue;
-          if (n.col < 0 || n.col >= 200) continue;
+          if (n.row < 0 || n.row >= canvasRows) continue;
+          if (n.col < 0 || n.col >= canvasCols) continue;
           if (regionMap[n.idx] !== -1) continue; // Already assigned
           if (colors[n.idx] !== color) continue; // Different color
           
@@ -1509,13 +1509,11 @@ export default function PixelGrid() {
           
           while (queue.length > 0) {
             const idx = queue.shift();
-            // eslint-disable-next-line no-unused-vars
-            const row = Math.floor(idx / 200);
-            // eslint-disable-next-line no-unused-vars
-            const col = idx % 200;
+            const row = Math.floor(idx / canvasCols);
+            const col = idx % canvasCols;
             
             const neighbors = [
-              idx - 200, idx + 200, idx - 1, idx + 1
+              idx - canvasCols, idx + canvasCols, idx - 1, idx + 1
             ];
             
             // eslint-disable-next-line no-loop-func
