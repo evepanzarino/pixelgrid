@@ -7084,7 +7084,7 @@ const savedData = ${dataString};
       {size.w > 1024 && (activeDrawingTool === "select" || showLayersMenu) && (
         <div style={{
           position: "fixed",
-          top: "7.8vw",
+          top: "7.7vw",
           right: 0,
           width: "35vw",
           height: "100vh",
