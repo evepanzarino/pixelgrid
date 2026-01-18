@@ -5281,13 +5281,9 @@ const savedData = ${dataString};
                       }
                       
                       if (pickedColor) {
-                        if (e.shiftKey) {
-                          setSecondaryColor(pickedColor);
-                          setActiveTool("secondary");
-                        } else {
-                          setPrimaryColor(pickedColor);
-                          setActiveTool("primary");
-                        }
+                        // During drag, always set primary color
+                        setPrimaryColor(pickedColor);
+                        setActiveTool("primary");
                       }
                     }
                   }
