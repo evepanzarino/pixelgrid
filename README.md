@@ -1,2 +1,2 @@
 # PixelGrid
-<img href="/pixelgridLogo.png"/>
+<img src="/pixelgridLogo.png"/>
