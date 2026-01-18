@@ -531,6 +531,19 @@ export default function PixelGrid() {
   // Calculate rows - use canvasRows state directly
   const rows = canvasRows;
   const totalPixels = cols * rows;
+  
+  // Force re-sync if pixelColors length doesn't match canvas dimensions
+  useEffect(() => {
+    if (pixelColors.length !== totalPixels) {
+      console.log("Resyncing pixel array:", { current: pixelColors.length, expected: totalPixels });
+      const newArray = Array(totalPixels).fill(null);
+      // Copy what we can
+      for (let i = 0; i < Math.min(pixelColors.length, totalPixels); i++) {
+        newArray[i] = pixelColors[i];
+      }
+      setPixelColors(newArray);
+    }
+  }, [canvasCols, canvasRows]);
 
   // Initialize pixelColors with saved data or defaults
   const [pixelColors, setPixelColors] = useState(() => {
@@ -4894,6 +4907,7 @@ const savedData = ${dataString};
               console.log("Click hit pixel directly:", e.target.getAttribute('data-pixel-index'));
             }
           }}
+          key={`canvas-${canvasCols}-${canvasRows}`}
           style={{
             display: "grid",
             gridTemplateColumns: `repeat(${cols}, ${displayPixelSize}vw)`,
@@ -4926,7 +4940,7 @@ const savedData = ${dataString};
           }}
         />
         
-        {(pixelColors || []).map((c, i) => {
+        {pixelColors.length === totalPixels && pixelColors.map((c, i) => {
           // Get the actual display color based on highest z-index from localStorage
           const displayC = getPixelDisplayColor(i);
           
