@@ -3246,12 +3246,14 @@ export default function PixelGrid() {
     const data = {
       pixelColors: pixelColors,
       pixelGroups: pixelGroups,
-      groups: groups
+      groups: groups,
+      canvasCols: canvasCols,
+      canvasRows: canvasRows
     };
     const dataString = JSON.stringify(data);
     const html = `
 <body style="margin:0; overflow-x:hidden;">
-<div style="display:grid;grid-template-columns:repeat(200,0.75vw);grid-auto-rows:0.75vw;">
+<div style="display:grid;grid-template-columns:repeat(${cols},0.75vw);grid-auto-rows:0.75vw;">
 ${pixelColors.map((c, i) => {
   const group = pixelGroups[i];
   const style = `width:0.75vw;height:0.75vw;background:${c};${group ? `position:relative;z-index:${group.zIndex}` : ''}`;
@@ -3260,7 +3262,7 @@ ${pixelColors.map((c, i) => {
 </div>
 <script>
 const savedData = ${dataString};
-// Data includes: pixelColors, pixelGroups, groups
+// Data includes: pixelColors, pixelGroups, groups, canvasCols, canvasRows
 </script>
 </body>
 </html>`;
@@ -3282,6 +3284,15 @@ const savedData = ${dataString};
       if (matchData) {
         try {
           const data = JSON.parse(matchData[1]);
+          
+          // Restore canvas dimensions if available
+          if (data.canvasCols !== undefined && data.canvasRows !== undefined) {
+            const newCols = Math.max(7, Math.min(200, data.canvasCols));
+            const newRows = Math.max(7, Math.min(1000, data.canvasRows));
+            setCanvasCols(newCols);
+            setCanvasRows(newRows);
+          }
+          
           if (data.pixelColors) setPixelColors(data.pixelColors);
           if (data.pixelGroups) setPixelGroups(data.pixelGroups);
           if (data.groups) setGroups(data.groups);
@@ -6894,12 +6905,12 @@ const savedData = ${dataString};
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "0.5vw" }}>
             <label style={{ color: "#000000", fontSize: "1.2vw" }}>Columns (Width)</label>
             <input
-              type="number"
+              type="range"
               min="7"
               max="200"
               value={canvasCols}
               onChange={(e) => {
-                const newCols = Math.max(7, Math.min(200, parseInt(e.target.value) || 7));
+                const newCols = parseInt(e.target.value);
                 setCanvasCols(newCols);
                 // Resize pixelColors array if needed
                 const newTotal = newCols * canvasRows;
@@ -6913,23 +6924,29 @@ const savedData = ${dataString};
               }}
               style={{
                 width: "100%",
-                padding: "0.5vw",
-                fontSize: "1.2vw",
-                border: "0.2vw solid #000",
-                textAlign: "center"
+                cursor: "pointer"
               }}
             />
+            <div style={{
+              color: "#000000",
+              fontSize: "1.2vw",
+              textAlign: "center",
+              fontFamily: "monospace",
+              fontWeight: "bold"
+            }}>
+              {String(canvasCols).padStart(3, '0')} px
+            </div>
           </div>
           
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "0.5vw" }}>
             <label style={{ color: "#000000", fontSize: "1.2vw" }}>Rows (Height)</label>
             <input
-              type="number"
+              type="range"
               min="7"
               max="1000"
               value={canvasRows}
               onChange={(e) => {
-                const newRows = Math.max(7, Math.min(1000, parseInt(e.target.value) || 7));
+                const newRows = parseInt(e.target.value);
                 setCanvasRows(newRows);
                 // Resize pixelColors array if needed
                 const newTotal = canvasCols * newRows;
@@ -6943,12 +6960,18 @@ const savedData = ${dataString};
               }}
               style={{
                 width: "100%",
-                padding: "0.5vw",
-                fontSize: "1.2vw",
-                border: "0.2vw solid #000",
-                textAlign: "center"
+                cursor: "pointer"
               }}
             />
+            <div style={{
+              color: "#000000",
+              fontSize: "1.2vw",
+              textAlign: "center",
+              fontFamily: "monospace",
+              fontWeight: "bold"
+            }}>
+              {String(canvasRows).padStart(3, '0')} px
+            </div>
           </div>
           
           <div style={{ display: "flex", gap: "1vw" }}>
