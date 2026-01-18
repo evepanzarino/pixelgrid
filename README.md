@@ -1,5 +1,5 @@
 # PixelGrid
 <img src="/pixelgridLogo.png"/>
-<img src="/pixelgridFluttershy.png"/>
-<img src="/pixelGridFont.png" />
+<img style="text-align: center" src="/pixelGridFont.png" />
 <img src="/pixelgridPhotoImport.png" />
+<img src="/pixelgridFluttershy.png"/>
