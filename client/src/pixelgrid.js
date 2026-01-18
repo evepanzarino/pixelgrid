@@ -3927,6 +3927,7 @@ const savedData = ${dataString};
               background: showFileMenu ? "#000" : "#fff",
               color: showFileMenu ? "#fff" : "#000",
               border: "none",
+              borderBottom: "0.3vw solid #000",
               width: "100%",
               cursor: "pointer",
               height: size.w <= 1024 ? "10vw" : "7vw",
@@ -4111,6 +4112,7 @@ const savedData = ${dataString};
               background: showViewMenu ? "#000" : "#fff",
               color: showViewMenu ? "#fff" : "#000",
               border: "none",
+              borderBottom: "0.3vw solid #000",
               width: "100%",
               cursor: "pointer",
               height: size.w <= 1024 ? "10vw" : "7vw",
@@ -7082,7 +7084,7 @@ const savedData = ${dataString};
       {size.w > 1024 && (activeDrawingTool === "select" || showLayersMenu) && (
         <div style={{
           position: "fixed",
-          top: size.w <= 1650 ? "7.2vw" : "7.8vw",
+          top: "7.8vw",
           right: 0,
           width: "35vw",
           height: "100vh",
