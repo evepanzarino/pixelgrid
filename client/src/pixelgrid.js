@@ -178,7 +178,24 @@ export default function PixelGrid() {
       return saved ? parseInt(saved) : 100;
     } catch { return 100; }
   });
+  const hoveredPixelRef = useRef(null);
   const [hoveredPixel, setHoveredPixel] = useState(null);
+  const hoverUpdateScheduled = useRef(false);
+  
+  // Throttled hover update using requestAnimationFrame
+  const updateHoveredPixel = useCallback((newPixel) => {
+    if (hoveredPixelRef.current === newPixel) return;
+    hoveredPixelRef.current = newPixel;
+    
+    if (!hoverUpdateScheduled.current) {
+      hoverUpdateScheduled.current = true;
+      requestAnimationFrame(() => {
+        setHoveredPixel(hoveredPixelRef.current);
+        hoverUpdateScheduled.current = false;
+      });
+    }
+  }, []);
+  
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
   const [verticalScrollPosition, setVerticalScrollPosition] = useState(0);
@@ -451,7 +468,7 @@ export default function PixelGrid() {
         if (element && element.hasAttribute('data-pixel-index')) {
           const pixelIndex = parseInt(element.getAttribute('data-pixel-index'), 10);
           if (!isNaN(pixelIndex) && pixelIndex !== hoveredPixel) {
-            setHoveredPixel(pixelIndex);
+            updateHoveredPixel(pixelIndex);
             // Paint or erase directly by updating pixel colors
             if (activeDrawingTool === "pencil") {
               paintPixel(null, pixelIndex);
@@ -482,7 +499,7 @@ export default function PixelGrid() {
       if (el && el.hasAttribute('data-pixel-index')) {
         const idx = parseInt(el.getAttribute('data-pixel-index'), 10);
         if (!Number.isNaN(idx) && idx !== hoveredPixel) {
-          setHoveredPixel(idx);
+          updateHoveredPixel(idx);
         }
       }
     };
@@ -6045,10 +6062,10 @@ const savedData = ${dataString};
                   // Store current position in ref for onPointerUp (no re-render)
                   dragStateRef.current.groupDragCurrent = { row: currentRow, col: currentCol };
                 }
-                setHoveredPixel(i);
+                updateHoveredPixel(i);
               }}
               onPointerMove={(e) => {
-                setHoveredPixel(i);
+                updateHoveredPixel(i);
                 
                 // SELECT TOOL - Update selection rectangle during desktop drag
                 if (activeDrawingTool === "select" && size.w > 1024 && isDrawing && selectionStart !== null) {
