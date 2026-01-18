@@ -169,8 +169,12 @@ export default function PixelGrid() {
   const [canvasCols, setCanvasCols] = useState(() => {
     try {
       const saved = localStorage.getItem("pixelgrid_canvasCols");
-      return saved ? parseInt(saved) : 200;
-    } catch { return 200; }
+      if (saved) return parseInt(saved);
+      // Default to 100 on mobile, 200 on desktop
+      return window.innerWidth <= 1024 ? 100 : 200;
+    } catch { 
+      return window.innerWidth <= 1024 ? 100 : 200;
+    }
   });
   const [canvasRows, setCanvasRows] = useState(() => {
     try {
