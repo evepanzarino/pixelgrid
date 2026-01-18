@@ -3251,12 +3251,14 @@ export default function PixelGrid() {
       canvasRows: canvasRows
     };
     const dataString = JSON.stringify(data);
+    // Calculate pixel size to fill viewport width
+    const pixelSize = (100 / cols).toFixed(4);
     const html = `
 <body style="margin:0; overflow-x:hidden;">
-<div style="display:grid;grid-template-columns:repeat(${cols},0.75vw);grid-auto-rows:0.75vw;">
+<div style="display:grid;grid-template-columns:repeat(${cols},${pixelSize}vw);grid-auto-rows:${pixelSize}vw;">
 ${pixelColors.map((c, i) => {
   const group = pixelGroups[i];
-  const style = `width:0.75vw;height:0.75vw;background:${c};${group ? `position:relative;z-index:${group.zIndex}` : ''}`;
+  const style = `width:${pixelSize}vw;height:${pixelSize}vw;background:${c};${group ? `position:relative;z-index:${group.zIndex}` : ''}`;
   return `<div style="${style}"${group ? ` id="${group.group}"` : ''}></div>`;
 }).join("")}
 </div>
