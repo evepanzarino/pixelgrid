@@ -1086,13 +1086,16 @@ export default function PixelGrid() {
   }, [activeDrawingTool]);
 
   function erasePixel(e, index) {
+    console.log("erasePixel called:", { index, activeGroup, pixelColor: pixelColors[index], pixelGroup: pixelGroups[index] });
     // If there's an active group, erase from the layer's pixels
     if (activeGroup && activeGroup !== "__selected__") {
       // Check if pixel is in the active layer - restrict erasing to layer pixels only
       const pixelGroup = pixelGroups[index];
       if (pixelGroup && pixelGroup.group !== activeGroup) {
+        console.log("Skipping erase - pixel belongs to different layer");
         return; // Don't erase pixels from other layers
       }
+      console.log("Erasing from active layer:", activeGroup);
       
       setGroups(prevGroups => {
         const updated = prevGroups.map(g => {
@@ -1129,8 +1132,13 @@ export default function PixelGrid() {
       });
     } else {
       // No active layer - erase from base pixelColors (background layer)
+      console.log("Erasing from background layer - no active group");
       setPixelColors((prev) => {
-        if (prev[index] === null) return prev; // Already erased
+        if (prev[index] === null) {
+          console.log("Pixel already erased, skipping");
+          return prev; // Already erased
+        }
+        console.log("Setting pixel to null:", index);
         const copy = [...prev];
         copy[index] = null; // Clear the pixel
         return copy;
