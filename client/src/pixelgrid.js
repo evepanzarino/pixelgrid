@@ -537,23 +537,47 @@ export default function PixelGrid() {
     try {
       // Check if we should clear everything on this load
       const shouldClear = sessionStorage.getItem("pixelgrid_clearOnLoad");
+      
+      // Get canvas dimensions for array size calculation
+      let savedCols = 200;
+      let savedRows = 100;
+      try {
+        const cols = localStorage.getItem("pixelgrid_canvasCols");
+        const rows = localStorage.getItem("pixelgrid_canvasRows");
+        if (cols) savedCols = parseInt(cols);
+        if (rows) savedRows = parseInt(rows);
+      } catch { }
+      
+      const totalSize = savedCols * savedRows;
+      
       if (shouldClear) {
-        return Array(totalPixels).fill(null);
+        return Array(totalSize).fill(null);
       }
       const saved = localStorage.getItem("pixelgrid_pixelColors");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.length === totalPixels) return parsed;
-        // If size changed, extend or trim array
-        const newArray = Array(totalPixels).fill(null);
-        const copyLength = Math.min(parsed.length, totalPixels);
-        for (let i = 0; i < copyLength; i++) {
-          newArray[i] = parsed[i];
+        if (parsed.length === totalSize) return parsed;
+        // If size changed, resize array preserving pixel positions
+        const newArray = Array(totalSize).fill(null);
+        // Copy row by row to preserve pixel positions
+        const oldCols = Math.sqrt(parsed.length) > savedCols ? Math.floor(Math.sqrt(parsed.length)) : savedCols;
+        const oldRows = Math.floor(parsed.length / oldCols);
+        for (let row = 0; row < Math.min(oldRows, savedRows); row++) {
+          for (let col = 0; col < Math.min(oldCols, savedCols); col++) {
+            const oldIndex = row * oldCols + col;
+            const newIndex = row * savedCols + col;
+            if (oldIndex < parsed.length && newIndex < newArray.length) {
+              newArray[newIndex] = parsed[oldIndex];
+            }
+          }
         }
         return newArray;
       }
-    } catch { }
-    return Array(totalPixels).fill(null);
+    } catch (e) { 
+      console.error("Error initializing pixelColors:", e);
+    }
+    // Fallback to default size
+    return Array(200 * 100).fill(null);
   });
 
   const fileInputRef = useRef(null);
@@ -6910,34 +6934,42 @@ const savedData = ${dataString};
               max="200"
               value={canvasCols}
               onChange={(e) => {
-                const newCols = parseInt(e.target.value);
-                const oldCols = canvasCols;
-                const newTotal = newCols * canvasRows;
-                
-                // Prepare new arrays
-                const newPixelColors = Array(newTotal).fill(null);
-                const newPixelGroups = Array(newTotal).fill(null);
-                
-                // Copy pixels row by row, preserving their positions
-                for (let row = 0; row < canvasRows; row++) {
-                  for (let col = 0; col < Math.min(oldCols, newCols); col++) {
-                    const oldIndex = row * oldCols + col;
-                    const newIndex = row * newCols + col;
-                    if (oldIndex < pixelColors.length) {
-                      newPixelColors[newIndex] = pixelColors[oldIndex];
-                    }
-                    if (oldIndex < pixelGroups.length) {
-                      newPixelGroups[newIndex] = pixelGroups[oldIndex];
+                try {
+                  const newCols = parseInt(e.target.value);
+                  if (isNaN(newCols) || newCols < 7 || newCols > 200) return;
+                  
+                  const oldCols = canvasCols;
+                  const newTotal = newCols * canvasRows;
+                  
+                  // Prepare new arrays
+                  const newPixelColors = Array(newTotal).fill(null);
+                  const newPixelGroups = Array(newTotal).fill(null);
+                  
+                  // Copy pixels row by row, preserving their positions
+                  if (pixelColors && pixelColors.length > 0) {
+                    for (let row = 0; row < canvasRows; row++) {
+                      for (let col = 0; col < Math.min(oldCols, newCols); col++) {
+                        const oldIndex = row * oldCols + col;
+                        const newIndex = row * newCols + col;
+                        if (oldIndex < pixelColors.length) {
+                          newPixelColors[newIndex] = pixelColors[oldIndex];
+                        }
+                        if (pixelGroups && oldIndex < pixelGroups.length) {
+                          newPixelGroups[newIndex] = pixelGroups[oldIndex];
+                        }
+                      }
                     }
                   }
+                  
+                  // Update all states synchronously
+                  flushSync(() => {
+                    setPixelColors(newPixelColors);
+                    setPixelGroups(newPixelGroups);
+                    setCanvasCols(newCols);
+                  });
+                } catch (err) {
+                  console.error("Error resizing canvas columns:", err);
                 }
-                
-                // Update all states synchronously
-                flushSync(() => {
-                  setPixelColors(newPixelColors);
-                  setPixelGroups(newPixelGroups);
-                  setCanvasCols(newCols);
-                });
               }}
               style={{
                 width: "100%",
@@ -6963,34 +6995,42 @@ const savedData = ${dataString};
               max="1000"
               value={canvasRows}
               onChange={(e) => {
-                const newRows = parseInt(e.target.value);
-                const oldRows = canvasRows;
-                const newTotal = canvasCols * newRows;
-                
-                // Prepare new arrays
-                const newPixelColors = Array(newTotal).fill(null);
-                const newPixelGroups = Array(newTotal).fill(null);
-                
-                // Copy pixels row by row, cutting off rows beyond new height
-                for (let row = 0; row < Math.min(oldRows, newRows); row++) {
-                  for (let col = 0; col < canvasCols; col++) {
-                    const oldIndex = row * canvasCols + col;
-                    const newIndex = row * canvasCols + col;
-                    if (oldIndex < pixelColors.length) {
-                      newPixelColors[newIndex] = pixelColors[oldIndex];
-                    }
-                    if (oldIndex < pixelGroups.length) {
-                      newPixelGroups[newIndex] = pixelGroups[oldIndex];
+                try {
+                  const newRows = parseInt(e.target.value);
+                  if (isNaN(newRows) || newRows < 7 || newRows > 1000) return;
+                  
+                  const oldRows = canvasRows;
+                  const newTotal = canvasCols * newRows;
+                  
+                  // Prepare new arrays
+                  const newPixelColors = Array(newTotal).fill(null);
+                  const newPixelGroups = Array(newTotal).fill(null);
+                  
+                  // Copy pixels row by row, cutting off rows beyond new height
+                  if (pixelColors && pixelColors.length > 0) {
+                    for (let row = 0; row < Math.min(oldRows, newRows); row++) {
+                      for (let col = 0; col < canvasCols; col++) {
+                        const oldIndex = row * canvasCols + col;
+                        const newIndex = row * canvasCols + col;
+                        if (oldIndex < pixelColors.length) {
+                          newPixelColors[newIndex] = pixelColors[oldIndex];
+                        }
+                        if (pixelGroups && oldIndex < pixelGroups.length) {
+                          newPixelGroups[newIndex] = pixelGroups[oldIndex];
+                        }
+                      }
                     }
                   }
+                  
+                  // Update all states synchronously
+                  flushSync(() => {
+                    setPixelColors(newPixelColors);
+                    setPixelGroups(newPixelGroups);
+                    setCanvasRows(newRows);
+                  });
+                } catch (err) {
+                  console.error("Error resizing canvas rows:", err);
                 }
-                
-                // Update all states synchronously
-                flushSync(() => {
-                  setPixelColors(newPixelColors);
-                  setPixelGroups(newPixelGroups);
-                  setCanvasRows(newRows);
-                });
               }}
               style={{
                 width: "100%",
