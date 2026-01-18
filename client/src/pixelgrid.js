@@ -166,6 +166,19 @@ export default function PixelGrid() {
   const [viewMode, setViewMode] = useState("drawing"); // "drawing" or "layers"
   const [showColorEditor, setShowColorEditor] = useState(false);
   const [editingColor, setEditingColor] = useState(null); // "primary" or "secondary"
+  const [showCanvasSizeEditor, setShowCanvasSizeEditor] = useState(false);
+  const [canvasCols, setCanvasCols] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pixelgrid_canvasCols");
+      return saved ? parseInt(saved) : 200;
+    } catch { return 200; }
+  });
+  const [canvasRows, setCanvasRows] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pixelgrid_canvasRows");
+      return saved ? parseInt(saved) : 100;
+    } catch { return 100; }
+  });
   const [hoveredPixel, setHoveredPixel] = useState(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
@@ -511,13 +524,12 @@ export default function PixelGrid() {
   const zoomFactor = getZoomFactor();
   const logoPixelSize = getLogoPixelSize();
   const titlePixelSize = getTitlePixelSize();
-  const cols = 200; // Fixed 200 columns
+  const cols = canvasCols; // Use state variable for columns
   const basePixelSize = 0.75; // Base pixel size in vw
   const displayPixelSize = basePixelSize * zoomFactor;
   
-  // Calculate rows needed to fill the screen height
-  const pixelSizeInPx = (displayPixelSize / 100) * size.w; // Convert vw to px
-  const rows = Math.ceil(size.h / pixelSizeInPx);
+  // Calculate rows - use canvasRows state directly
+  const rows = canvasRows;
   const totalPixels = cols * rows;
 
   // Initialize pixelColors with saved data or defaults
@@ -645,6 +657,16 @@ export default function PixelGrid() {
       console.error("Failed to save background scale:", error);
     }
   }, [backgroundScale]);
+  
+  // Save canvas dimensions to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_canvasCols", canvasCols.toString());
+      localStorage.setItem("pixelgrid_canvasRows", canvasRows.toString());
+    } catch (error) {
+      console.error("Failed to save canvas dimensions:", error);
+    }
+  }, [canvasCols, canvasRows]);
   
   // Save groups (layers) to localStorage - ONLY when explicitly called, not automatically
   // This prevents moves from persisting until user draws with that layer selected
@@ -4130,6 +4152,24 @@ const savedData = ${dataString};
               >
                 Layer Mode
               </div>
+              
+              <div
+                onClick={() => {
+                  setShowViewMenu(false);
+                  setShowCanvasSizeEditor(true);
+                }}
+                style={{
+                  cursor: "pointer",
+                  color: "white",
+                  textAlign: "center",
+                  fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
+                  width: size.w <= 1024 ? "10vw" : "7.5vw",
+                  borderBottom: "0.2vw solid #333",
+                  padding: "0.5vw"
+                }}
+              >
+                Canvas Size
+              </div>
             </div>
           )}
         </div>
@@ -4446,6 +4486,29 @@ const savedData = ${dataString};
               <i className="fas fa-layer-group"></i>
             </button>
           </div>
+          
+          {/* Edit Button */}
+          <button
+            onClick={() => setShowCanvasSizeEditor(!showCanvasSizeEditor)}
+            style={{
+              width: size.w <= 1024 ? "8vw" : "6.4vw",
+              height: size.w <= 1024 ? "8vw" : "3vw",
+              background: showCanvasSizeEditor ? "#000" : "#fff",
+              color: showCanvasSizeEditor ? "white" : "black",
+              border: "0.15vw solid #000000",
+              marginTop: "0.5vw",
+              cursor: "pointer",
+              fontSize: size.w <= 1024 ? "3.5vw" : "1.2vw",
+              fontWeight: "bold",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.3vw"
+            }}
+          >
+            <i className="fas fa-edit"></i>
+            <span>Edit</span>
+          </button>
         </div>
         </div>
         
@@ -4798,7 +4861,7 @@ const savedData = ${dataString};
           }}
           style={{
             display: "grid",
-            gridTemplateColumns: `repeat(200, ${displayPixelSize}vw)`,
+            gridTemplateColumns: `repeat(${cols}, ${displayPixelSize}vw)`,
             gridTemplateRows: `repeat(${rows}, ${displayPixelSize}vw)`,
             userSelect: "none",
             position: "relative",
@@ -6796,6 +6859,136 @@ const savedData = ${dataString};
           >
             Remove Background
           </button>
+        </div>
+      )}
+
+      {/* CANVAS SIZE EDITOR DOCKED MENU */}
+      {showCanvasSizeEditor && (
+        <div
+          style={{
+            position: "fixed",
+            inset: size.w <= 1024 
+              ? (showLayersMenu ? "auto 0px 45vw 10vw" : "auto 0px 10vw 10vw") 
+              : (showLayersMenu ? "auto 35vw 0px 7vw" : "auto 0vw 0px 7vw"),
+            background: "#ffffff",
+            padding: "1vw",
+            borderTop: "0.3vw solid #000000",
+            borderBottom: "none",
+            borderLeft: "none",
+            zIndex: 1001,
+            display: "flex",
+            flexDirection: "column",
+            gap: "1vw",
+            alignItems: "center"
+          }}
+        >
+          <div style={{ 
+            color: "#000000", 
+            fontSize: "1.5vw", 
+            fontWeight: "bold",
+            textAlign: "center"
+          }}>
+            Canvas Size
+          </div>
+          
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "0.5vw" }}>
+            <label style={{ color: "#000000", fontSize: "1.2vw" }}>Columns (Width)</label>
+            <input
+              type="number"
+              min="10"
+              max="500"
+              value={canvasCols}
+              onChange={(e) => {
+                const newCols = Math.max(10, Math.min(500, parseInt(e.target.value) || 10));
+                setCanvasCols(newCols);
+                // Resize pixelColors array if needed
+                const newTotal = newCols * canvasRows;
+                setPixelColors(prev => {
+                  const newArr = Array(newTotal).fill(null);
+                  for (let i = 0; i < Math.min(prev.length, newTotal); i++) {
+                    newArr[i] = prev[i];
+                  }
+                  return newArr;
+                });
+              }}
+              style={{
+                width: "100%",
+                padding: "0.5vw",
+                fontSize: "1.2vw",
+                border: "0.2vw solid #000",
+                textAlign: "center"
+              }}
+            />
+          </div>
+          
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "0.5vw" }}>
+            <label style={{ color: "#000000", fontSize: "1.2vw" }}>Rows (Height)</label>
+            <input
+              type="number"
+              min="10"
+              max="500"
+              value={canvasRows}
+              onChange={(e) => {
+                const newRows = Math.max(10, Math.min(500, parseInt(e.target.value) || 10));
+                setCanvasRows(newRows);
+                // Resize pixelColors array if needed
+                const newTotal = canvasCols * newRows;
+                setPixelColors(prev => {
+                  const newArr = Array(newTotal).fill(null);
+                  for (let i = 0; i < Math.min(prev.length, newTotal); i++) {
+                    newArr[i] = prev[i];
+                  }
+                  return newArr;
+                });
+              }}
+              style={{
+                width: "100%",
+                padding: "0.5vw",
+                fontSize: "1.2vw",
+                border: "0.2vw solid #000",
+                textAlign: "center"
+              }}
+            />
+          </div>
+          
+          <div style={{ display: "flex", gap: "1vw" }}>
+            <button
+              onClick={() => {
+                setShowCanvasSizeEditor(false);
+              }}
+              style={{
+                background: "#fff",
+                color: "#000",
+                border: "0.2vw solid #000",
+                padding: "1vw 3vw",
+                cursor: "pointer",
+                fontSize: "1.3vw",
+                fontWeight: "bold"
+              }}
+            >
+              Close
+            </button>
+            
+            <button
+              onClick={() => {
+                setCanvasCols(200);
+                setCanvasRows(100);
+                const newTotal = 200 * 100;
+                setPixelColors(Array(newTotal).fill(null));
+              }}
+              style={{
+                background: "#000",
+                color: "#fff",
+                border: "0.2vw solid #000",
+                padding: "1vw 3vw",
+                cursor: "pointer",
+                fontSize: "1.3vw",
+                fontWeight: "bold"
+              }}
+            >
+              Reset to Default
+            </button>
+          </div>
         </div>
       )}
 
