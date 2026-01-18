@@ -3927,7 +3927,7 @@ const savedData = ${dataString};
               background: showFileMenu ? "#000" : "#fff",
               color: showFileMenu ? "#fff" : "#000",
               border: "none",
-              borderBottom: "0.3vw solid #000",
+              borderBottom: size.w <= 1024 ? "0vw solid #000" : "0.3vw solid #000",
               width: "100%",
               cursor: "pointer",
               height: size.w <= 1024 ? "10vw" : "7.7vw",
