@@ -1128,52 +1128,13 @@ export default function PixelGrid() {
         return newPixelGroups;
       });
     } else {
-      // No active layer - erase from base pixelColors
-      const pixelGroup = pixelGroups[index];
-      if (pixelGroup) {
-        // Pixel belongs to a layer - erase from that layer
-        setGroups(prevGroups => {
-          const updated = prevGroups.map(g => {
-            if (g.name === pixelGroup.group) {
-              const newPixels = { ...g.pixels };
-              delete newPixels[index];
-              return Object.freeze({ ...g, pixels: Object.freeze(newPixels) });
-            }
-            return g;
-          });
-          
-          // Save to localStorage
-          try {
-            const frozenGroups = updated.filter(g => g.name !== "__selected__").map(g => ({
-              name: g.name,
-              zIndex: g.zIndex,
-              pixels: { ...g.pixels },
-              locked: g.locked,
-              originalSelectionArea: g.originalSelectionArea || []
-            }));
-            localStorage.setItem("pixelgrid_groups", JSON.stringify(frozenGroups));
-          } catch (error) {
-            console.error("Failed to save to localStorage:", error);
-          }
-          
-          return updated;
-        });
-        
-        // Remove from pixelGroups tracking
-        setPixelGroups(prevPixelGroups => {
-          const newPixelGroups = { ...prevPixelGroups };
-          delete newPixelGroups[index];
-          return newPixelGroups;
-        });
-      } else {
-        // Erase from base pixelColors
-        setPixelColors((prev) => {
-          if (prev[index] === null) return prev; // Already erased
-          const copy = [...prev];
-          copy[index] = null; // Clear the pixel
-          return copy;
-        });
-      }
+      // No active layer - erase from base pixelColors (background layer)
+      setPixelColors((prev) => {
+        if (prev[index] === null) return prev; // Already erased
+        const copy = [...prev];
+        copy[index] = null; // Clear the pixel
+        return copy;
+      });
     }
   }
 
@@ -3957,7 +3918,7 @@ const savedData = ${dataString};
             style={{
               background: showFileMenu ? "#000" : "#fff",
               color: showFileMenu ? "#fff" : "#000",
-              border: "0.2vw solid #000",
+              border: "none",
               width: "100%",
               cursor: "pointer",
               height: size.w <= 1024 ? "10vw" : "7vw",
@@ -4141,7 +4102,7 @@ const savedData = ${dataString};
             style={{
               background: showViewMenu ? "#000" : "#fff",
               color: showViewMenu ? "#fff" : "#000",
-              border: "0.2vw solid #000",
+              border: "none",
               width: "100%",
               cursor: "pointer",
               height: size.w <= 1024 ? "10vw" : "7vw",
