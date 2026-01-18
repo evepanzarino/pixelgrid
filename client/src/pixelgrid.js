@@ -4884,7 +4884,7 @@ const savedData = ${dataString};
             willChange: "transform",
             height: "100%",
             width: "100%",
-            background: "transparent",
+            background: "#fefefe",
             cursor: activeDrawingTool === "select" ? "crosshair" : "default",
             touchAction: activeDrawingTool === "movegroup" ? "none" : "auto"
           }}>
@@ -6912,38 +6912,31 @@ const savedData = ${dataString};
               onChange={(e) => {
                 const newCols = parseInt(e.target.value);
                 const oldCols = canvasCols;
+                const newTotal = newCols * canvasRows;
+                
+                // Prepare new arrays
+                const newPixelColors = Array(newTotal).fill(null);
+                const newPixelGroups = Array(newTotal).fill(null);
+                
+                // Copy pixels row by row, preserving their positions
+                for (let row = 0; row < canvasRows; row++) {
+                  for (let col = 0; col < Math.min(oldCols, newCols); col++) {
+                    const oldIndex = row * oldCols + col;
+                    const newIndex = row * newCols + col;
+                    if (oldIndex < pixelColors.length) {
+                      newPixelColors[newIndex] = pixelColors[oldIndex];
+                    }
+                    if (oldIndex < pixelGroups.length) {
+                      newPixelGroups[newIndex] = pixelGroups[oldIndex];
+                    }
+                  }
+                }
+                
+                // Update all states synchronously
                 flushSync(() => {
+                  setPixelColors(newPixelColors);
+                  setPixelGroups(newPixelGroups);
                   setCanvasCols(newCols);
-                  // Resize pixelColors array preserving pixel locations
-                  const newTotal = newCols * canvasRows;
-                  setPixelColors(prev => {
-                    const newArr = Array(newTotal).fill(null);
-                    // Copy pixels row by row, preserving their positions
-                    for (let row = 0; row < canvasRows; row++) {
-                      for (let col = 0; col < Math.min(oldCols, newCols); col++) {
-                        const oldIndex = row * oldCols + col;
-                        const newIndex = row * newCols + col;
-                        if (oldIndex < prev.length) {
-                          newArr[newIndex] = prev[oldIndex];
-                        }
-                      }
-                    }
-                    return newArr;
-                  });
-                  // Update pixelGroups similarly
-                  setPixelGroups(prev => {
-                    const newArr = Array(newTotal).fill(null);
-                    for (let row = 0; row < canvasRows; row++) {
-                      for (let col = 0; col < Math.min(oldCols, newCols); col++) {
-                        const oldIndex = row * oldCols + col;
-                        const newIndex = row * newCols + col;
-                        if (oldIndex < prev.length) {
-                          newArr[newIndex] = prev[oldIndex];
-                        }
-                      }
-                    }
-                    return newArr;
-                  });
                 });
               }}
               style={{
@@ -6972,38 +6965,31 @@ const savedData = ${dataString};
               onChange={(e) => {
                 const newRows = parseInt(e.target.value);
                 const oldRows = canvasRows;
+                const newTotal = canvasCols * newRows;
+                
+                // Prepare new arrays
+                const newPixelColors = Array(newTotal).fill(null);
+                const newPixelGroups = Array(newTotal).fill(null);
+                
+                // Copy pixels row by row, cutting off rows beyond new height
+                for (let row = 0; row < Math.min(oldRows, newRows); row++) {
+                  for (let col = 0; col < canvasCols; col++) {
+                    const oldIndex = row * canvasCols + col;
+                    const newIndex = row * canvasCols + col;
+                    if (oldIndex < pixelColors.length) {
+                      newPixelColors[newIndex] = pixelColors[oldIndex];
+                    }
+                    if (oldIndex < pixelGroups.length) {
+                      newPixelGroups[newIndex] = pixelGroups[oldIndex];
+                    }
+                  }
+                }
+                
+                // Update all states synchronously
                 flushSync(() => {
+                  setPixelColors(newPixelColors);
+                  setPixelGroups(newPixelGroups);
                   setCanvasRows(newRows);
-                  // Resize pixelColors array preserving pixel locations
-                  const newTotal = canvasCols * newRows;
-                  setPixelColors(prev => {
-                    const newArr = Array(newTotal).fill(null);
-                    // Copy pixels row by row, cutting off rows beyond new height
-                    for (let row = 0; row < Math.min(oldRows, newRows); row++) {
-                      for (let col = 0; col < canvasCols; col++) {
-                        const oldIndex = row * canvasCols + col;
-                        const newIndex = row * canvasCols + col;
-                        if (oldIndex < prev.length) {
-                          newArr[newIndex] = prev[oldIndex];
-                        }
-                      }
-                    }
-                    return newArr;
-                  });
-                  // Update pixelGroups similarly
-                  setPixelGroups(prev => {
-                    const newArr = Array(newTotal).fill(null);
-                    for (let row = 0; row < Math.min(oldRows, newRows); row++) {
-                      for (let col = 0; col < canvasCols; col++) {
-                        const oldIndex = row * canvasCols + col;
-                        const newIndex = row * canvasCols + col;
-                        if (oldIndex < prev.length) {
-                          newArr[newIndex] = prev[oldIndex];
-                        }
-                      }
-                    }
-                    return newArr;
-                  });
                 });
               }}
               style={{
