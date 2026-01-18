@@ -6895,11 +6895,11 @@ const savedData = ${dataString};
             <label style={{ color: "#000000", fontSize: "1.2vw" }}>Columns (Width)</label>
             <input
               type="number"
-              min="10"
-              max="500"
+              min="7"
+              max="200"
               value={canvasCols}
               onChange={(e) => {
-                const newCols = Math.max(10, Math.min(500, parseInt(e.target.value) || 10));
+                const newCols = Math.max(7, Math.min(200, parseInt(e.target.value) || 7));
                 setCanvasCols(newCols);
                 // Resize pixelColors array if needed
                 const newTotal = newCols * canvasRows;
@@ -6925,11 +6925,11 @@ const savedData = ${dataString};
             <label style={{ color: "#000000", fontSize: "1.2vw" }}>Rows (Height)</label>
             <input
               type="number"
-              min="10"
-              max="500"
+              min="7"
+              max="1000"
               value={canvasRows}
               onChange={(e) => {
-                const newRows = Math.max(10, Math.min(500, parseInt(e.target.value) || 10));
+                const newRows = Math.max(7, Math.min(1000, parseInt(e.target.value) || 7));
                 setCanvasRows(newRows);
                 // Resize pixelColors array if needed
                 const newTotal = canvasCols * newRows;
