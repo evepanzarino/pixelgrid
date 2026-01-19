@@ -4279,7 +4279,7 @@ const savedData = ${dataString};
         }}>
         {/* TOOLS SECTION */}
         <div style={{ width: "100%", textAlign: "center", paddingTop: "1vw" }}>
-          <div style={{ color: "#000000", fontSize: "1.5vw", marginBottom: "0.5vw" }}><b>Tools</b></div>
+          <div style={{ color: "#000000", fontSize: size.w <= 1024 ? "1.5vw" : "18px", marginBottom: "0.5vw" }}><b>Tools</b></div>
           <div style={{ 
             display: "grid", 
             gridTemplateColumns: size.w <= 1024 ? "1fr" : "52px 38px",
@@ -4506,14 +4506,14 @@ const savedData = ${dataString};
             <button
               onClick={() => setShowLayersMenu(!showLayersMenu)}
               style={{
-                width: size.w <= 1024 ? "8vw" : "3vw",
-                height: size.w <= 1024 ? "8vw" : "3vw",
+                width: size.w <= 1024 ? "8vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : "42px",
                 background: showLayersMenu ? "#000" : "#fff",
                 color: showLayersMenu ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "3vw" : "1.2vw",
+                fontSize: size.w <= 1024 ? "3vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4527,14 +4527,14 @@ const savedData = ${dataString};
             <button
               onClick={() => setViewMode(viewMode === "edit" ? "drawing" : "edit")}
               style={{
-                width: size.w <= 1024 ? "8vw" : "3vw",
-                height: size.w <= 1024 ? "8vw" : "3vw",
+                width: size.w <= 1024 ? "8vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : "42px",
                 background: viewMode === "edit" ? "#000" : "#fff",
                 color: viewMode === "edit" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "3vw" : "1.2vw",
+                fontSize: size.w <= 1024 ? "3vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
