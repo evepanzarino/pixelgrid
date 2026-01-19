@@ -531,11 +531,20 @@ export default function PixelGrid() {
 
   // Logo and title pixel size based on screen size
   const getLogoPixelSize = () => {
-    return 1.43; // Same for all: 10vw / 7 = 1.43vw per cell
+    if (size.w > 1024) {
+      // Desktop: max height 100px / 7 rows = 14.28px per cell
+      // Convert to vw: (14.28 / viewport width) * 100
+      return Math.min(1.43, (14.28 / size.w) * 100);
+    }
+    return 1.43; // Mobile: 10vw / 7 = 1.43vw per cell
   };
 
   const getTitlePixelSize = () => {
-    return 0.75; // Same for all screen sizes
+    if (size.w > 1024) {
+      // Desktop: scale proportionally to logo
+      return Math.min(0.75, getLogoPixelSize() * (0.75 / 1.43));
+    }
+    return 0.75; // Mobile: same size
   };
 
   const zoomFactor = getZoomFactor();
