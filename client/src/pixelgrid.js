@@ -4295,14 +4295,14 @@ const savedData = ${dataString};
                 setLineStartPixel(null);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
+                width: size.w <= 1024 ? "8vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : "42px",
                 background: activeDrawingTool === "pencil" ? "#000" : "#fff",
                 color: activeDrawingTool === "pencil" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "14px" : "17px",
+                fontSize: size.w <= 1024 ? "4vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4320,14 +4320,14 @@ const savedData = ${dataString};
                 setLineStartPixel(null);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
+                width: size.w <= 1024 ? "8vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : "42px",
                 background: activeDrawingTool === "eraser" ? "#000" : "#fff",
                 color: activeDrawingTool === "eraser" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "14px" : "17px",
+                fontSize: size.w <= 1024 ? "4vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4345,14 +4345,14 @@ const savedData = ${dataString};
                 setLineStartPixel(null);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
+                width: size.w <= 1024 ? "8vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : "42px",
                 background: activeDrawingTool === "line" ? "#000" : "#fff",
                 color: activeDrawingTool === "line" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "14px" : "17px",
+                fontSize: size.w <= 1024 ? "4vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4372,14 +4372,14 @@ const savedData = ${dataString};
                 setCurveCurveAmount(0);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
+                width: size.w <= 1024 ? "8vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : "42px",
                 background: activeDrawingTool === "curve" ? "#000" : "#fff",
                 color: activeDrawingTool === "curve" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "14px" : "17px",
+                fontSize: size.w <= 1024 ? "4vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4397,14 +4397,14 @@ const savedData = ${dataString};
                 setLineStartPixel(null);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
+                width: size.w <= 1024 ? "8vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : "42px",
                 background: activeDrawingTool === "bucket" ? "#000" : "#fff",
                 color: activeDrawingTool === "bucket" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "14px" : "17px",
+                fontSize: size.w <= 1024 ? "4vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4422,14 +4422,14 @@ const savedData = ${dataString};
                 setLineStartPixel(null);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
+                width: size.w <= 1024 ? "8vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : "42px",
                 background: activeDrawingTool === "eyedropper" ? "#000" : "#fff",
                 color: activeDrawingTool === "eyedropper" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "14px" : "17px",
+                fontSize: size.w <= 1024 ? "4vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4450,14 +4450,14 @@ const savedData = ${dataString};
                 setShowLayersMenu(true);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
+                width: size.w <= 1024 ? "8vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : "42px",
                 background: activeDrawingTool === "movegroup" ? "#000" : "#fff",
                 color: activeDrawingTool === "movegroup" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "14px" : "17px",
+                fontSize: size.w <= 1024 ? "4vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4485,14 +4485,14 @@ const savedData = ${dataString};
                 dragStateRef.current.isDrawing = false;
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
+                width: size.w <= 1024 ? "8vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : "42px",
                 background: activeDrawingTool === "select" ? "#000" : "#fff",
                 color: activeDrawingTool === "select" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "3vw" : size.w > 1650 ? "14px" : "17px",
+                fontSize: size.w <= 1024 ? "3vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4506,14 +4506,14 @@ const savedData = ${dataString};
             <button
               onClick={() => setShowLayersMenu(!showLayersMenu)}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
+                width: size.w <= 1024 ? "8vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : "42px",
                 background: showLayersMenu ? "#000" : "#fff",
                 color: showLayersMenu ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "3vw" : size.w > 1650 ? "14px" : "17px",
+                fontSize: size.w <= 1024 ? "3vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4527,14 +4527,14 @@ const savedData = ${dataString};
             <button
               onClick={() => setViewMode(viewMode === "edit" ? "drawing" : "edit")}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "34px" : "42px",
+                width: size.w <= 1024 ? "8vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : "42px",
                 background: viewMode === "edit" ? "#000" : "#fff",
                 color: viewMode === "edit" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "3vw" : size.w > 1650 ? "14px" : "17px",
+                fontSize: size.w <= 1024 ? "3vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4577,7 +4577,7 @@ const savedData = ${dataString};
             padding: "0.5vw",
             borderBottom: "0.1vw solid #ddd"
           }}>
-            <div style={{ color: "#000000", fontSize: "1.2vw", marginBottom: "0.3vw" }}><b>Primary</b></div>
+            <div style={{ color: "#000000", fontSize: size.w <= 1024 ? "1.2vw" : ".75vw", marginBottom: "0.3vw" }}><b>Primary</b></div>
             <div
               onClick={() => {
                 if (activeTool === "primary") {
@@ -4588,8 +4588,8 @@ const savedData = ${dataString};
                 }
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : "4vw",
-                height: size.w <= 1024 ? "8vw" : "4vw",
+                width: size.w <= 1024 ? "8vw" : "3vw",
+                height: size.w <= 1024 ? "8vw" : "3vw",
                 background: primaryColor,
                 border: activeTool === "primary" 
                   ? (isLightColor(primaryColor) ? "0.4vw solid #000000" : "0.4vw solid #ffffff")
@@ -4612,7 +4612,7 @@ const savedData = ${dataString};
             justifyItems: "center",
             padding: "0.5vw"
           }}>
-            <div style={{ color: "#000000", fontSize: "1.2vw", marginBottom: "0.3vw" }}><b>Secondary</b></div>
+            <div style={{ color: "#000000", fontSize: size.w <= 1024 ? "1.2vw" : ".75vw", marginBottom: "0.3vw" }}><b>Secondary</b></div>
             <div
               onClick={() => {
                 if (activeTool === "secondary") {
@@ -4623,8 +4623,8 @@ const savedData = ${dataString};
                 }
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : "4vw",
-                height: size.w <= 1024 ? "8vw" : "4vw",
+                width: size.w <= 1024 ? "8vw" : "3vw",
+                height: size.w <= 1024 ? "8vw" : "3vw",
                 background: secondaryColor,
                 border: activeTool === "secondary" 
                   ? (isLightColor(secondaryColor) ? "0.4vw solid #000000" : "0.4vw solid #ffffff")
