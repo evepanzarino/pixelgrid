@@ -3517,8 +3517,8 @@ const savedData = ${dataString};
         top: 0,
         left: 0,
         width: "100vw",
-        height: size.w > 1650 ? "auto" : size.w > 1024 ? "9.76vw" : "auto",
-        maxHeight: size.w > 1650 ? "100px" : "none",
+        height: size.w > 1024 ? "auto" : "auto",
+        maxHeight: size.w > 1024 ? "100px" : "none",
         background: "rgb(255, 255, 255)",
         borderBottomWidth: "0.3vw",
         borderBottomStyle: "solid",
@@ -3527,8 +3527,6 @@ const savedData = ${dataString};
         alignItems: "center",
         gridTemplateColumns: size.w <= 1024 
           ? `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .75vw 10vw 10vw 10vw 10vw`
-          : size.w <= 1650
-          ? `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .976vw 9.76vw 9.76vw 9.76vw 9.76vw`
           : `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .976vw 9.76vw 9.76vw 9.76vw 9.76vw`,
         zIndex: 20
       }}>
