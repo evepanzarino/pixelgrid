@@ -531,14 +531,13 @@ export default function PixelGrid() {
 
   // Logo and title pixel size based on screen size
   const getLogoPixelSize = () => {
-    if (size.w > 1650) return 1.075; // Desktop: 7vw / 7 = 1vw per cell
-    if (size.w <= 1024) return 1.43; // Mobile/Tablet: 10vw / 7 = 1.43vw
-    return 1; // Mid-range
+    if (size.w > 1024) return 0.357; // Desktop: 2.5vw / 7 = 0.357vw per cell
+    return 1.43; // Mobile/Tablet: 10vw / 7 = 1.43vw
   };
 
   const getTitlePixelSize = () => {
-    if (size.w > 1650) return 0.75; // Desktop: scaled down
-    return 0.75; // Same size on all screen sizes
+    if (size.w > 1024) return 0.25; // Desktop: scaled to fit 2.5vw height
+    return 0.75; // Mobile: Same size
   };
 
   const zoomFactor = getZoomFactor();
@@ -3516,7 +3515,7 @@ const savedData = ${dataString};
         top: 0,
         left: 0,
         width: "100vw",
-        height: size.w > 1650 ? "7.7vw" : "auto",
+        height: size.w > 1024 ? "2.5vw" : "auto",
         background: "rgb(255, 255, 255)",
         borderBottomWidth: "0.3vw",
         borderBottomStyle: "solid",
@@ -3525,7 +3524,7 @@ const savedData = ${dataString};
         alignItems: "center",
         gridTemplateColumns: size.w <= 1024 
           ? `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .75vw 10vw 10vw 10vw 10vw`
-          : `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .75vw 7.525vw 7.525vw 7.525vw 7.525vw`,
+          : `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .25vw 2.5vw 2.5vw 2.5vw 2.5vw`,
         zIndex: 20
       }}>
         <div className="logo" style={{
@@ -3927,11 +3926,11 @@ const savedData = ${dataString};
               background: showFileMenu ? "#000" : "#fff",
               color: showFileMenu ? "#fff" : "#000",
               border: "none",
-              borderBottom: size.w >= 1650 ? "0.3vw solid #000" : "0vw solid #000" ,
+              borderBottom: size.w > 1024 ? "0.3vw solid #000" : "0vw solid #000" ,
               width: "100%",
               cursor: "pointer",
-              height: size.w <= 1024 ? "10vw" : "7.7vw",
-              fontSize: "3vw"
+              height: size.w <= 1024 ? "10vw" : "2.5vw",
+              fontSize: size.w <= 1024 ? "3vw" : "1vw"
             }}
           >
             File
@@ -4114,11 +4113,11 @@ const savedData = ${dataString};
               borderTop: "none",
               borderLeft: "none",
               borderRight: "none",
-              borderBottom: size.w >= 1650 ? "0.3vw solid #000" : "0vw solid #000",
+              borderBottom: size.w > 1024 ? "0.3vw solid #000" : "0vw solid #000",
               width: "100%",
               cursor: "pointer",
-              height: size.w <= 1024 ? "10vw" : "7.7vw",
-              fontSize: "3vw"
+              height: size.w <= 1024 ? "10vw" : "2.5vw",
+              fontSize: size.w <= 1024 ? "3vw" : "1vw"
             }}
           >
             View
