@@ -3531,7 +3531,7 @@ const savedData = ${dataString};
         borderBottomColor: "rgb(0, 0, 0)",
         display: "grid",
         alignItems: "center",
-        gridTemplateColumns: `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .75vw`,
+        gridTemplateColumns: `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .75vw 10vw 10vw`,
         zIndex: 20
       }}>
         <div className="logo" style={{
@@ -3937,6 +3937,7 @@ const savedData = ${dataString};
               width: "100%",
               cursor: "pointer",
               height: "10vw",
+              maxHeight: size.w > 1024 ? "100px" : "none",
               fontSize: "3vw"
             }}
           >
@@ -4124,6 +4125,7 @@ const savedData = ${dataString};
               width: "100%",
               cursor: "pointer",
               height: "10vw",
+              maxHeight: size.w > 1024 ? "100px" : "none",
               fontSize: "3vw"
             }}
           >
