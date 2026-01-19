@@ -3521,16 +3521,17 @@ const savedData = ${dataString};
       <div style={{
         top: 0,
         left: 0,
-        width: "100vw",
+        width: "100%",
+        padding: 0,
         height: "auto",
         maxHeight: size.w > 1024 ? "100px" : "none",
         background: "rgb(255, 255, 255)",
-        borderBottomWidth: "0.3vw",
+        borderBottomWidth: "0.2vw",
         borderBottomStyle: "solid",
         borderBottomColor: "rgb(0, 0, 0)",
         display: "grid",
         alignItems: "center",
-        gridTemplateColumns: `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .75vw 10vw 10vw 10vw 10vw`,
+        gridTemplateColumns: `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .75vw`,
         zIndex: 20
       }}>
         <div className="logo" style={{
