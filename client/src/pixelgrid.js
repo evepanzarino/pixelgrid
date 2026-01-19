@@ -4573,6 +4573,7 @@ const savedData = ${dataString};
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
+            justifyItems: "center",
             padding: "0.5vw",
             borderBottom: "0.1vw solid #ddd"
           }}>
@@ -4608,6 +4609,7 @@ const savedData = ${dataString};
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
+            justifyItems: "center",
             padding: "0.5vw"
           }}>
             <div style={{ color: "#000000", fontSize: "1.2vw", marginBottom: "0.3vw" }}><b>Secondary</b></div>
