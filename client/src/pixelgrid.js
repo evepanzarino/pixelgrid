@@ -531,13 +531,11 @@ export default function PixelGrid() {
 
   // Logo and title pixel size based on screen size
   const getLogoPixelSize = () => {
-    if (size.w > 1024) return 0.836; // Desktop: 5.85vw / 7 = 0.836vw per cell
-    return 1.43; // Mobile/Tablet: 10vw / 7 = 1.43vw
+    return 1.43; // Same for all: 10vw / 7 = 1.43vw per cell
   };
 
   const getTitlePixelSize = () => {
-    if (size.w > 1024) return 0.585; // Desktop: scaled to fit 5.85vw height
-    return 0.75; // Mobile: Same size
+    return 0.75; // Same for all screen sizes
   };
 
   const zoomFactor = getZoomFactor();
@@ -3515,7 +3513,7 @@ const savedData = ${dataString};
         top: 0,
         left: 0,
         width: "100vw",
-        height: size.w > 1024 ? "5.85vw" : "auto",
+        height: size.w > 1024 ? "min(5.85vw, 75px)" : "auto",
         background: "rgb(255, 255, 255)",
         borderBottomWidth: "0.3vw",
         borderBottomStyle: "solid",
@@ -3524,7 +3522,7 @@ const savedData = ${dataString};
         alignItems: "center",
         gridTemplateColumns: size.w <= 1024 
           ? `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .75vw 10vw 10vw 10vw 10vw`
-          : `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .585vw 5.85vw 5.85vw 5.85vw 5.85vw`,
+          : `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .75vw 10vw 10vw 10vw 10vw`,
         zIndex: 20
       }}>
         <div className="logo" style={{
@@ -3929,8 +3927,8 @@ const savedData = ${dataString};
               borderBottom: size.w > 1024 ? "0.3vw solid #000" : "0vw solid #000" ,
               width: "100%",
               cursor: "pointer",
-              height: size.w <= 1024 ? "10vw" : "5.85vw",
-              fontSize: size.w <= 1024 ? "3vw" : "2.34vw"
+              height: "10vw",
+              fontSize: "3vw"
             }}
           >
             File
@@ -4116,8 +4114,8 @@ const savedData = ${dataString};
               borderBottom: size.w > 1024 ? "0.3vw solid #000" : "0vw solid #000",
               width: "100%",
               cursor: "pointer",
-              height: size.w <= 1024 ? "10vw" : "5.85vw",
-              fontSize: size.w <= 1024 ? "3vw" : "2.34vw"
+              height: "10vw",
+              fontSize: "3vw"
             }}
           >
             View
