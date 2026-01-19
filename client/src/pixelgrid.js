@@ -3956,8 +3956,8 @@ const savedData = ${dataString};
                   cursor: "pointer",
                   color: "white",
                   textAlign: "center",
-                  fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
-                  width: size.w <= 1024 ? "10vw" : "7.5vw",
+                  fontSize: "1.5vw",
+                  width: "10vw",
                   borderBottom: "0.2vw solid #333",
                   padding: "0.5vw"
                 }}
@@ -3974,8 +3974,8 @@ const savedData = ${dataString};
                   cursor: "pointer",
                   color: "white",
                   textAlign: "center",
-                  fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
-                  width: size.w <= 1024 ? "10vw" : "7.5vw",
+                  fontSize: "1.5vw",
+                  width: "10vw",
                   borderBottom: "0.2vw solid #333",
                   padding: "0.5vw"
                 }}
@@ -3992,8 +3992,8 @@ const savedData = ${dataString};
                   cursor: "pointer",
                   color: "white",
                   textAlign: "center",
-                  fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
-                  width: size.w <= 1024 ? "10vw" : "7.5vw",
+                  fontSize: "1.5vw",
+                  width: "10vw",
                   borderBottom: "0.2vw solid #333",
                   padding: "0.5vw"
                 }}
@@ -4011,8 +4011,8 @@ const savedData = ${dataString};
                   cursor: "pointer",
                   color: "white",
                   textAlign: "center",
-                  fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
-                  width: size.w <= 1024 ? "10vw" : "7.5vw",
+                  fontSize: "1.5vw",
+                  width: "10vw",
                   borderBottom: "0.2vw solid #333",
                   padding: "0.5vw"
                 }}
@@ -4030,8 +4030,8 @@ const savedData = ${dataString};
                   cursor: "pointer",
                   color: "white",
                   textAlign: "center",
-                  fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
-                  width: size.w <= 1024 ? "10vw" : "7.5vw",
+                  fontSize: "1.5vw",
+                  width: "10vw",
                   borderBottom: "0.2vw solid #333",
                   padding: "0.5vw"
                 }}
@@ -4049,8 +4049,8 @@ const savedData = ${dataString};
                   cursor: "pointer",
                   color: "white",
                   textAlign: "center",
-                  fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
-                  width: size.w <= 1024 ? "10vw" : "7.5vw",
+                  fontSize: "1.5vw",
+                  width: "10vw",
                   borderBottom: "0.2vw solid #333",
                   padding: "0.5vw"
                 }}
@@ -4068,8 +4068,8 @@ const savedData = ${dataString};
                     cursor: "pointer",
                     color: "#ff9800",
                     textAlign: "center",
-                    fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
-                    width: size.w <= 1024 ? "10vw" : "7.5vw",
+                    fontSize: "1.5vw",
+                    width: "10vw",
                     borderBottom: "0.2vw solid #333",
                     padding: "0.5vw"
                   }}
@@ -4092,8 +4092,8 @@ const savedData = ${dataString};
                   cursor: "pointer",
                   color: "#f44336",
                   textAlign: "center",
-                  fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
-                  width: size.w <= 1024 ? "10vw" : "7.5vw",
+                  fontSize: "1.5vw",
+                  width: "10vw",
                   padding: "0.5vw"
                 }}
               >
@@ -4144,8 +4144,8 @@ const savedData = ${dataString};
                   cursor: "pointer",
                   color: viewMode === "drawing" ? "#4CAF50" : "white",
                   textAlign: "center",
-                  fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
-                  width: size.w <= 1024 ? "10vw" : "7.5vw",
+                  fontSize: "1.5vw",
+                  width: "10vw",
                   borderBottom: "0.2vw solid #333",
                   padding: "0.5vw",
                   fontWeight: viewMode === "drawing" ? "bold" : "normal"
@@ -4172,8 +4172,8 @@ const savedData = ${dataString};
                   cursor: "pointer",
                   color: viewMode === "layers" ? "#4CAF50" : "white",
                   textAlign: "center",
-                  fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
-                  width: size.w <= 1024 ? "10vw" : "7.5vw",
+                  fontSize: "1.5vw",
+                  width: "10vw",
                   padding: "0.5vw",
                   fontWeight: viewMode === "layers" ? "bold" : "normal"
                 }}
@@ -4190,8 +4190,8 @@ const savedData = ${dataString};
                   cursor: "pointer",
                   color: viewMode === "edit" ? "#4CAF50" : "white",
                   textAlign: "center",
-                  fontSize: size.w <= 1024 ? "1.5vw" : "1.05vw",
-                  width: size.w <= 1024 ? "10vw" : "7.5vw",
+                  fontSize: "1.5vw",
+                  width: "10vw",
                   padding: "0.5vw",
                   fontWeight: viewMode === "edit" ? "bold" : "normal"
                 }}
