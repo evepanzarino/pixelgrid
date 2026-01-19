@@ -25,13 +25,17 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running' });
 });
 
-// Serve static files from React build
+// Serve static files from React build at /pixelgrid
 app.use('/pixelgrid', express.static(buildPath));
-app.use(express.static(buildPath));
 
-// Serve React app for all other routes (SPA fallback)
-app.get('/*', (req, res) => {
+// Serve React app for pixelgrid routes (SPA fallback)
+app.get('/pixelgrid/*', (req, res) => {
   res.sendFile(path.join(buildPath, 'index.html'));
+});
+
+// Root redirect to /pixelgrid
+app.get('/', (req, res) => {
+  res.redirect('/pixelgrid');
 });
 
 const PORT = process.env.SERVER_PORT || 5000;

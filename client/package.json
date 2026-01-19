@@ -2,7 +2,7 @@
   "name": "react-client",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://evepanzarino.github.io/pixelgrid",
+  "homepage": "/pixelgrid",
   "proxy": "http://localhost:5000",
   "dependencies": {
     "axios": "^1.5.0",
