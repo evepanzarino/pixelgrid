@@ -4112,7 +4112,7 @@ const savedData = ${dataString};
               background: showViewMenu ? "#000" : "#fff",
               color: showViewMenu ? "#fff" : "#000",
               border: "none",
-              borderBottom: "0vw solid #000",
+              borderBottom: size.w >= 1650 ? "0.3vw solid #000" : "0vw solid #000",
               width: "100%",
               cursor: "pointer",
               height: size.w <= 1024 ? "10vw" : "7.7vw",
