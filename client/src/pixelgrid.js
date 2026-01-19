@@ -4272,8 +4272,8 @@ const savedData = ${dataString};
           <div style={{ color: "#000000", fontSize: "1.5vw", marginBottom: "0.5vw" }}><b>Tools</b></div>
           <div style={{ 
             display: "grid", 
-            gridTemplateColumns: size.w < 1000 ? "1fr" : "3.66vw 2.7vw",
-            gap: size.w < 1000 ? "0.5vw" : "0", 
+            gridTemplateColumns: size.w < 1100 ? "1fr" : "3.66vw 2.7vw",
+            gap: size.w < 1100 ? "0.5vw" : "0", 
             padding: "0",
             justifyItems: "center"
           }}>
