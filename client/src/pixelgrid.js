@@ -4565,8 +4565,8 @@ const savedData = ${dataString};
         }}>
           {/* PRIMARY COLOR */}
           <div style={{ 
-            width: "100%", 
-            display: "flex",
+            width: size.w <= 1024 ? "100%" : "98px", 
+            display: size.w <= 1024 ? "flex" : "grid",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
@@ -4600,8 +4600,8 @@ const savedData = ${dataString};
 
           {/* SECONDARY COLOR */}
           <div style={{ 
-            width: "100%", 
-            display: "flex",
+            width: size.w <= 1024 ? "100%" : "98px", 
+            display: size.w <= 1024 ? "flex" : "grid",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
