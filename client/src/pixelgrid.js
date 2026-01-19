@@ -4263,7 +4263,7 @@ const savedData = ${dataString};
         position: "relative",
         display: "grid",
         gridTemplateRows: "1fr auto",
-        width: size.w <= 1024 ? "10vw" : size.w > 1650 ? "7vw" : "7vw",
+        width: size.w <= 1024 ? "10vw" : size.w > 1650 ? "7vw" : "100px",
         borderRight: "0.2vw solid #000000",
         height: "100vh"
       }}>
@@ -4282,7 +4282,7 @@ const savedData = ${dataString};
           <div style={{ color: "#000000", fontSize: "1.5vw", marginBottom: "0.5vw" }}><b>Tools</b></div>
           <div style={{ 
             display: "grid", 
-            gridTemplateColumns: size.w <= 1024 ? "1fr" : size.w > 1650 ? "3.66vw 2.7vw" : "3.66vw 2.7vw",
+            gridTemplateColumns: size.w <= 1024 ? "1fr" : size.w > 1650 ? "3.66vw 2.7vw" : "52px 38px",
             gap: size.w <= 1024 ? "0.5vw" : "0", 
             padding: "0",
             justifyItems: "center"
@@ -4295,14 +4295,14 @@ const savedData = ${dataString};
                 setLineStartPixel(null);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
+                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
                 background: activeDrawingTool === "pencil" ? "#000" : "#fff",
                 color: activeDrawingTool === "pencil" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "1.2vw",
+                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4320,14 +4320,14 @@ const savedData = ${dataString};
                 setLineStartPixel(null);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
+                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
                 background: activeDrawingTool === "eraser" ? "#000" : "#fff",
                 color: activeDrawingTool === "eraser" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "1.2vw",
+                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4345,14 +4345,14 @@ const savedData = ${dataString};
                 setLineStartPixel(null);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
+                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
                 background: activeDrawingTool === "line" ? "#000" : "#fff",
                 color: activeDrawingTool === "line" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "1.2vw",
+                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4372,14 +4372,14 @@ const savedData = ${dataString};
                 setCurveCurveAmount(0);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
+                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
                 background: activeDrawingTool === "curve" ? "#000" : "#fff",
                 color: activeDrawingTool === "curve" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "1.2vw",
+                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4397,14 +4397,14 @@ const savedData = ${dataString};
                 setLineStartPixel(null);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
+                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
                 background: activeDrawingTool === "bucket" ? "#000" : "#fff",
                 color: activeDrawingTool === "bucket" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "1.2vw",
+                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4422,14 +4422,14 @@ const savedData = ${dataString};
                 setLineStartPixel(null);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
+                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
                 background: activeDrawingTool === "eyedropper" ? "#000" : "#fff",
                 color: activeDrawingTool === "eyedropper" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "1.2vw",
+                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4450,14 +4450,14 @@ const savedData = ${dataString};
                 setShowLayersMenu(true);
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
+                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
                 background: activeDrawingTool === "movegroup" ? "#000" : "#fff",
                 color: activeDrawingTool === "movegroup" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "1.2vw",
+                fontSize: size.w <= 1024 ? "4vw" : size.w > 1650 ? "1.2vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
@@ -4485,14 +4485,14 @@ const savedData = ${dataString};
                 dragStateRef.current.isDrawing = false;
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
-                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "3vw",
+                width: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
+                height: size.w <= 1024 ? "8vw" : size.w > 1650 ? "3vw" : "42px",
                 background: activeDrawingTool === "select" ? "#000" : "#fff",
                 color: activeDrawingTool === "select" ? "white" : "black",
                 border: "0.15vw solid #000000",
                 padding: "0",
                 cursor: "pointer",
-                fontSize: size.w <= 1024 ? "3vw" : size.w > 1650 ? "1.2vw" : "1.2vw",
+                fontSize: size.w <= 1024 ? "3vw" : size.w > 1650 ? "1.2vw" : "17px",
                 fontWeight: "bold",
                 display: "flex",
                 alignItems: "center",
