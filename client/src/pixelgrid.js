@@ -4569,7 +4569,7 @@ const savedData = ${dataString};
           {/* PRIMARY COLOR */}
           <div style={{ 
             width: size.w <= 1024 ? "100%" : "98px", 
-            display: size.w <= 1024 ? "flex" : "grid",
+            display: "grid",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
@@ -4587,8 +4587,8 @@ const savedData = ${dataString};
                 }
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : "5vw",
-                height: size.w <= 1024 ? "8vw" : "5vw",
+                width: size.w <= 1024 ? "8vw" : "4vw",
+                height: size.w <= 1024 ? "8vw" : "4vw",
                 background: primaryColor,
                 border: activeTool === "primary" 
                   ? (isLightColor(primaryColor) ? "0.4vw solid #000000" : "0.4vw solid #ffffff")
@@ -4604,7 +4604,7 @@ const savedData = ${dataString};
           {/* SECONDARY COLOR */}
           <div style={{ 
             width: size.w <= 1024 ? "100%" : "98px", 
-            display: size.w <= 1024 ? "flex" : "grid",
+            display: "grid",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
@@ -4621,8 +4621,8 @@ const savedData = ${dataString};
                 }
               }}
               style={{
-                width: size.w <= 1024 ? "8vw" : "5vw",
-                height: size.w <= 1024 ? "8vw" : "5vw",
+                width: size.w <= 1024 ? "8vw" : "4vw",
+                height: size.w <= 1024 ? "8vw" : "4vw",
                 background: secondaryColor,
                 border: activeTool === "secondary" 
                   ? (isLightColor(secondaryColor) ? "0.4vw solid #000000" : "0.4vw solid #ffffff")
