@@ -4571,10 +4571,10 @@ const savedData = ${dataString};
             width: size.w <= 1024 ? "100%" : "98px", 
             display: "grid",
             flexDirection: "column",
-            alignItems: "center",
+            placeItems: "center",
             justifyContent: "center",
-            justifyItems: "center",
             padding: "0.5vw",
+            borderRight: ".1vw solid #000",
             borderBottom: "0.1vw solid #ddd"
           }}>
             <div style={{ color: "#000000", fontSize: size.w <= 1024 ? "1.2vw" : ".75vw", marginBottom: "0.3vw" }}><b>Primary</b></div>
