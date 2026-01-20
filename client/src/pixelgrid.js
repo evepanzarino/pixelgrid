@@ -4284,7 +4284,7 @@ const savedData = ${dataString};
             display: "grid", 
             gridTemplateColumns: size.w <= 1024 ? "1fr" : size.w > 1650 ? "42px 30px" : "52px 38px",
             gap: size.w <= 1024 ? "0.5vw" : "0", 
-            padding: "0",
+            padding: size.w <= 1024 ? "0" : "0px 0px 0px 0.55vw",
             justifyItems: "center"
           }}>
             {/* Pencil Tool */}
