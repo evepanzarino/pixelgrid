@@ -3389,6 +3389,14 @@ const savedData = ${dataString};
     const aspectRatio = uploadedImage.height / uploadedImage.width;
     const targetHeight = Math.round(targetWidth * aspectRatio);
     
+    // Resize canvas to fit the image (cap at 200 cols, 1000 rows)
+    const newCols = Math.max(7, Math.min(200, targetWidth));
+    const newRows = Math.max(7, Math.min(1000, targetHeight));
+    
+    // Update canvas dimensions first
+    setCanvasCols(newCols);
+    setCanvasRows(newRows);
+    
     canvas.width = targetWidth;
     canvas.height = targetHeight;
     
@@ -3399,10 +3407,12 @@ const savedData = ${dataString};
     const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
     const pixels = imageData.data;
     
-    // Convert to our pixel format
-    const newPixelColors = [...pixelColors];
-    for (let row = 0; row < targetHeight && row < rows; row++) {
-      for (let col = 0; col < targetWidth && col < cols; col++) {
+    // Convert to our pixel format - use the new dimensions
+    const totalPixels = newCols * newRows;
+    const newPixelColors = new Array(totalPixels).fill("#ffffff");
+    
+    for (let row = 0; row < targetHeight && row < newRows; row++) {
+      for (let col = 0; col < targetWidth && col < newCols; col++) {
         const imageIndex = (row * targetWidth + col) * 4;
         const r = pixels[imageIndex];
         const g = pixels[imageIndex + 1];
@@ -3416,7 +3426,7 @@ const savedData = ${dataString};
             g.toString(16).padStart(2, '0') +
             b.toString(16).padStart(2, '0');
           
-          const pixelIndex = row * cols + col;
+          const pixelIndex = row * newCols + col;
           newPixelColors[pixelIndex] = hex;
         }
       }
