@@ -4562,7 +4562,7 @@ const savedData = ${dataString};
           gap: "0",
           borderTop: "0.2vw solid #000000",
           borderRight: size.w <= 1024 ? "0.2vw solid #000000" : "none",
-          marginBottom: size.w <= 1024 ? "0" : "7.45vw",
+          marginBottom: size.w <= 1024 ? "0" : size.w >= 1025 && size.w <= 1370 ? "10vw" : "7.45vw",
           background: "#ffffff",
           zIndex: size.w <= 1024 ? 1002 : "auto"
         }}>
