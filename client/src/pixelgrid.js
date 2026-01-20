@@ -4284,7 +4284,7 @@ const savedData = ${dataString};
             display: "grid", 
             gridTemplateColumns: size.w <= 1024 ? "1fr" : size.w > 1650 ? "42px 30px" : "52px 38px",
             gap: size.w <= 1024 ? "0.5vw" : "0", 
-            padding: size.w <= 1024 ? "0" : "0px 0px 0px 0.55vw",
+            padding: size.w <= 1024 ? "0" : size.w > 1650 ? "0px 0px 0px 0.55vw" : "0",
             justifyItems: "center"
           }}>
             {/* Pencil Tool */}
@@ -4610,7 +4610,8 @@ const savedData = ${dataString};
             alignItems: "center",
             justifyContent: "center",
             justifyItems: "center",
-            padding: "0.5vw"
+            padding: "0.5vw",
+            borderRight: ".1vw solid #000"
           }}>
             <div style={{ color: "#000000", fontSize: size.w <= 1024 ? "1.2vw" : ".75vw", marginBottom: "0.3vw" }}><b>Secondary</b></div>
             <div
