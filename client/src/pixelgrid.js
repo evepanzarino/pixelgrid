@@ -3938,7 +3938,7 @@ const savedData = ${dataString};
               cursor: "pointer",
               height: "10vw",
               maxHeight: size.w > 1024 ? "100px" : "none",
-              fontSize: "3vw"
+              fontSize: size.w > 1024 ? "1.5vw" : "3vw"
             }}
           >
             File
@@ -4126,7 +4126,7 @@ const savedData = ${dataString};
               cursor: "pointer",
               height: "10vw",
               maxHeight: size.w > 1024 ? "100px" : "none",
-              fontSize: "3vw"
+              fontSize: size.w > 1024 ? "1.5vw" : "3vw"
             }}
           >
             View
