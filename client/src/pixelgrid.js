@@ -719,6 +719,22 @@ export default function PixelGrid() {
     }
   }, [canvasCols, canvasRows]);
   
+  // Update canvas size when image scale changes (before applying the image)
+  useEffect(() => {
+    if (showImageScaleDialog && uploadedImage) {
+      const targetWidth = imageScale;
+      const aspectRatio = uploadedImage.height / uploadedImage.width;
+      const targetHeight = Math.round(targetWidth * aspectRatio);
+      
+      // Resize canvas to fit the image (cap at 200 cols, 1000 rows)
+      const newCols = Math.max(7, Math.min(200, targetWidth));
+      const newRows = Math.max(7, Math.min(1000, targetHeight));
+      
+      setCanvasCols(newCols);
+      setCanvasRows(newRows);
+    }
+  }, [imageScale, showImageScaleDialog, uploadedImage]);
+  
   // Save groups (layers) to localStorage - ONLY when explicitly called, not automatically
   // This prevents moves from persisting until user draws with that layer selected
   // eslint-disable-next-line no-unused-vars
@@ -3389,13 +3405,9 @@ const savedData = ${dataString};
     const aspectRatio = uploadedImage.height / uploadedImage.width;
     const targetHeight = Math.round(targetWidth * aspectRatio);
     
-    // Resize canvas to fit the image (cap at 200 cols, 1000 rows)
-    const newCols = Math.max(7, Math.min(200, targetWidth));
-    const newRows = Math.max(7, Math.min(1000, targetHeight));
-    
-    // Update canvas dimensions first
-    setCanvasCols(newCols);
-    setCanvasRows(newRows);
+    // Canvas dimensions are already set by useEffect, just use current values
+    const newCols = canvasCols;
+    const newRows = canvasRows;
     
     canvas.width = targetWidth;
     canvas.height = targetHeight;
@@ -3407,7 +3419,7 @@ const savedData = ${dataString};
     const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
     const pixels = imageData.data;
     
-    // Convert to our pixel format - use the new dimensions
+    // Convert to our pixel format - use the current canvas dimensions
     const totalPixels = newCols * newRows;
     const newPixelColors = new Array(totalPixels).fill("#ffffff");
     
