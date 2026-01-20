@@ -3305,10 +3305,20 @@ const savedData = ${dataString};
         try {
           const data = JSON.parse(matchData[1]);
           
-          // Restore canvas dimensions if available
+          // Restore canvas dimensions if available, capping at 200 cols max
           if (data.canvasCols !== undefined && data.canvasRows !== undefined) {
             const newCols = Math.max(7, Math.min(200, data.canvasCols));
             const newRows = Math.max(7, Math.min(1000, data.canvasRows));
+            setCanvasCols(newCols);
+            setCanvasRows(newRows);
+          } else if (data.pixelColors && data.pixelColors.length > 0) {
+            // If dimensions not saved, try to infer from pixel data
+            // Assume square-ish canvas or use current dimensions
+            const totalPixels = data.pixelColors.length;
+            const estimatedCols = Math.ceil(Math.sqrt(totalPixels));
+            const estimatedRows = Math.ceil(totalPixels / estimatedCols);
+            const newCols = Math.max(7, Math.min(200, estimatedCols));
+            const newRows = Math.max(7, Math.min(1000, estimatedRows));
             setCanvasCols(newCols);
             setCanvasRows(newRows);
           }
