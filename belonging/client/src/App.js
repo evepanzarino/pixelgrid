@@ -4910,8 +4910,11 @@ const CallManager = () => {
   const peerRef = useRef(null);
   const localStreamRef = useRef(null);
   const pendingOfferRef = useRef(null);
+  const pendingCandidatesRef = useRef([]);
+  const remoteStreamRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null);
 
   const endCall = useCallback((notifyRemote = true) => {
     if (notifyRemote && remoteUser) {
@@ -4922,6 +4925,9 @@ const CallManager = () => {
       localStreamRef.current.getTracks().forEach(t => t.stop());
       localStreamRef.current = null;
     }
+    remoteStreamRef.current = null;
+    pendingCandidatesRef.current = [];
+    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
     setCallState(null);
     setRemoteUser(null);
     setIsMuted(false);
@@ -4937,7 +4943,9 @@ const CallManager = () => {
       }
     };
     peer.ontrack = (e) => {
+      remoteStreamRef.current = e.streams[0];
       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0];
+      if (remoteAudioRef.current) remoteAudioRef.current.srcObject = e.streams[0];
     };
     peerRef.current = peer;
     return peer;
@@ -4956,12 +4964,19 @@ const CallManager = () => {
     const onCallAnswer = async ({ answer }) => {
       if (peerRef.current) {
         await peerRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        for (const c of pendingCandidatesRef.current) {
+          try { await peerRef.current.addIceCandidate(new RTCIceCandidate(c)); } catch(e) {}
+        }
+        pendingCandidatesRef.current = [];
         setCallState('connected');
       }
     };
     const onIceCandidate = async ({ candidate }) => {
-      if (peerRef.current && candidate) {
-        await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      if (!candidate) return;
+      if (peerRef.current?.remoteDescription) {
+        try { await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate)); } catch(e) {}
+      } else {
+        pendingCandidatesRef.current.push(candidate);
       }
     };
     const onCallEnd = () => endCall(false);
@@ -5012,6 +5027,10 @@ const CallManager = () => {
     const peer = initPeer(remoteUser);
     stream.getTracks().forEach(t => peer.addTrack(t, stream));
     await peer.setRemoteDescription(new RTCSessionDescription(pendingOfferRef.current));
+    for (const c of pendingCandidatesRef.current) {
+      try { await peer.addIceCandidate(new RTCIceCandidate(c)); } catch(e) {}
+    }
+    pendingCandidatesRef.current = [];
     const answer = await peer.createAnswer();
     await peer.setLocalDescription(answer);
     getSocket().emit('call-answer', { targetUserId: remoteUser.id, answer });
@@ -5058,13 +5077,21 @@ const CallManager = () => {
 
   return (
     <div className="call-overlay">
+      {/* Hidden audio element — always present so remote audio plays even before video mounts */}
+      <audio ref={remoteAudioRef} autoPlay style={{ display: 'none' }} />
       {/* Remote video — full-screen background when connected */}
       {callState === 'connected' && (
-        <video ref={remoteVideoRef} autoPlay playsInline className="call-remote-video" />
+        <video
+          ref={(el) => { remoteVideoRef.current = el; if (el && remoteStreamRef.current) el.srcObject = remoteStreamRef.current; }}
+          autoPlay playsInline className="call-remote-video"
+        />
       )}
       {/* Local video — picture-in-picture */}
       {(callState === 'connected' || callState === 'outgoing') && callType === 'video' && (
-        <video ref={localVideoRef} autoPlay playsInline muted className="call-local-video" />
+        <video
+          ref={(el) => { localVideoRef.current = el; if (el && localStreamRef.current) el.srcObject = localStreamRef.current; }}
+          autoPlay playsInline muted className="call-local-video"
+        />
       )}
 
       <div className="call-info">
