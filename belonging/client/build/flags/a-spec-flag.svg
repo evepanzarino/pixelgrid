@@ -1,0 +1,19 @@
+<!--
+	COPYRIGHT:
+	Author: Rummskartoffel
+	Based on:
+	https://the-moon-is-aroace.tumblr.com/post/183702972387/a-new-flag-for-the-aspec-community-just-an-idea-i
+	by the-moon-is-aroace, usable under the condition that they receive
+	adequate attribution. I understand this condition to be viral, which means
+	that any use or modification of this derived work must retain attribution
+	to the-moon-is-aroace. Attribution to me, Rummskartoffel, need not be
+	provided. I believe that attribution has been adequately provided to
+	the-moon-is-aroace in the form of this disclaimer.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 36" width="2000" height="1200">
+	<rect width="30" height="18" fill="#000000" />
+	<rect width="30" height="18" fill="#820080" y="18" />
+	<rect width="30" height="18" fill="#3ca542" x="30" />
+	<rect width="30" height="18" fill="#999999" x="30" y="18" />
+	<polyline points="15,18 27,15 30,3 33,15 45,18 33,21 30,33 27,21 15,18" fill="#ffffff" />
+</svg>

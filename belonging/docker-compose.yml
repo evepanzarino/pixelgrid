@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: belonging-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: belonging
+      MYSQL_USER: evepanzarino
+      MYSQL_PASSWORD: TrueLove25320664!
+    ports:
+      - "3307:3306"
+    volumes:
+      - belonging_mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - belonging-network
+
+  server:
+    build: ./server
+    container_name: belonging-server
+    environment:
+      DB_HOST: mysql
+      DB_USER: evepanzarino
+      DB_PASSWORD: TrueLove25320664!
+      DB_NAME: belonging
+      JWT_SECRET: belonging_jwt_secret_key_2026
+      PORT: 5000
+      DISCORD_BOT_URL: http://discord-bot:5005
+      BOT_TOKEN_SECRET: ${BOT_TOKEN_SECRET:-any_random_string_like_abc123xyz}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      DISCORD_REDIRECT_URI: ${DISCORD_REDIRECT_URI}
+    ports:
+      - "5003:5000"
+    volumes:
+      - belonging_uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - belonging-network
+
+  client:
+    build: ./client
+    container_name: belonging-client
+    ports:
+      - "5004:80"
+    depends_on:
+      - server
+    networks:
+      - belonging-network
+
+  discord-bot:
+    build: ./discord-bot
+    container_name: belonging-discord-bot
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID}
+      CONNECTED_ROLE_NAME: connected
+      WEBSITE_CHANNEL_ID: ${WEBSITE_CHANNEL_ID}
+      UPDATES_CHANNEL_ID: ${UPDATES_CHANNEL_ID}
+      BOT_TOKEN_SECRET: ${BOT_TOKEN_SECRET:-any_random_string_like_abc123xyz}
+      DB_HOST: mysql
+      DB_USER: evepanzarino
+      DB_PASSWORD: TrueLove25320664!
+      DB_NAME: belonging
+      PORT: 5005
+      NODE_OPTIONS: "--dns-result-order=ipv4first"
+    ports:
+      - "5005:5005"
+    volumes:
+      - belonging_uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      server:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - belonging-network
+
+volumes:
+  belonging_mysql_data:
+    external: true
+    name: belonginglgbt_belonging_mysql_data
+  belonging_uploads:
+    external: true
+    name: belonginglgbt_belonging_uploads
+
+networks:
+  belonging-network:
+    driver: bridge
