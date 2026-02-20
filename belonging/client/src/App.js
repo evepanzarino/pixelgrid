@@ -633,7 +633,7 @@ const Navbar = ({ onLevelUpUpdate }) => {
         <LogoBelonging className="logo-belonging" />
         <BelongingLogo className="belonging-logo" />
       </Link>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+      <div className="navbar-links" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
         <Link to={`${BASE_PATH}/feed`}>Feed</Link>
         <Link to={`${BASE_PATH}/users`}>Users</Link>
         <Link to={`${BASE_PATH}/tribes`}>Tribes</Link>
@@ -3405,46 +3405,22 @@ const FeedPage = () => {
       {/* Feed Tabs */}
       <div style={{ display: 'flex', gap: '10px', marginTop: '30px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
         <button
+          className={`feed-tab${activeTab === 'global' ? ' active' : ''}`}
           onClick={() => setActiveTab('global')}
-          style={{
-            padding: '10px 20px',
-            border: 'none',
-            background: activeTab === 'global' ? '#667eea' : 'transparent',
-            color: activeTab === 'global' ? 'white' : '#666',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontWeight: activeTab === 'global' ? 'bold' : 'normal'
-          }}
         >
           Global Feed
         </button>
         {currentUser && (
           <button
+            className={`feed-tab${activeTab === 'personal' ? ' active' : ''}`}
             onClick={() => setActiveTab('personal')}
-            style={{
-              padding: '10px 20px',
-              border: 'none',
-              background: activeTab === 'personal' ? '#667eea' : 'transparent',
-              color: activeTab === 'personal' ? 'white' : '#666',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontWeight: activeTab === 'personal' ? 'bold' : 'normal'
-            }}
           >
             Personal Feed
           </button>
         )}
         <button
+          className={`feed-tab${activeTab === 'updates' ? ' active' : ''}`}
           onClick={() => setActiveTab('updates')}
-          style={{
-            padding: '10px 20px',
-            border: 'none',
-            background: activeTab === 'updates' ? '#667eea' : 'transparent',
-            color: activeTab === 'updates' ? 'white' : '#666',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontWeight: activeTab === 'updates' ? 'bold' : 'normal'
-          }}
         >
           Updates
         </button>
@@ -5633,6 +5609,38 @@ const XpDrops = () => {
 };
 
 // ============================================
+// MOBILE BOTTOM NAVIGATION
+// ============================================
+const MobileNav = () => {
+  const { user } = useAuth();
+  if (!user) return null;
+  return (
+    <nav className="mobile-nav">
+      <Link to={`${BASE_PATH}/feed`} className="mobile-nav-btn">
+        <span className="mobile-nav-icon">🏠</span>
+        <span className="mobile-nav-label">Feed</span>
+      </Link>
+      <Link to={`${BASE_PATH}/skills`} className="mobile-nav-btn">
+        <span className="mobile-nav-icon">⚔</span>
+        <span className="mobile-nav-label">Skills</span>
+      </Link>
+      <Link to={`${BASE_PATH}/tribes`} className="mobile-nav-btn">
+        <span className="mobile-nav-icon">🏘</span>
+        <span className="mobile-nav-label">Tribes</span>
+      </Link>
+      <Link to={`${BASE_PATH}/messages`} className="mobile-nav-btn">
+        <span className="mobile-nav-icon">✉</span>
+        <span className="mobile-nav-label">Messages</span>
+      </Link>
+      <Link to={`${BASE_PATH}/${user.username}`} className="mobile-nav-btn">
+        <span className="mobile-nav-icon">👤</span>
+        <span className="mobile-nav-label">Profile</span>
+      </Link>
+    </nav>
+  );
+};
+
+// ============================================
 // RESTRICTED BANNER (shown when user is banned)
 // ============================================
 const RestrictedBanner = () => {
@@ -5816,6 +5824,7 @@ function App() {
         />
         <XpDrops />
         <CallManager />
+        <MobileNav />
         <RestrictedBanner />
         <Routes>
           <Route path="/" element={<HomePage />} />

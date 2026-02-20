@@ -1820,3 +1820,158 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ============================================
+   RESPONSIVE VW STYLING — MOBILE FIRST
+   ============================================ */
+
+/* Phase 1: Container & Card vw padding */
+@media (max-width: 1024px) {
+  body { padding-bottom: 16vw; }
+  .container { padding: 3vw; }
+  .card { padding: 4vw; border-radius: 2.5vw; margin-bottom: 3vw; }
+}
+
+/* Phase 2: Buttons — 10vw minimum touch target */
+@media (max-width: 1024px) {
+  .btn {
+    min-width: 10vw;
+    min-height: 10vw;
+    padding: 2.5vw 5vw;
+    font-size: 3.5vw;
+    border-radius: 2vw;
+  }
+  .interaction-btn {
+    min-height: 10vw;
+    min-width: 10vw;
+    font-size: 4vw;
+    padding: 1.5vw 2.5vw;
+  }
+  .send-button {
+    min-height: 10vw;
+    min-width: 10vw;
+    font-size: 4vw;
+    padding: 2vw 4vw;
+  }
+  .attach-btn {
+    min-height: 10vw;
+    min-width: 10vw;
+    font-size: 5vw;
+    padding: 1vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Phase 3: Navbar — hide links on mobile */
+@media (max-width: 1024px) {
+  .navbar { padding: 2vw 3vw; }
+  .navbar-links { display: none; }
+}
+
+/* Phase 4: Feed tabs */
+.feed-tab {
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  color: #666;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: normal;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+.feed-tab.active {
+  background: #667eea;
+  color: white;
+  font-weight: bold;
+}
+.feed-tab:hover:not(.active) { background: #f0f0f0; }
+
+@media (max-width: 1024px) {
+  .feed-tab {
+    flex: 1;
+    min-height: 10vw;
+    font-size: 3.5vw;
+    padding: 2vw;
+    border-radius: 2vw;
+    text-align: center;
+  }
+}
+
+/* Phase 5: Mobile Bottom Navigation */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 16vw;
+  background: white;
+  border-top: 1px solid #eee;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+  z-index: 3000;
+  justify-content: space-around;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .mobile-nav { display: flex; }
+}
+
+.mobile-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 10vw;
+  min-height: 10vw;
+  color: #666;
+  text-decoration: none;
+  gap: 1vw;
+  transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav-btn:hover,
+.mobile-nav-btn.active-nav {
+  color: #667eea;
+}
+
+.mobile-nav-icon {
+  font-size: 5.5vw;
+  line-height: 1;
+}
+
+.mobile-nav-label {
+  font-size: 2.5vw;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* Phase 6: Messages Page Mobile */
+@media (max-width: 1024px) {
+  .messages-page {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 16vw);
+  }
+  .conversations-list {
+    width: 100%;
+    max-height: 30vw;
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+  }
+  .message {
+    max-width: 90%;
+  }
+  .message-input-form {
+    padding: 2vw;
+    gap: 2vw;
+  }
+  .message-input {
+    font-size: 4vw;
+    padding: 2vw;
+  }
+}
