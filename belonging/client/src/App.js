@@ -691,6 +691,9 @@ const Navbar = ({ onLevelUpUpdate }) => {
                 </Link>
               )}
             </span>
+            {user.role === 'admin' && (
+              <Link to={`${BASE_PATH}/admin`} style={{ color: '#e74c3c', fontWeight: '600' }}>⚙ Admin</Link>
+            )}
             <button onClick={logout} className="btn btn-secondary">
               Logout
             </button>
@@ -1863,6 +1866,7 @@ const EditProfilePage = () => {
 
 // Post Editor Component (WordPress-like with visual and code editor)
 const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
+  const { user: currentUser } = useAuth();
   const [tagline, setTagline] = useState(editPost?.tagline || '');
   const [content, setContent] = useState(editPost?.content || '');
   const [customCss, setCustomCss] = useState(editPost?.custom_css || '');
@@ -2354,7 +2358,7 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={loading || !tagline.trim() || !content.trim()}
+            disabled={loading || !tagline.trim() || !content.trim() || currentUser?.is_banned || currentUser?.is_muted}
             style={{ flex: 1 }}
           >
             {loading ? 'Saving...' : (editPost ? 'Update Post' : 'Publish Post')}
@@ -2508,6 +2512,10 @@ const PostCard = ({ post, onEdit, onDelete, isOwner }) => {
         const data = await response.json();
         setComments([...comments, data.comment]);
         setNewComment('');
+      } else {
+        const data = await response.json().catch(() => ({}));
+        if (data.code === 'BANNED') alert('Your account is restricted. You cannot post.');
+        else if (data.code === 'MUTED') alert('Your account is muted. You cannot post.');
       }
     } catch (err) {
       console.error('Failed to submit comment:', err);
@@ -2885,8 +2893,9 @@ const PostCard = ({ post, onEdit, onDelete, isOwner }) => {
                     <input
                       type="text"
                       value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Write a comment..."
+                      onChange={(e) => { if (!currentUser?.is_banned && !currentUser?.is_muted) setNewComment(e.target.value); }}
+                      placeholder={currentUser?.is_banned ? 'Your account is restricted.' : currentUser?.is_muted ? 'You are muted.' : 'Write a comment...'}
+                      disabled={currentUser?.is_banned || currentUser?.is_muted}
                       style={{
                         flex: 1,
                         padding: '10px 15px',
@@ -2898,7 +2907,7 @@ const PostCard = ({ post, onEdit, onDelete, isOwner }) => {
                     />
                     <button
                       type="submit"
-                      disabled={submittingComment || !newComment.trim()}
+                      disabled={submittingComment || !newComment.trim() || currentUser?.is_banned || currentUser?.is_muted}
                       style={{
                         padding: '10px 20px',
                         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -5306,6 +5315,10 @@ const MessagesPage = () => {
         setNewMessage('');
         setAttachments([]);
         fetchConversations();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        if (data.code === 'BANNED') alert('Your account is restricted. You cannot send messages.');
+        else if (data.code === 'MUTED') alert('Your account is muted. You cannot send messages.');
       }
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -5493,6 +5506,7 @@ const MessagesPage = () => {
                 type="text"
                 value={newMessage}
                 onChange={(e) => {
+                  if (user?.is_banned || user?.is_muted) return;
                   setNewMessage(e.target.value);
                   const sock = getSocket();
                   sock.emit('typing-start', { conversationId: selectedConversation });
@@ -5501,12 +5515,13 @@ const MessagesPage = () => {
                     sock.emit('typing-stop', { conversationId: selectedConversation });
                   }, 2000);
                 }}
-                placeholder="Type a message..."
+                placeholder={user?.is_banned ? 'Your account is restricted.' : user?.is_muted ? 'You are muted — you cannot send messages.' : 'Type a message...'}
+                disabled={user?.is_banned || user?.is_muted}
                 className="message-input"
               />
               <button
                 type="submit"
-                disabled={sending || (!newMessage.trim() && attachments.length === 0)}
+                disabled={sending || user?.is_banned || user?.is_muted || (!newMessage.trim() && attachments.length === 0)}
                 className="send-button"
               >
                 {sending ? '...' : 'Send'}
@@ -5617,6 +5632,177 @@ const XpDrops = () => {
   );
 };
 
+// ============================================
+// RESTRICTED BANNER (shown when user is banned)
+// ============================================
+const RestrictedBanner = () => {
+  const { user } = useAuth();
+  if (!user?.is_banned) return null;
+  return (
+    <div className="account-restricted-banner">
+      ⚠ Your account is currently restricted. You can browse content but cannot post or interact.
+    </div>
+  );
+};
+
+// ============================================
+// ADMIN PAGE
+// ============================================
+const AdminPage = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [users, setUsers] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState({});
+
+  useEffect(() => {
+    if (!user || user.role !== 'admin') { navigate('/'); return; }
+    fetchUsers();
+  }, [user]);
+
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${window.location.origin}${BASE_PATH === '' ? '' : BASE_PATH}/api/admin/users`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setUsers(await res.json());
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  };
+
+  const adminAction = async (userId, action, body) => {
+    setSaving(s => ({ ...s, [`${userId}-${action}`]: true }));
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${window.location.origin}${BASE_PATH === '' ? '' : BASE_PATH}/api/admin/users/${userId}/${action}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        await fetchUsers();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Action failed');
+      }
+    } catch (e) { alert('Request failed'); }
+    setSaving(s => ({ ...s, [`${userId}-${action}`]: false }));
+  };
+
+  const filtered = users.filter(u =>
+    !search || u.username?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (!user || user.role !== 'admin') return null;
+
+  return (
+    <div className="admin-page">
+      <h1>Admin Dashboard</h1>
+      <input
+        className="admin-search"
+        type="text"
+        placeholder="Search users..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+      {loading ? <p>Loading...</p> : (
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>Member</th>
+              <th>Banned</th>
+              <th>Muted</th>
+              <th>Upload Limit</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(u => (
+              <AdminUserRow key={u.id} u={u} currentUser={user} adminAction={adminAction} saving={saving} />
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+};
+
+const AdminUserRow = ({ u, currentUser, adminAction, saving }) => {
+  const [limitInput, setLimitInput] = useState(u.upload_limit_mb != null ? String(u.upload_limit_mb) : '');
+  const isSelf = u.id === currentUser.id;
+
+  return (
+    <tr>
+      <td>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {u.profile_picture && <img src={u.profile_picture} alt="" style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover' }} />}
+          <span>@{u.username}</span>
+        </div>
+      </td>
+      <td>
+        <select
+          value={u.role}
+          disabled={isSelf || (u.handle === 'eve' || u.username === 'eve')}
+          onChange={e => adminAction(u.id, 'role', { role: e.target.value })}
+          className="admin-role-select"
+        >
+          <option value="user">user</option>
+          <option value="admin">admin</option>
+        </select>
+      </td>
+      <td><span style={{ color: u.is_member ? '#27ae60' : '#999' }}>{u.is_member ? 'Yes' : 'No'}</span></td>
+      <td><span style={{ color: u.is_banned ? '#e74c3c' : '#999' }}>{u.is_banned ? 'Yes' : 'No'}</span></td>
+      <td><span style={{ color: u.is_muted ? '#e67e22' : '#999' }}>{u.is_muted ? 'Yes' : 'No'}</span></td>
+      <td>
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          <input
+            type="number"
+            min="1"
+            placeholder="MB (blank=default)"
+            value={limitInput}
+            onChange={e => setLimitInput(e.target.value)}
+            className="admin-limit-input"
+          />
+          <button
+            className="admin-btn-save"
+            disabled={saving[`${u.id}-upload-limit`]}
+            onClick={() => adminAction(u.id, 'upload-limit', { upload_limit_mb: limitInput ? parseInt(limitInput) : null })}
+          >
+            {saving[`${u.id}-upload-limit`] ? '...' : 'Save'}
+          </button>
+        </div>
+      </td>
+      <td>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {!isSelf && (
+            <>
+              <button
+                className={u.is_banned ? 'admin-btn-unban' : 'admin-btn-ban'}
+                disabled={saving[`${u.id}-ban`]}
+                onClick={() => adminAction(u.id, 'ban', { is_banned: !u.is_banned })}
+              >
+                {saving[`${u.id}-ban`] ? '...' : u.is_banned ? 'Unban' : 'Ban'}
+              </button>
+              <button
+                className={u.is_muted ? 'admin-btn-unmute' : 'admin-btn-mute'}
+                disabled={saving[`${u.id}-mute`]}
+                onClick={() => adminAction(u.id, 'mute', { is_muted: !u.is_muted })}
+              >
+                {saving[`${u.id}-mute`] ? '...' : u.is_muted ? 'Unmute' : 'Mute'}
+              </button>
+            </>
+          )}
+          {isSelf && <span style={{ color: '#aaa', fontSize: '12px' }}>You</span>}
+        </div>
+      </td>
+    </tr>
+  );
+};
+
 function App() {
   const [latestLevelUp, setLatestLevelUp] = useState(null);
 
@@ -5630,6 +5816,7 @@ function App() {
         />
         <XpDrops />
         <CallManager />
+        <RestrictedBanner />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -5645,6 +5832,7 @@ function App() {
           <Route path="/tribes/create" element={<CreateTribePage />} />
           <Route path="/tribe/:tag" element={<TribePage />} />
           <Route path="/messages" element={<MessagesPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/:identifier" element={<UserProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

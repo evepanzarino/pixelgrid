@@ -66,3 +66,13 @@ INSERT INTO items (name, description) VALUES
 --   FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
 --   INDEX idx_message_id (message_id)
 -- );
+
+-- Permissions system columns (run once on live DB)
+-- ALTER TABLE users
+--   ADD COLUMN is_banned      BOOLEAN NOT NULL DEFAULT FALSE,
+--   ADD COLUMN banned_at      TIMESTAMP NULL,
+--   ADD COLUMN banned_by      INT NULL,
+--   ADD COLUMN is_muted       BOOLEAN NOT NULL DEFAULT FALSE,
+--   ADD COLUMN muted_at       TIMESTAMP NULL,
+--   ADD COLUMN muted_by       INT NULL,
+--   ADD COLUMN upload_limit_mb INT NULL;

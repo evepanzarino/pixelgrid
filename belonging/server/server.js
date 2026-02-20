@@ -83,11 +83,22 @@ const authenticateToken = (req, res, next) => {
     return next();
   }
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, async (err, decoded) => {
     if (err) {
       req.user = null;
-    } else {
-      req.user = user;
+      return next();
+    }
+    // Fresh DB lookup to get real-time ban/mute status
+    try {
+      const [rows] = await pool.query(
+        'SELECT is_banned, is_muted, upload_limit_mb FROM users WHERE id = ?',
+        [decoded.id]
+      );
+      req.user = rows.length > 0
+        ? { ...decoded, is_banned: !!rows[0].is_banned, is_muted: !!rows[0].is_muted, upload_limit_mb: rows[0].upload_limit_mb }
+        : decoded;
+    } catch {
+      req.user = decoded;
     }
     next();
   });
@@ -139,6 +150,16 @@ const requireAdmin = (req, res, next) => {
   if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
   }
+  next();
+};
+
+const requireNotBanned = (req, res, next) => {
+  if (req.user?.is_banned) return res.status(403).json({ error: 'Your account is restricted.', code: 'BANNED' });
+  next();
+};
+
+const requireNotMuted = (req, res, next) => {
+  if (req.user?.is_muted) return res.status(403).json({ error: 'Your account is muted.', code: 'MUTED' });
   next();
 };
 
@@ -268,7 +289,7 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/auth/me', requireAuth, async (req, res) => {
   try {
     const [users] = await pool.execute(
-      'SELECT id, username, email, first_name, last_name, role, profile_picture, discord_id, discord_username, discord_avatar, is_member, created_at FROM users WHERE id = ?',
+      'SELECT id, username, email, first_name, last_name, role, profile_picture, discord_id, discord_username, discord_avatar, is_member, is_banned, is_muted, upload_limit_mb, created_at FROM users WHERE id = ?',
       [req.user.id]
     );
 
@@ -670,7 +691,7 @@ app.get('/api/users/:identifier', async (req, res) => {
 // ============================================
 
 // Create a post
-app.post('/api/posts', requireAuth, async (req, res) => {
+app.post('/api/posts', requireAuth, requireNotBanned, requireNotMuted, async (req, res) => {
   try {
     const { tagline, content, customCss, tribeIds } = req.body;
 
@@ -1275,7 +1296,7 @@ app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
 // ============================================
 
 // Create a comment
-app.post('/api/posts/:postId/comments', requireAuth, async (req, res) => {
+app.post('/api/posts/:postId/comments', requireAuth, requireNotBanned, requireNotMuted, async (req, res) => {
   try {
     const { postId } = req.params;
     const { content, parentCommentId } = req.body;
@@ -1541,7 +1562,7 @@ app.get('/api/messages/conversations/:conversationId', requireAuth, async (req, 
 });
 
 // Send a message
-app.post('/api/messages/conversations/:conversationId', requireAuth, async (req, res) => {
+app.post('/api/messages/conversations/:conversationId', requireAuth, requireNotBanned, requireNotMuted, async (req, res) => {
   try {
     const { conversationId } = req.params;
     const { content, attachment_ids } = req.body;
@@ -1662,21 +1683,25 @@ app.put('/api/users/:id/member', requireAuth, async (req, res) => {
 // ============================================
 
 // POST /api/messages/upload - upload attachment for a message
-app.post('/api/messages/upload', requireAuth, messageUpload.single('file'), async (req, res) => {
+app.post('/api/messages/upload', requireAuth, requireNotBanned, messageUpload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file provided' });
     }
 
-    // Enforce per-user file size limit
-    const [memberRows] = await pool.execute('SELECT is_member FROM users WHERE id = ?', [req.user.id]);
+    // Enforce per-user file size limit (custom > member 10GB > non-member 100MB)
+    const [memberRows] = await pool.execute('SELECT is_member, upload_limit_mb FROM users WHERE id = ?', [req.user.id]);
     const isMember = memberRows.length > 0 && memberRows[0].is_member;
-    const limitBytes = isMember ? 10 * 1024 * 1024 * 1024 : 100 * 1024 * 1024;
+    const customMb = memberRows.length > 0 ? memberRows[0].upload_limit_mb : null;
+    const limitBytes = customMb
+      ? customMb * 1024 * 1024
+      : isMember ? 10 * 1024 * 1024 * 1024 : 100 * 1024 * 1024;
+    const limitLabel = customMb ? `${customMb}MB` : isMember ? '10GB' : '100MB';
 
     if (req.file.size > limitBytes) {
       fs.unlinkSync(req.file.path);
       return res.status(413).json({
-        error: `File too large. ${isMember ? 'Members' : 'Non-members'} can upload up to ${isMember ? '10GB' : '100MB'}`
+        error: `File too large. Your upload limit is ${limitLabel}.`
       });
     }
 
@@ -1776,12 +1801,79 @@ app.get('/api/embed/preview', async (req, res) => {
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
   try {
     const [users] = await pool.query(
-      'SELECT id, username, email, role, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, username, handle, email, role, profile_picture, is_member, is_banned, banned_at, is_muted, muted_at, upload_limit_mb, created_at FROM users ORDER BY created_at DESC'
     );
     res.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Ban / unban a user
+app.put('/api/admin/users/:id/ban', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_banned } = req.body;
+    if (parseInt(id) === req.user.id) return res.status(400).json({ error: 'Cannot ban yourself' });
+    await pool.execute(
+      'UPDATE users SET is_banned = ?, banned_at = ?, banned_by = ? WHERE id = ?',
+      [is_banned, is_banned ? new Date() : null, is_banned ? req.user.id : null, id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Ban error:', error);
+    res.status(500).json({ error: 'Failed to update ban status' });
+  }
+});
+
+// Mute / unmute a user
+app.put('/api/admin/users/:id/mute', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_muted } = req.body;
+    if (parseInt(id) === req.user.id) return res.status(400).json({ error: 'Cannot mute yourself' });
+    await pool.execute(
+      'UPDATE users SET is_muted = ?, muted_at = ?, muted_by = ? WHERE id = ?',
+      [is_muted, is_muted ? new Date() : null, is_muted ? req.user.id : null, id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Mute error:', error);
+    res.status(500).json({ error: 'Failed to update mute status' });
+  }
+});
+
+// Set per-user upload limit
+app.put('/api/admin/users/:id/upload-limit', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { upload_limit_mb } = req.body; // null = tier default
+    await pool.execute('UPDATE users SET upload_limit_mb = ? WHERE id = ?', [upload_limit_mb || null, id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Upload limit error:', error);
+    res.status(500).json({ error: 'Failed to update upload limit' });
+  }
+});
+
+// Change user role
+app.put('/api/admin/users/:id/role', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    if (!['user', 'admin'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
+    if (parseInt(id) === req.user.id) return res.status(400).json({ error: 'Cannot change your own role' });
+    // Protect the eve handle from demotion
+    const [rows] = await pool.execute('SELECT handle, username FROM users WHERE id = ?', [id]);
+    if (rows.length > 0 && (rows[0].handle === 'eve' || rows[0].username === 'eve') && role !== 'admin') {
+      return res.status(403).json({ error: 'Cannot demote the @eve account' });
+    }
+    await pool.execute('UPDATE users SET role = ? WHERE id = ?', [role, id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Role change error:', error);
+    res.status(500).json({ error: 'Failed to update role' });
   }
 });
 
@@ -1816,7 +1908,7 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
 app.use('/uploads', express.static(uploadsDir));
 
 // Image upload endpoint
-app.post('/api/upload', authenticateToken, requireAuth, upload.single('image'), (req, res) => {
+app.post('/api/upload', authenticateToken, requireAuth, requireNotBanned, upload.single('image'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
@@ -2445,7 +2537,7 @@ app.get('/api/tribes/:tag/posts', async (req, res) => {
 });
 
 // Create tribe post
-app.post('/api/tribes/:tag/posts', requireAuth, async (req, res) => {
+app.post('/api/tribes/:tag/posts', requireAuth, requireNotBanned, requireNotMuted, async (req, res) => {
   try {
     const { content, isAnnouncement } = req.body;
 
