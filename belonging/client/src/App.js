@@ -2371,12 +2371,14 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
       {/* Action row: upload | sticker | → post */}
       <div className="composer-actions">
         <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*,video/*" style={{ display: 'none' }} />
-        <button type="button" className="composer-btn" title="Upload" onClick={() => fileInputRef.current?.click()}>
-          {uploading ? '⌛' : '📎'}
-        </button>
-        <button type="button" className="composer-btn" title="Stickers" onClick={() => setShowStickers(s => !s)}>
-          🫧
-        </button>
+        <div className="composer-btn-stack">
+          <button type="button" className="composer-btn" title="Stickers" onClick={() => setShowStickers(s => !s)}>
+            🫧
+          </button>
+          <button type="button" className="composer-btn" title="Upload" onClick={() => fileInputRef.current?.click()}>
+            {uploading ? '⌛' : '📎'}
+          </button>
+        </div>
         <div style={{ flex: 1 }} />
         <button
           type="button"
