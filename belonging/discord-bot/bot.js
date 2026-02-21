@@ -938,25 +938,25 @@ async function autoCloseThreadsInFeed() {
   try {
     console.log('[AUTO-CLOSE] Checking for threads to close in #feed...');
 
-    const channel = await client.channels.fetch(CONFIG.WEBSITE_CHANNEL_ID);
-    if (!channel) {
-      console.error('[AUTO-CLOSE] Website channel not found');
+    const guild = client.guilds.cache.get(CONFIG.GUILD_ID);
+    if (!guild) {
+      console.error('[AUTO-CLOSE] Guild not found');
       return;
     }
 
-    // Fetch all active threads in the channel
-    const activeThreads = await channel.threads.fetchActive();
-    console.log(`[AUTO-CLOSE] Found ${activeThreads.threads.size} active threads`);
+    // Fetch all active threads in the guild, then filter by parent channel
+    const fetchedThreads = await guild.channels.fetchActiveThreads();
+    const feedThreads = fetchedThreads.threads.filter(
+      t => t.parentId === CONFIG.WEBSITE_CHANNEL_ID
+    );
+    console.log(`[AUTO-CLOSE] Found ${feedThreads.size} active threads in #feed`);
 
     let closedCount = 0;
-    for (const [threadId, thread] of activeThreads.threads) {
+    for (const [threadId, thread] of feedThreads) {
       try {
-        // Archive the thread (this is Discord's way of "closing" a thread)
         await thread.setArchived(true, 'Auto-closing thread in #feed');
         console.log(`[AUTO-CLOSE] ✓ Closed thread: ${thread.name} (ID: ${threadId})`);
         closedCount++;
-
-        // Small delay to avoid rate limiting
         await new Promise(r => setTimeout(r, 500));
       } catch (error) {
         console.error(`[AUTO-CLOSE] ✗ Failed to close thread ${threadId}:`, error.message);
