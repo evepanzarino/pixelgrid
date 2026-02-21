@@ -1866,72 +1866,92 @@ const EditProfilePage = () => {
 };
 
 // Post Editor Component (WordPress-like with visual and code editor)
+const COMPOSER_VIBES = [
+  { emoji: '😊', label: 'happy' }, { emoji: '😢', label: 'sad' },
+  { emoji: '😡', label: 'angry' }, { emoji: '😍', label: 'loving' },
+  { emoji: '😂', label: 'laughing' }, { emoji: '🤔', label: 'thinking' },
+  { emoji: '😴', label: 'tired' }, { emoji: '🥳', label: 'celebrating' },
+  { emoji: '💪', label: 'motivated' }, { emoji: '😌', label: 'peaceful' },
+  { emoji: '🔥', label: 'fired up' }, { emoji: '🌸', label: 'grateful' },
+  { emoji: '😰', label: 'anxious' }, { emoji: '🤗', label: 'excited' },
+];
+const COMPOSER_STICKERS = ['❤️','🏳️‍🌈','🏳️‍⚧️','✨','🌟','💜','🔥','👀','🎉','💅','🌙','🌺','💫','🦋','🌈','🍀','🫶','😭','💀','🤌','🎭','🌸','🫧','🫠','🪷','🦄','🐾','🌻'];
+
 const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
   const { user: currentUser } = useAuth();
   const [tagline, setTagline] = useState(editPost?.tagline || '');
-  const [content, setContent] = useState(editPost?.content || '');
-  const [customCss, setCustomCss] = useState(editPost?.custom_css || '');
-  const [editorMode, setEditorMode] = useState('visual'); // 'visual', 'html', 'css'
+  const [body, setBody] = useState(editPost?.content || '');
+  const [customCss] = useState(editPost?.custom_css || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showPreview, setShowPreview] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [selectedTribes, setSelectedTribes] = useState([]);
   const [tribeQuery, setTribeQuery] = useState('');
   const [tribeResults, setTribeResults] = useState([]);
   const [showTribeDropdown, setShowTribeDropdown] = useState(false);
+  const [location, setLocation] = useState('');
+  const [vibe, setVibe] = useState('');
+  const [privacy, setPrivacy] = useState('public');
+  const [showStickers, setShowStickers] = useState(false);
   const fileInputRef = React.useRef(null);
+  const bodyRef = React.useRef(null);
+
+  // Build HTML content from plaintext body (new posts only)
+  const buildContent = () => {
+    if (editPost) return body;
+    let html = body
+      .replace(/\*\*(.*?)\*\*/g, '<h1>$1</h1>')
+      .split('\n').join('<br/>');
+    if (location.trim()) html += `<p class="post-location">📍 ${location}</p>`;
+    if (vibe) html += `<p class="post-vibe">${vibe}</p>`;
+    return html;
+  };
+
+  // Insert text at cursor in body textarea
+  const insertIntoBody = (text) => {
+    const ta = bodyRef.current;
+    if (!ta) { setBody(prev => prev + text); return; }
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    setBody(prev => prev.substring(0, start) + text + prev.substring(end));
+    setTimeout(() => {
+      ta.focus();
+      ta.setSelectionRange(start + text.length, start + text.length);
+    }, 0);
+  };
 
   // Handle image upload
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setUploading(true);
     const formData = new FormData();
     formData.append('image', file);
-
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${window.location.origin}${BASE_PATH === '' ? '' : BASE_PATH}/api/upload`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload image');
-      }
-
+      if (!response.ok) throw new Error('Failed to upload image');
       const data = await response.json();
       const imageUrl = `${window.location.origin}${BASE_PATH === '' ? '' : BASE_PATH}${data.url}`;
       setUploadedImages([...uploadedImages, imageUrl]);
-
-      // Insert image tag into content
-      const imgTag = `<img src="${imageUrl}" alt="Uploaded image" style="max-width: 100%;" />`;
-      setContent(prev => prev + '\n' + imgTag);
+      insertIntoBody(`<img src="${imageUrl}" alt="Uploaded image" style="max-width:100%;" />`);
     } catch (err) {
       setError('Failed to upload image: ' + err.message);
     } finally {
       setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  // Handle tribe search
+  // Tribe search
   useEffect(() => {
     const searchTribes = async () => {
-      if (tribeQuery.length < 1) {
-        setTribeResults([]);
-        setShowTribeDropdown(false);
-        return;
-      }
-
+      if (tribeQuery.length < 1) { setTribeResults([]); setShowTribeDropdown(false); return; }
       try {
         const response = await fetch(`${window.location.origin}${BASE_PATH === '' ? '' : BASE_PATH}/api/tribes/search/autocomplete?q=${tribeQuery}`);
         if (response.ok) {
@@ -1939,126 +1959,37 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
           setTribeResults(data);
           setShowTribeDropdown(data.length > 0);
         }
-      } catch (err) {
-        console.error('Tribe search failed:', err);
-      }
+      } catch (err) { console.error('Tribe search failed:', err); }
     };
-
-    const timeoutId = setTimeout(searchTribes, 300);
-    return () => clearTimeout(timeoutId);
+    const t = setTimeout(searchTribes, 300);
+    return () => clearTimeout(t);
   }, [tribeQuery]);
 
-  const handleContentChange = (e) => {
-    const newContent = e.target.value;
-    setContent(newContent);
-
-    // Detect if user is typing a tribe tag (e.g. #tribe)
-    const cursorPosition = e.target.selectionStart;
-    const textBeforeCursor = newContent.substring(0, cursorPosition);
-    const lastHashIndex = textBeforeCursor.lastIndexOf('#');
-
-    if (lastHashIndex !== -1 && !textBeforeCursor.substring(lastHashIndex).includes(' ')) {
-      const query = textBeforeCursor.substring(lastHashIndex + 1);
-      setTribeQuery(query);
-    } else {
-      setTribeQuery('');
-      setShowTribeDropdown(false);
-    }
-  };
-
   const addTribe = (tribe) => {
-    if (!selectedTribes.find(t => t.id === tribe.id)) {
-      setSelectedTribes([...selectedTribes, tribe]);
-    }
-
-    // Remove the #tag from content
-    const textarea = document.getElementById('post-content-editor');
-    const cursorPosition = textarea.selectionStart;
-    const textBeforeCursor = content.substring(0, cursorPosition);
-    const lastHashIndex = textBeforeCursor.lastIndexOf('#');
-
-    const newContent = content.substring(0, lastHashIndex) + content.substring(cursorPosition);
-    setContent(newContent);
+    if (!selectedTribes.find(t => t.id === tribe.id)) setSelectedTribes([...selectedTribes, tribe]);
     setTribeQuery('');
     setShowTribeDropdown(false);
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(lastHashIndex, lastHashIndex);
-    }, 0);
   };
 
-  const removeTribe = (tribeId) => {
-    setSelectedTribes(selectedTribes.filter(t => t.id !== tribeId));
-  };
-
-  // Toolbar actions for visual editor
-  const insertFormatting = (before, after = '') => {
-    const textarea = document.getElementById('post-content-editor');
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
-    const newContent = content.substring(0, start) + before + selectedText + after + content.substring(end);
-    setContent(newContent);
-
-    // Refocus and set cursor position
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
-    }, 0);
-  };
-
-  const toolbarButtons = [
-    { label: 'B', title: 'Bold', action: () => insertFormatting('<strong>', '</strong>') },
-    { label: 'I', title: 'Italic', action: () => insertFormatting('<em>', '</em>') },
-    { label: 'U', title: 'Underline', action: () => insertFormatting('<u>', '</u>') },
-    { label: 'S', title: 'Strikethrough', action: () => insertFormatting('<s>', '</s>') },
-    { label: 'H1', title: 'Heading 1', action: () => insertFormatting('<h1>', '</h1>') },
-    { label: 'H2', title: 'Heading 2', action: () => insertFormatting('<h2>', '</h2>') },
-    { label: 'H3', title: 'Heading 3', action: () => insertFormatting('<h3>', '</h3>') },
-    { label: '¶', title: 'Paragraph', action: () => insertFormatting('<p>', '</p>') },
-    { label: '•', title: 'Bullet List', action: () => insertFormatting('<ul>\n  <li>', '</li>\n</ul>') },
-    { label: '1.', title: 'Numbered List', action: () => insertFormatting('<ol>\n  <li>', '</li>\n</ol>') },
-    { label: '""', title: 'Blockquote', action: () => insertFormatting('<blockquote>', '</blockquote>') },
-    { label: '<>', title: 'Code', action: () => insertFormatting('<code>', '</code>') },
-    { label: '🔗', title: 'Link', action: () => insertFormatting('<a href="URL">', '</a>') },
-    { label: '🖼', title: 'Image', action: () => insertFormatting('<img src="URL" alt="', '" />') },
-    { label: '📹', title: 'Video Embed', action: () => insertFormatting('<iframe src="', '" width="560" height="315" frameborder="0" allowfullscreen></iframe>') },
-    { label: '—', title: 'Horizontal Rule', action: () => insertFormatting('<hr />', '') },
-    { label: '↵', title: 'Line Break', action: () => insertFormatting('<br />', '') },
-    { label: '📦', title: 'Div Container', action: () => insertFormatting('<div class="custom-block">\n', '\n</div>') },
-    { label: '🎨', title: 'Span with Style', action: () => insertFormatting('<span style="color: #667eea;">', '</span>') },
-  ];
+  const removeTribe = (tribeId) => setSelectedTribes(selectedTribes.filter(t => t.id !== tribeId));
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!tagline.trim()) {
-      setError('Post tagline/title is required');
-      return;
-    }
-    if (!content.trim()) {
-      setError('Post content is required');
-      return;
-    }
-
+    e && e.preventDefault();
+    if (!tagline.trim()) { setError('Title is required'); return; }
+    if (!body.trim()) { setError('Content is required'); return; }
     setLoading(true);
     setError('');
-
     try {
       const token = localStorage.getItem('token');
       const url = editPost
         ? `${window.location.origin}${BASE_PATH === '' ? '' : BASE_PATH}/api/posts/${editPost.id}`
         : `${window.location.origin}${BASE_PATH === '' ? '' : BASE_PATH}/api/posts`;
-
       const response = await fetch(url, {
         method: editPost ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           tagline,
-          content,
+          content: buildContent(),
           customCss,
           tribeIds: selectedTribes.map(t => t.id)
         })
@@ -2070,9 +2001,11 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
       }
 
       setTagline('');
-      setContent('');
-      setCustomCss('');
+      setBody('');
       setSelectedTribes([]);
+      setLocation('');
+      setVibe('');
+      setPrivacy('public');
       if (onPostCreated) onPostCreated();
       if (onCancel) onCancel();
     } catch (err) {
@@ -2082,297 +2015,119 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
     }
   };
 
-  const tabStyle = (isActive) => ({
-    padding: '8px 16px',
-    border: 'none',
-    background: isActive ? '#667eea' : '#f0f0f0',
-    color: isActive ? 'white' : '#333',
-    cursor: 'pointer',
-    borderRadius: '5px 5px 0 0',
-    fontWeight: isActive ? '600' : '400',
-    fontSize: '13px'
-  });
+  const canPost = tagline.trim() && body.trim() && !currentUser?.is_banned && !currentUser?.is_muted;
 
   return (
-    <div className="card" style={{ marginBottom: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-        <h3 style={{ margin: 0 }}>{editPost ? 'Edit Post' : 'Create a Post'}</h3>
-        <div style={{ display: 'flex', gap: '5px' }}>
-          <button type="button" style={tabStyle(editorMode === 'visual')} onClick={() => setEditorMode('visual')}>
-            Visual
-          </button>
-          <button type="button" style={tabStyle(editorMode === 'html')} onClick={() => setEditorMode('html')}>
-            HTML
-          </button>
-          <button type="button" style={tabStyle(editorMode === 'css')} onClick={() => setEditorMode('css')}>
-            CSS
-          </button>
-        </div>
+    <div className="post-composer">
+      {error && <div className="composer-error">{error}</div>}
+
+      {/* Title row — becomes the post h1 */}
+      <input
+        className="composer-title"
+        type="text"
+        placeholder={editPost ? 'Title' : 'Title…'}
+        value={tagline}
+        onChange={e => setTagline(e.target.value)}
+      />
+
+      {/* Main row: upload | sticker | body | post */}
+      <div className="composer-main">
+        <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*,video/*" style={{ display: 'none' }} />
+        <button type="button" className="composer-btn" title="Upload" onClick={() => fileInputRef.current?.click()}>
+          {uploading ? '⌛' : '📎'}
+        </button>
+        <button type="button" className="composer-btn" title="Stickers" onClick={() => setShowStickers(s => !s)}>
+          🫧
+        </button>
+        <textarea
+          ref={bodyRef}
+          className="composer-body"
+          placeholder={editPost ? '' : 'What\'s on your mind? (**text** = heading, Enter = line break)'}
+          value={body}
+          onChange={e => setBody(e.target.value)}
+          rows={3}
+        />
+        <button
+          type="button"
+          className="composer-btn composer-post-btn"
+          onClick={handleSubmit}
+          disabled={!canPost || loading}
+          title="Post"
+        >
+          {loading ? '⌛' : '→'}
+        </button>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {/* Sticker panel */}
+      {showStickers && (
+        <div className="composer-sticker-panel">
+          {COMPOSER_STICKERS.map(s => (
+            <button key={s} type="button" className="sticker-btn" onClick={() => { insertIntoBody(s); setShowStickers(false); }}>
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <form onSubmit={handleSubmit}>
-        {/* Selected Tribes Tags */}
-        {selectedTribes.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '15px' }}>
-            {selectedTribes.map(tribe => (
-              <div
-                key={tribe.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  background: tribe.color || '#667eea',
-                  color: 'white',
-                  padding: '4px 10px',
-                  borderRadius: '15px',
-                  fontSize: '12px',
-                  fontWeight: 'bold'
-                }}
-              >
-                <TribeIcon icon={tribe.icon} size={16} style={{ marginRight: 4 }} />{tribe.name}
-                <button
-                  type="button"
-                  onClick={() => removeTribe(tribe.id)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'white',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    padding: '0 2px'
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Tagline Input - Post Title */}
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px' }}>
-            Post Title / Tagline <span style={{ color: 'red' }}>*</span>
-          </label>
+      {/* Metadata row: tribes | location | vibe | privacy */}
+      <div className="composer-meta">
+        <div className="composer-tribes-wrap">
+          <span className="composer-meta-icon">#</span>
           <input
-            type="text"
-            value={tagline}
-            onChange={(e) => setTagline(e.target.value)}
-            placeholder="What's on your mind? (Tag tribes with #)"
-            style={{
-              width: '100%',
-              padding: '10px',
-              borderRadius: '5px',
-              border: '1px solid #ddd',
-              fontSize: '16px'
-            }}
-            required
+            className="composer-meta-input"
+            placeholder="tribe"
+            value={tribeQuery}
+            onChange={e => setTribeQuery(e.target.value)}
           />
-        </div>
-
-        {/* Tribe Autocomplete Dropdown */}
-        {showTribeDropdown && (
-          <div style={{
-            position: 'absolute',
-            zIndex: 1000,
-            background: 'white',
-            border: '1px solid #ddd',
-            borderRadius: '5px',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-            width: '300px',
-            marginTop: '-10px',
-            maxHeight: '200px',
-            overflowY: 'auto'
-          }}>
-            {tribeResults.map(tribe => (
-              <div
-                key={tribe.id}
-                onClick={() => addTribe(tribe)}
-                style={{
-                  padding: '10px',
-                  cursor: 'pointer',
-                  borderBottom: '1px solid #eee',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}
-                className="tribe-suggestion"
-              >
-                <TribeIcon icon={tribe.icon} size={24} />
-                <div>
-                  <div style={{ fontWeight: 'bold' }}>{tribe.name}</div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>#{tribe.tag}</div>
+          {showTribeDropdown && (
+            <div className="composer-tribe-dropdown">
+              {tribeResults.map(tribe => (
+                <div key={tribe.id} className="composer-tribe-option" onClick={() => addTribe(tribe)}>
+                  <TribeIcon icon={tribe.icon} size={18} />
+                  <span>{tribe.name}</span>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Visual/HTML Editor */}
-        {(editorMode === 'visual' || editorMode === 'html') && (
-          <>
-            {editorMode === 'visual' && (
-              <div style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '5px',
-                padding: '10px',
-                background: '#f8f9fa',
-                borderRadius: '5px 5px 0 0',
-                border: '1px solid #ddd',
-                borderBottom: 'none'
-              }}>
-                {toolbarButtons.map((btn, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    title={btn.title}
-                    onClick={btn.action}
-                    style={{
-                      padding: '5px 10px',
-                      border: '1px solid #ddd',
-                      background: 'white',
-                      borderRadius: '3px',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      minWidth: '32px'
-                    }}
-                  >
-                    {btn.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            <textarea
-              id="post-content-editor"
-              value={content}
-              onChange={handleContentChange}
-              placeholder={editorMode === 'visual'
-                ? "Write your post... Tag tribes with #!"
-                : "HTML Mode: <p>Your HTML content</p>"}
-              style={{
-                width: '100%',
-                minHeight: '300px',
-                padding: '15px',
-                border: '1px solid #ddd',
-                borderRadius: editorMode === 'html' ? '5px' : '0 0 5px 5px',
-                fontFamily: editorMode === 'html' ? 'monospace' : 'inherit',
-                fontSize: '14px',
-                lineHeight: '1.6',
-                resize: 'vertical'
-              }}
-              required
-            />
-
-            {/* Image Upload */}
-            <div style={{ marginTop: '15px' }}>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
-                style={{ display: 'none' }}
-                id="post-image-upload"
-              />
-              <label
-                htmlFor="post-image-upload"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '80px',
-                  height: '80px',
-                  border: '2px dashed #ddd',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  background: '#f8f9fa'
-                }}
-              >
-                {uploading ? '...' : '+'}
-              </label>
-              <span style={{ marginLeft: '10px', fontSize: '13px', color: '#666' }}>
-                {uploading ? 'Uploading...' : 'Add image'}
-              </span>
+              ))}
             </div>
-          </>
-        )}
-
-        {/* CSS Editor */}
-        {editorMode === 'css' && (
-          <div>
-            <textarea
-              value={customCss}
-              onChange={(e) => setCustomCss(e.target.value)}
-              placeholder="/* Custom CSS */"
-              style={{
-                width: '100%',
-                minHeight: '300px',
-                padding: '15px',
-                border: '1px solid #ddd',
-                borderRadius: '5px',
-                fontFamily: 'monospace',
-                fontSize: '14px',
-                background: '#1e1e1e',
-                color: '#d4d4d4'
-              }}
-            />
-          </div>
-        )}
-
-        {/* Preview Toggle */}
-        <div style={{ marginTop: '15px' }}>
-          <button
-            type="button"
-            onClick={() => setShowPreview(!showPreview)}
-            style={{
-              padding: '8px 16px',
-              background: showPreview ? '#667eea' : 'transparent',
-              border: '1px solid #667eea',
-              color: showPreview ? 'white' : '#667eea',
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}
-          >
-            {showPreview ? 'Hide Preview' : 'Show Preview'}
-          </button>
+          )}
         </div>
 
-        {/* Live Preview */}
-        {showPreview && (
-          <div style={{ marginTop: '15px' }}>
-            <div style={{
-              border: '1px solid #ddd',
-              borderRadius: '5px',
-              padding: '20px',
-              background: 'white'
-            }}>
-              {customCss && <style>{customCss}</style>}
-              <div dangerouslySetInnerHTML={{ __html: content }} />
-            </div>
-          </div>
-        )}
-
-        {/* Submit Buttons */}
-        <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={loading || !tagline.trim() || !content.trim() || currentUser?.is_banned || currentUser?.is_muted}
-            style={{ flex: 1 }}
-          >
-            {loading ? 'Saving...' : (editPost ? 'Update Post' : 'Publish Post')}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="btn btn-secondary"
-          >
-            Cancel
-          </button>
+        <div className="composer-location-wrap">
+          <span className="composer-meta-icon">📍</span>
+          <input className="composer-meta-input" placeholder="location" value={location} onChange={e => setLocation(e.target.value)} />
         </div>
-      </form>
+
+        <select className="composer-vibe-select" value={vibe} onChange={e => setVibe(e.target.value)}>
+          <option value="">vibe</option>
+          {COMPOSER_VIBES.map(v => (
+            <option key={v.emoji} value={`${v.emoji} ${v.label}`}>{v.emoji} {v.label}</option>
+          ))}
+        </select>
+
+        <select className="composer-privacy-select" value={privacy} onChange={e => setPrivacy(e.target.value)}>
+          <option value="public">🌍 public</option>
+          <option value="friends">👥 friends</option>
+          <option value="private">🔒 private</option>
+        </select>
+      </div>
+
+      {/* Selected tribe chips */}
+      {selectedTribes.length > 0 && (
+        <div className="composer-selected-tribes">
+          {selectedTribes.map(tribe => (
+            <span key={tribe.id} className="composer-tribe-chip" style={{ background: tribe.color || '#667eea' }}>
+              <TribeIcon icon={tribe.icon} size={12} />
+              {tribe.name}
+              <button type="button" onClick={() => removeTribe(tribe.id)}>×</button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {onCancel && (
+        <div className="composer-footer">
+          <button type="button" className="composer-cancel" onClick={onCancel}>Cancel</button>
+        </div>
+      )}
     </div>
   );
 };
