@@ -611,7 +611,9 @@ const NavbarSearch = () => {
         onChange={e => setQuery(e.target.value)}
         onFocus={() => results.users.length + results.posts.length > 0 && setOpen(true)}
       />
-      {searching && <span className="navbar-search-spinner">…</span>}
+      <button className="navbar-search-btn" onClick={() => query.length >= 2 && setOpen(true)} tabIndex={-1}>
+        {searching ? '…' : '🔍'}
+      </button>
       {open && (results.users.length > 0 || results.posts.length > 0) && (
         <div className="navbar-search-dropdown">
           {results.users.length > 0 && (
@@ -3563,8 +3565,8 @@ const FeedPage = () => {
         </div>
       )}
 
-      {/* Posts */}
-      <div style={{ marginTop: '20px' }}>
+      {/* Posts grid */}
+      <div className="feed-grid">
         {posts.length > 0 ? (
           posts.map(post => (
             <PostCard
