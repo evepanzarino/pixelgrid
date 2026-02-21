@@ -5934,7 +5934,11 @@ const MobileNav = () => {
         <span className="mobile-nav-label">Messages</span>
       </Link>
       <Link to={`${BASE_PATH}/${user.username}`} className="mobile-nav-btn">
-        <span className="mobile-nav-icon">👤</span>
+        <span className="mobile-nav-icon">
+          {user.profile_picture
+            ? <img src={user.profile_picture} alt="" className="mobile-nav-avatar" />
+            : '👤'}
+        </span>
         <span className="mobile-nav-label">Profile</span>
       </Link>
     </nav>

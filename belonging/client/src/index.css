@@ -2131,6 +2131,14 @@ body {
   line-height: 1;
 }
 
+.mobile-nav-avatar {
+  width: 7.5vw;
+  height: 7.5vw;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
 
 /* Create Post Page */
 .create-post-page {
