@@ -2131,6 +2131,69 @@ body {
   line-height: 1;
 }
 
+.mobile-nav-create {
+  position: relative;
+  top: -3vw;
+}
+
+.mobile-nav-create-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 13vw;
+  height: 13vw;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.mobile-nav-create-svg {
+  width: 7vw;
+  height: 7vw;
+  object-fit: contain;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
+/* Create Post Page */
+.create-post-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 18vw;
+}
+
+.create-post-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.create-post-back {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #555;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.create-post-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.create-post-body {
+  padding: 16px;
+}
+
 /* Phase 6: Messages Page Mobile */
 @media (max-width: 1024px) {
   .messages-page {

@@ -5920,6 +5920,10 @@ const MobileNav = () => {
         <span className="mobile-nav-icon"><img src={`${process.env.PUBLIC_URL}/images/skills.svg`} alt="Skills" className="mobile-nav-svg" /></span>
         <span className="mobile-nav-label">Skills</span>
       </Link>
+      <Link to={`${BASE_PATH}/create`} className="mobile-nav-btn mobile-nav-create">
+        <span className="mobile-nav-create-icon"><img src={`${process.env.PUBLIC_URL}/images/create.svg`} alt="Create" className="mobile-nav-create-svg" /></span>
+        <span className="mobile-nav-label">Create</span>
+      </Link>
       <Link to={`${BASE_PATH}/tribes`} className="mobile-nav-btn">
         <span className="mobile-nav-icon">🏘</span>
         <span className="mobile-nav-label">Tribes</span>
@@ -5933,6 +5937,26 @@ const MobileNav = () => {
         <span className="mobile-nav-label">Profile</span>
       </Link>
     </nav>
+  );
+};
+
+// ============================================
+// CREATE POST PAGE
+// ============================================
+const CreatePostPage = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  if (!user) return <Navigate to={`${BASE_PATH}/login`} replace />;
+  return (
+    <div className="create-post-page">
+      <div className="create-post-header">
+        <button className="create-post-back" onClick={() => navigate(-1)}>←</button>
+        <span className="create-post-title">New Post</span>
+      </div>
+      <div className="create-post-body">
+        <PostEditor onPostCreated={() => navigate(`${BASE_PATH}/feed`)} />
+      </div>
+    </div>
   );
 };
 
@@ -6135,6 +6159,7 @@ function App() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/skills" element={<SkillsPage />} />
           <Route path="/tribes" element={<TribesPage />} />
+          <Route path="/create" element={<CreatePostPage />} />
           <Route path="/tribes/create" element={<CreateTribePage />} />
           <Route path="/tribe/:tag" element={<TribePage />} />
           <Route path="/messages" element={<MessagesPage />} />
