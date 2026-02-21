@@ -5031,7 +5031,7 @@ const StickerPicker = ({ onSelect, onClose, customStickers: initialCustom, onSti
       if (!shortcode.trim()) { setError('Enter a shortcode first'); return; }
       setUploading(true);
       try {
-        const token = localStorage.getItem('belonging_token');
+        const token = localStorage.getItem('token');
         const fd = new FormData();
         fd.append('file', file);
         fd.append('shortcode', shortcode.trim().toLowerCase());
