@@ -1901,6 +1901,11 @@ body {
 .navbar-user-link:hover { color: #667eea; }
 .navbar-badge { margin-left: 4px; background: #e0245e; color: white; border-radius: 50%; padding: 2px 5px; font-size: 10px; font-weight: bold; min-width: 16px; text-align: center; }
 
+/* Desktop nav links grid */
+.navbar-links { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid #f0f0f0; }
+.navbar-links a { display: flex; align-items: center; justify-content: center; padding: 10px 4px; font-size: 0.88rem; font-weight: 600; color: #555; text-decoration: none; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s, background 0.15s; white-space: nowrap; }
+.navbar-links a:hover { color: #667eea; border-bottom-color: #667eea; background: #f8f8ff; }
+
 /* Second navbar row */
 .navbar-row2 { display: flex; align-items: center; gap: 14px; padding: 7px 20px; border-top: 1px solid #f0f0f0; background: white; }
 .navbar-row2-link { font-size: 0.9rem; font-weight: 600; color: #555; text-decoration: none; white-space: nowrap; padding: 4px 0; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; flex-shrink: 0; }
