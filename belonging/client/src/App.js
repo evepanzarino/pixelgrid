@@ -1879,8 +1879,10 @@ const COMPOSER_STICKERS = ['❤️','🏳️‍🌈','🏳️‍⚧️','✨','�
 
 const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
   const { user: currentUser } = useAuth();
-  const [tagline, setTagline] = useState(editPost?.tagline || '');
-  const [body, setBody] = useState(editPost?.content || '');
+  const [draft, setDraft] = useState(() => {
+    if (editPost) return (editPost.tagline || '') + (editPost.content ? '\n' + editPost.content : '');
+    return '';
+  });
   const [customCss] = useState(editPost?.custom_css || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -1897,8 +1899,15 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
   const fileInputRef = React.useRef(null);
   const bodyRef = React.useRef(null);
 
-  // Build HTML content from plaintext body (new posts only)
+  // Split draft: line 1 = tagline, rest = body
+  const getDraftParts = () => {
+    const lines = draft.split('\n');
+    return { tagline: lines[0].trim(), body: lines.slice(1).join('\n').trim() };
+  };
+
+  // Build HTML content from body (new posts only)
   const buildContent = () => {
+    const { body } = getDraftParts();
     if (editPost) return body;
     let html = body
       .replace(/\*\*(.*?)\*\*/g, '<h1>$1</h1>')
@@ -1908,13 +1917,13 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
     return html;
   };
 
-  // Insert text at cursor in body textarea
+  // Insert text at cursor in draft textarea
   const insertIntoBody = (text) => {
     const ta = bodyRef.current;
-    if (!ta) { setBody(prev => prev + text); return; }
+    if (!ta) { setDraft(prev => prev + text); return; }
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
-    setBody(prev => prev.substring(0, start) + text + prev.substring(end));
+    setDraft(prev => prev.substring(0, start) + text + prev.substring(end));
     setTimeout(() => {
       ta.focus();
       ta.setSelectionRange(start + text.length, start + text.length);
@@ -1975,8 +1984,9 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
 
   const handleSubmit = async (e) => {
     e && e.preventDefault();
-    if (!tagline.trim()) { setError('Title is required'); return; }
-    if (!body.trim()) { setError('Content is required'); return; }
+    const { tagline, body } = getDraftParts();
+    if (!tagline) { setError('Title is required'); return; }
+    if (!body) { setError('Content is required'); return; }
     setLoading(true);
     setError('');
     try {
@@ -2000,8 +2010,7 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
         throw new Error(data.error || 'Failed to save post');
       }
 
-      setTagline('');
-      setBody('');
+      setDraft('');
       setSelectedTribes([]);
       setLocation('');
       setVibe('');
@@ -2015,24 +2024,25 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
     }
   };
 
-  const canPost = tagline.trim() && body.trim() && !currentUser?.is_banned && !currentUser?.is_muted;
+  const { tagline: draftTagline, body: draftBody } = getDraftParts();
+  const canPost = draftTagline && draftBody && !currentUser?.is_banned && !currentUser?.is_muted;
 
   return (
     <div className="post-composer">
       {error && <div className="composer-error">{error}</div>}
 
-      {/* Title row — becomes the post h1 */}
-      <input
-        className="composer-title"
-        type="text"
-        placeholder={editPost ? 'Title' : 'Title…'}
-        value={tagline}
-        onChange={e => setTagline(e.target.value)}
-        style={{ marginBottom: '10px' }}
+      {/* Unified draft textarea — line 1 = title (h1), rest = body */}
+      <textarea
+        ref={bodyRef}
+        className="composer-draft"
+        placeholder={'Title…\n\nWhat\'s on your mind?'}
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        rows={4}
       />
 
-      {/* Main row: upload | sticker | body | post */}
-      <div className="composer-main">
+      {/* Action row: upload | sticker | → post */}
+      <div className="composer-actions">
         <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*,video/*" style={{ display: 'none' }} />
         <button type="button" className="composer-btn" title="Upload" onClick={() => fileInputRef.current?.click()}>
           {uploading ? '⌛' : '📎'}
@@ -2040,14 +2050,7 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
         <button type="button" className="composer-btn" title="Stickers" onClick={() => setShowStickers(s => !s)}>
           🫧
         </button>
-        <textarea
-          ref={bodyRef}
-          className="composer-body"
-          placeholder={editPost ? '' : 'What\'s on your mind?'}
-          value={body}
-          onChange={e => setBody(e.target.value)}
-          rows={3}
-        />
+        <div style={{ flex: 1 }} />
         <button
           type="button"
           className="composer-btn composer-post-btn"
