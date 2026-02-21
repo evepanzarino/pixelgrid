@@ -446,10 +446,10 @@ const Notifications = ({ unreadCount, setUnreadCount, levelUpCount, setLevelUpCo
     <div className="notifications-container" ref={dropdownRef} style={{ position: 'relative' }}>
       <button
         onClick={toggleDropdown}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '28px', position: 'relative', padding: '5px' }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: '5px' }}
         title="Notifications"
       >
-        🔔
+        <img src={`${process.env.PUBLIC_URL}/images/bell.svg`} alt="Notifications" style={{ width: '28px', height: '28px', display: 'block' }} />
         {unreadCount > 0 && (
           <span style={{
             position: 'absolute',
@@ -5937,7 +5937,7 @@ const MobileNav = () => {
         <span className="mobile-nav-icon">
           {user.profile_picture
             ? <img src={user.profile_picture} alt="" className="mobile-nav-avatar" />
-            : '👤'}
+            : <img src={`${process.env.PUBLIC_URL}/images/profile.svg`} alt="Profile" className="mobile-nav-svg" />}
         </span>
         <span className="mobile-nav-label">Profile</span>
       </Link>
