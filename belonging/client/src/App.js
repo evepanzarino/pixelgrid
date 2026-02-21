@@ -1866,6 +1866,154 @@ const EditProfilePage = () => {
 };
 
 // Post Editor Component (WordPress-like with visual and code editor)
+const WORLD_LOCATIONS = [
+  // Countries
+  'Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda',
+  'Argentina','Armenia','Australia','Austria','Azerbaijan',
+  'Bahamas','Bahrain','Bangladesh','Barbados','Belarus','Belgium',
+  'Belize','Benin','Bhutan','Bolivia','Bosnia and Herzegovina','Botswana',
+  'Brazil','Brunei','Bulgaria','Burkina Faso','Burundi',
+  'Cambodia','Cameroon','Canada','Cape Verde','Central African Republic',
+  'Chad','Chile','China','Colombia','Comoros','Costa Rica',
+  "Côte d'Ivoire",'Croatia','Cuba','Cyprus','Czech Republic',
+  'Denmark','Djibouti','Dominica','Dominican Republic',
+  'Ecuador','Egypt','El Salvador','Equatorial Guinea','Eritrea','Estonia','Eswatini','Ethiopia',
+  'Fiji','Finland','France',
+  'Gabon','Gambia','Georgia','Germany','Ghana','Greece','Grenada',
+  'Guatemala','Guinea','Guinea-Bissau','Guyana',
+  'Haiti','Honduras','Hungary',
+  'Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy',
+  'Jamaica','Japan','Jordan',
+  'Kazakhstan','Kenya','Kiribati','Kosovo','Kuwait','Kyrgyzstan',
+  'Laos','Latvia','Lebanon','Lesotho','Liberia','Libya','Liechtenstein','Lithuania','Luxembourg',
+  'Madagascar','Malawi','Malaysia','Maldives','Mali','Malta','Marshall Islands',
+  'Mauritania','Mauritius','Mexico','Micronesia','Moldova','Monaco','Mongolia','Montenegro','Morocco','Mozambique','Myanmar',
+  'Namibia','Nauru','Nepal','Netherlands','New Zealand','Nicaragua','Niger','Nigeria','North Korea','North Macedonia','Norway',
+  'Oman',
+  'Pakistan','Palau','Palestine','Panama','Papua New Guinea','Paraguay','Peru','Philippines','Poland','Portugal',
+  'Qatar',
+  'Romania','Russia','Rwanda',
+  'Saint Kitts and Nevis','Saint Lucia','Saint Vincent and the Grenadines',
+  'Samoa','San Marino','Saudi Arabia','Senegal','Serbia','Seychelles',
+  'Sierra Leone','Singapore','Slovakia','Slovenia','Solomon Islands',
+  'Somalia','South Africa','South Korea','South Sudan','Spain','Sri Lanka','Sudan','Suriname','Sweden','Switzerland','Syria',
+  'Taiwan','Tajikistan','Tanzania','Thailand','Timor-Leste','Togo','Tonga','Trinidad and Tobago','Tunisia','Turkey','Turkmenistan','Tuvalu',
+  'Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan',
+  'Vanuatu','Vatican City','Venezuela','Vietnam',
+  'Yemen','Zambia','Zimbabwe',
+  // North America — Cities
+  'New York, USA','Los Angeles, USA','Chicago, USA','Houston, USA','Phoenix, USA',
+  'Philadelphia, USA','San Antonio, USA','San Diego, USA','Dallas, USA',
+  'San Jose, USA','Austin, USA','Seattle, USA','Denver, USA','Boston, USA',
+  'Portland, USA','Miami, USA','Atlanta, USA','Minneapolis, USA','Las Vegas, USA',
+  'San Francisco, USA','Nashville, USA','Detroit, USA','Louisville, USA',
+  'Baltimore, USA','Milwaukee, USA','Sacramento, USA','Pittsburgh, USA',
+  'Cincinnati, USA','Cleveland, USA','Kansas City, USA','Tampa, USA',
+  'Orlando, USA','St. Louis, USA','New Orleans, USA','Indianapolis, USA',
+  'Columbus, USA','Charlotte, USA','Raleigh, USA','Omaha, USA','Honolulu, USA',
+  'Anchorage, USA','Albuquerque, USA','Tucson, USA','Fresno, USA',
+  'Salt Lake City, USA','Richmond, USA','Baton Rouge, USA','Memphis, USA',
+  'Toronto, Canada','Montreal, Canada','Vancouver, Canada','Calgary, Canada',
+  'Ottawa, Canada','Edmonton, Canada','Quebec City, Canada','Winnipeg, Canada','Halifax, Canada',
+  'Mexico City, Mexico','Guadalajara, Mexico','Monterrey, Mexico','Tijuana, Mexico',
+  'Havana, Cuba','San José, Costa Rica','Guatemala City, Guatemala',
+  'Panama City, Panama','Managua, Nicaragua','Tegucigalpa, Honduras','San Salvador, El Salvador',
+  // South America — Cities
+  'São Paulo, Brazil','Rio de Janeiro, Brazil','Brasília, Brazil','Salvador, Brazil',
+  'Fortaleza, Brazil','Manaus, Brazil','Curitiba, Brazil','Recife, Brazil',
+  'Buenos Aires, Argentina','Córdoba, Argentina','Rosario, Argentina',
+  'Bogotá, Colombia','Medellín, Colombia','Cali, Colombia',
+  'Lima, Peru','Santiago, Chile','Caracas, Venezuela','Quito, Ecuador',
+  'Guayaquil, Ecuador','La Paz, Bolivia','Asunción, Paraguay','Montevideo, Uruguay',
+  // Europe — Cities
+  'London, UK','Manchester, UK','Birmingham, UK','Glasgow, UK','Liverpool, UK',
+  'Leeds, UK','Bristol, UK','Edinburgh, UK','Sheffield, UK','Cardiff, UK','Belfast, UK',
+  'Paris, France','Lyon, France','Marseille, France','Toulouse, France','Bordeaux, France','Nice, France','Strasbourg, France','Nantes, France',
+  'Berlin, Germany','Hamburg, Germany','Munich, Germany','Cologne, Germany',
+  'Frankfurt, Germany','Stuttgart, Germany','Düsseldorf, Germany','Leipzig, Germany',
+  'Madrid, Spain','Barcelona, Spain','Valencia, Spain','Seville, Spain','Zaragoza, Spain','Bilbao, Spain','Málaga, Spain',
+  'Rome, Italy','Milan, Italy','Naples, Italy','Turin, Italy','Florence, Italy','Venice, Italy','Bologna, Italy',
+  'Amsterdam, Netherlands','Rotterdam, Netherlands','The Hague, Netherlands',
+  'Brussels, Belgium','Antwerp, Belgium','Ghent, Belgium',
+  'Vienna, Austria','Graz, Austria',
+  'Zurich, Switzerland','Geneva, Switzerland','Basel, Switzerland','Bern, Switzerland',
+  'Stockholm, Sweden','Gothenburg, Sweden','Malmö, Sweden',
+  'Oslo, Norway','Bergen, Norway',
+  'Copenhagen, Denmark','Aarhus, Denmark',
+  'Helsinki, Finland','Reykjavik, Iceland',
+  'Warsaw, Poland','Kraków, Poland','Gdańsk, Poland','Wrocław, Poland',
+  'Prague, Czech Republic','Brno, Czech Republic',
+  'Budapest, Hungary','Bucharest, Romania','Sofia, Bulgaria',
+  'Athens, Greece','Thessaloniki, Greece',
+  'Lisbon, Portugal','Porto, Portugal',
+  'Dublin, Ireland','Cork, Ireland',
+  'Belgrade, Serbia','Zagreb, Croatia','Split, Croatia',
+  'Sarajevo, Bosnia and Herzegovina','Skopje, North Macedonia','Tirana, Albania','Podgorica, Montenegro',
+  'Riga, Latvia','Vilnius, Lithuania','Tallinn, Estonia',
+  'Chisinau, Moldova','Kyiv, Ukraine','Kharkiv, Ukraine','Odesa, Ukraine',
+  'Moscow, Russia','St. Petersburg, Russia','Novosibirsk, Russia','Yekaterinburg, Russia',
+  'Istanbul, Turkey','Ankara, Turkey','Izmir, Turkey',
+  'Ljubljana, Slovenia','Luxembourg City, Luxembourg','Valletta, Malta','Nicosia, Cyprus',
+  // Middle East — Cities
+  'Dubai, UAE','Abu Dhabi, UAE','Doha, Qatar','Riyadh, Saudi Arabia','Jeddah, Saudi Arabia',
+  'Kuwait City, Kuwait','Manama, Bahrain','Muscat, Oman',
+  'Beirut, Lebanon','Tel Aviv, Israel','Jerusalem, Israel','Haifa, Israel',
+  'Amman, Jordan','Damascus, Syria','Baghdad, Iraq','Tehran, Iran',
+  'Kabul, Afghanistan',"Sana'a, Yemen",
+  // Asia — Cities
+  'Tokyo, Japan','Osaka, Japan','Kyoto, Japan','Sapporo, Japan','Fukuoka, Japan','Yokohama, Japan','Nagoya, Japan','Kobe, Japan',
+  'Beijing, China','Shanghai, China','Guangzhou, China','Shenzhen, China',
+  'Chengdu, China','Chongqing, China',"Xi'an, China",'Hangzhou, China','Wuhan, China','Nanjing, China','Tianjin, China',
+  'Hong Kong','Taipei, Taiwan','Macau',
+  'Seoul, South Korea','Busan, South Korea','Incheon, South Korea','Daegu, South Korea',
+  'Pyongyang, North Korea',
+  'Singapore',
+  'Kuala Lumpur, Malaysia','George Town, Malaysia','Johor Bahru, Malaysia',
+  'Bangkok, Thailand','Chiang Mai, Thailand',
+  'Jakarta, Indonesia','Surabaya, Indonesia','Bandung, Indonesia','Bali, Indonesia',
+  'Manila, Philippines','Cebu, Philippines','Quezon City, Philippines',
+  'Hanoi, Vietnam','Ho Chi Minh City, Vietnam','Da Nang, Vietnam',
+  'Phnom Penh, Cambodia','Siem Reap, Cambodia',
+  'Yangon, Myanmar','Naypyidaw, Myanmar','Vientiane, Laos',
+  'Colombo, Sri Lanka','Kathmandu, Nepal','Dhaka, Bangladesh','Chittagong, Bangladesh',
+  'Karachi, Pakistan','Lahore, Pakistan','Islamabad, Pakistan','Rawalpindi, Pakistan',
+  'Mumbai, India','Delhi, India','Bangalore, India','Kolkata, India',
+  'Chennai, India','Hyderabad, India','Ahmedabad, India','Pune, India',
+  'Jaipur, India','Surat, India','Lucknow, India','Kochi, India',
+  'Ulaanbaatar, Mongolia','Almaty, Kazakhstan','Nur-Sultan, Kazakhstan',
+  'Tashkent, Uzbekistan','Bishkek, Kyrgyzstan','Dushanbe, Tajikistan','Ashgabat, Turkmenistan',
+  'Baku, Azerbaijan','Tbilisi, Georgia','Yerevan, Armenia',
+  // Africa — Cities
+  'Cairo, Egypt','Alexandria, Egypt',
+  'Lagos, Nigeria','Abuja, Nigeria','Kano, Nigeria',
+  'Nairobi, Kenya','Mombasa, Kenya',
+  'Johannesburg, South Africa','Cape Town, South Africa','Durban, South Africa','Pretoria, South Africa',
+  'Addis Ababa, Ethiopia','Dar es Salaam, Tanzania',
+  'Casablanca, Morocco','Rabat, Morocco','Tunis, Tunisia','Algiers, Algeria','Oran, Algeria',
+  'Accra, Ghana','Kumasi, Ghana',
+  "Abidjan, Côte d'Ivoire",'Kampala, Uganda','Lusaka, Zambia',
+  'Harare, Zimbabwe','Bulawayo, Zimbabwe','Dakar, Senegal',
+  'Kinshasa, DR Congo','Luanda, Angola','Khartoum, Sudan','Mogadishu, Somalia',
+  'Antananarivo, Madagascar','Maputo, Mozambique',
+  'Douala, Cameroon','Yaoundé, Cameroon','Bamako, Mali','Ouagadougou, Burkina Faso',
+  'Conakry, Guinea','Freetown, Sierra Leone','Monrovia, Liberia',
+  'Lomé, Togo','Cotonou, Benin','Niamey, Niger','Ndjamena, Chad',
+  'Brazzaville, Congo','Libreville, Gabon','Malabo, Equatorial Guinea',
+  'Banjul, Gambia','Bissau, Guinea-Bissau','Praia, Cape Verde',
+  'Djibouti City, Djibouti','Asmara, Eritrea','Juba, South Sudan',
+  'Kigali, Rwanda','Bujumbura, Burundi','Lilongwe, Malawi','Windhoek, Namibia',
+  'Gaborone, Botswana','Mbabane, Eswatini','Maseru, Lesotho',
+  // Oceania — Cities
+  'Sydney, Australia','Melbourne, Australia','Brisbane, Australia',
+  'Perth, Australia','Adelaide, Australia','Canberra, Australia',
+  'Gold Coast, Australia','Darwin, Australia','Hobart, Australia',
+  'Auckland, New Zealand','Wellington, New Zealand','Christchurch, New Zealand',
+  'Suva, Fiji','Port Moresby, Papua New Guinea','Honiara, Solomon Islands',
+  'Port Vila, Vanuatu',"Nuku'alofa, Tonga",'Apia, Samoa',
+  'Majuro, Marshall Islands','Palikir, Micronesia','Koror, Palau',
+  'South Tarawa, Kiribati','Yaren, Nauru',
+];
+
 const COMPOSER_VIBES = [
   { emoji: '😊', label: 'happy' }, { emoji: '😢', label: 'sad' },
   { emoji: '😡', label: 'angry' }, { emoji: '😍', label: 'loving' },
@@ -1889,10 +2037,11 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
   const [uploadedImages, setUploadedImages] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [selectedTribes, setSelectedTribes] = useState([]);
-  const [tribeQuery, setTribeQuery] = useState('');
-  const [tribeResults, setTribeResults] = useState([]);
-  const [showTribeDropdown, setShowTribeDropdown] = useState(false);
+  const [allTribes, setAllTribes] = useState([]);
+  const [tribeSearch, setTribeSearch] = useState('');
+  const [showTribesDropdown, setShowTribesDropdown] = useState(false);
   const [location, setLocation] = useState('');
+  const [locationOpen, setLocationOpen] = useState(false);
   const [vibe, setVibe] = useState('');
   const [privacy, setPrivacy] = useState('public');
   const [showStickers, setShowStickers] = useState(false);
@@ -1957,27 +2106,18 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
     }
   };
 
-  // Tribe search
+  // Fetch all tribes on mount (sorted by popularity)
   useEffect(() => {
-    const searchTribes = async () => {
-      if (tribeQuery.length < 1) { setTribeResults([]); setShowTribeDropdown(false); return; }
-      try {
-        const response = await fetch(`${window.location.origin}${BASE_PATH === '' ? '' : BASE_PATH}/api/tribes/search/autocomplete?q=${tribeQuery}`);
-        if (response.ok) {
-          const data = await response.json();
-          setTribeResults(data);
-          setShowTribeDropdown(data.length > 0);
-        }
-      } catch (err) { console.error('Tribe search failed:', err); }
-    };
-    const t = setTimeout(searchTribes, 300);
-    return () => clearTimeout(t);
-  }, [tribeQuery]);
+    fetch(`${window.location.origin}${BASE_PATH === '' ? '' : BASE_PATH}/api/tribes`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => setAllTribes(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
 
   const addTribe = (tribe) => {
-    if (!selectedTribes.find(t => t.id === tribe.id)) setSelectedTribes([...selectedTribes, tribe]);
-    setTribeQuery('');
-    setShowTribeDropdown(false);
+    if (!selectedTribes.find(t => t.id === tribe.id)) setSelectedTribes(prev => [...prev, tribe]);
+    setTribeSearch('');
+    setShowTribesDropdown(false);
   };
 
   const removeTribe = (tribeId) => setSelectedTribes(selectedTribes.filter(t => t.id !== tribeId));
@@ -2027,9 +2167,30 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
   const { tagline: draftTagline, body: draftBody } = getDraftParts();
   const canPost = draftTagline && draftBody && !currentUser?.is_banned && !currentUser?.is_muted;
 
+  const filteredTribes = allTribes.filter(t =>
+    !selectedTribes.find(s => s.id === t.id) &&
+    (tribeSearch === '' || t.name.toLowerCase().includes(tribeSearch.toLowerCase()) ||
+      (t.tag && t.tag.toLowerCase().includes(tribeSearch.toLowerCase())))
+  );
+
+  const filteredLocations = location.length >= 2
+    ? WORLD_LOCATIONS.filter(l => l.toLowerCase().includes(location.toLowerCase())).slice(0, 20)
+    : [];
+
   return (
     <div className="post-composer">
       {error && <div className="composer-error">{error}</div>}
+
+      {/* Top bar: vibe on the right */}
+      <div className="composer-topbar">
+        <div style={{ flex: 1 }} />
+        <select className="composer-vibe-select" value={vibe} onChange={e => setVibe(e.target.value)}>
+          <option value="">vibe…</option>
+          {COMPOSER_VIBES.map(v => (
+            <option key={v.emoji} value={`${v.emoji} ${v.label}`}>{v.emoji} {v.label}</option>
+          ))}
+        </select>
+      </div>
 
       {/* Unified draft textarea — line 1 = title (h1), rest = body */}
       <textarea
@@ -2073,44 +2234,58 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
         </div>
       )}
 
-      {/* Metadata row: tribes | location | vibe | privacy */}
+      {/* Metadata row: tribes | location */}
       <div className="composer-meta">
+        {/* Tribe searchable dropdown */}
         <div className="composer-tribes-wrap">
           <span className="composer-meta-icon">#</span>
           <input
             className="composer-meta-input"
             placeholder="tribe"
-            value={tribeQuery}
-            onChange={e => setTribeQuery(e.target.value)}
+            value={tribeSearch}
+            onChange={e => { setTribeSearch(e.target.value); setShowTribesDropdown(true); }}
+            onFocus={() => setShowTribesDropdown(true)}
+            onBlur={() => setTimeout(() => setShowTribesDropdown(false), 150)}
           />
-          {showTribeDropdown && (
+          {showTribesDropdown && filteredTribes.length > 0 && (
             <div className="composer-tribe-dropdown">
-              {tribeResults.map(tribe => (
-                <div key={tribe.id} className="composer-tribe-option" onClick={() => addTribe(tribe)}>
+              {filteredTribes.slice(0, 15).map(tribe => (
+                <div key={tribe.id} className="composer-tribe-option" onMouseDown={() => addTribe(tribe)}>
                   <TribeIcon icon={tribe.icon} size={18} />
                   <span>{tribe.name}</span>
+                  {tribe.member_count > 0 && <span className="composer-tribe-count">{tribe.member_count}</span>}
                 </div>
               ))}
             </div>
           )}
         </div>
 
+        {/* Location searchable dropdown */}
         <div className="composer-location-wrap">
           <span className="composer-meta-icon">📍</span>
-          <input className="composer-meta-input" placeholder="location" value={location} onChange={e => setLocation(e.target.value)} />
+          <input
+            className="composer-meta-input"
+            placeholder="location"
+            value={location}
+            onChange={e => { setLocation(e.target.value); setLocationOpen(true); }}
+            onFocus={() => setLocationOpen(true)}
+            onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
+          />
+          {locationOpen && filteredLocations.length > 0 && (
+            <div className="composer-location-dropdown">
+              {filteredLocations.map(loc => (
+                <div key={loc} className="composer-location-option" onMouseDown={() => { setLocation(loc); setLocationOpen(false); }}>
+                  {loc}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-
-        <select className="composer-vibe-select" value={vibe} onChange={e => setVibe(e.target.value)}>
-          <option value="">vibe</option>
-          {COMPOSER_VIBES.map(v => (
-            <option key={v.emoji} value={`${v.emoji} ${v.label}`}>{v.emoji} {v.label}</option>
-          ))}
-        </select>
-
       </div>
 
-      {/* Privacy row */}
+      {/* Privacy row — full width with label */}
       <div className="composer-privacy-row">
+        <label className="composer-privacy-label">Privacy</label>
         <select className="composer-privacy-select" value={privacy} onChange={e => setPrivacy(e.target.value)}>
           <option value="public">🌍 public</option>
           <option value="mutuals">👥 mutuals</option>

@@ -1994,11 +1994,18 @@ body {
 .composer-tribes-wrap, .composer-location-wrap { display: flex; align-items: center; gap: 4px; background: #f4f4f6; border-radius: 8px; padding: 5px 10px; flex: 1; min-width: 80px; position: relative; }
 .composer-meta-icon { font-size: 0.9rem; color: #888; flex-shrink: 0; }
 .composer-meta-input { border: none; background: none; outline: none; font-size: 0.85rem; width: 60px; min-width: 0; color: #444; }
-.composer-tribe-dropdown { position: absolute; top: 110%; left: 0; z-index: 1000; background: white; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); min-width: 180px; max-height: 200px; overflow-y: auto; }
+.composer-topbar { display: flex; align-items: center; margin-bottom: 6px; }
+.composer-tribe-dropdown { position: absolute; top: 110%; left: 0; z-index: 1000; background: white; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); min-width: 200px; max-height: 220px; overflow-y: auto; }
 .composer-tribe-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; font-size: 0.9rem; }
 .composer-tribe-option:hover { background: #f8f8ff; }
-.composer-vibe-select, .composer-privacy-select { background: #f4f4f6; border: none; border-radius: 8px; padding: 5px 8px; font-size: 0.85rem; outline: none; cursor: pointer; color: #444; }
-.composer-privacy-row { margin-top: 8px; }
+.composer-tribe-count { margin-left: auto; font-size: 0.75rem; color: #aaa; }
+.composer-location-dropdown { position: absolute; top: 110%; left: 0; z-index: 1000; background: white; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); min-width: 220px; max-height: 220px; overflow-y: auto; }
+.composer-location-option { padding: 8px 12px; cursor: pointer; font-size: 0.9rem; color: #444; transition: background 0.1s; }
+.composer-location-option:hover { background: #f8f8ff; }
+.composer-vibe-select { background: #f4f4f6; border: none; border-radius: 8px; padding: 5px 8px; font-size: 0.85rem; outline: none; cursor: pointer; color: #444; }
+.composer-privacy-select { background: #f4f4f6; border: none; border-radius: 8px; padding: 5px 8px; font-size: 0.85rem; outline: none; cursor: pointer; color: #444; flex: 1; }
+.composer-privacy-row { margin-top: 8px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #f4f4f4; padding-top: 10px; }
+.composer-privacy-label { font-size: 0.8rem; font-weight: 600; color: #888; white-space: nowrap; flex-shrink: 0; }
 .composer-selected-tribes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .composer-tribe-chip { display: inline-flex; align-items: center; gap: 4px; color: white; padding: 3px 10px 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
 .composer-tribe-chip button { background: none; border: none; color: white; cursor: pointer; font-size: 0.9rem; padding: 0 0 0 4px; opacity: 0.8; }
@@ -2013,6 +2020,9 @@ body {
   .composer-tribes-wrap, .composer-location-wrap { padding: 1.5vw 2vw; border-radius: 2vw; }
   .composer-meta-input { font-size: 3vw; }
   .composer-vibe-select, .composer-privacy-select { font-size: 3vw; padding: 1.5vw 2vw; border-radius: 2vw; }
+  .composer-privacy-label { font-size: 3vw; }
+  .composer-location-dropdown, .composer-tribe-dropdown { max-height: 40vw; min-width: 50vw; }
+  .composer-location-option, .composer-tribe-option { font-size: 3vw; padding: 2vw 3vw; }
   .sticker-btn { font-size: 5vw; padding: 1vw; }
 }
 
