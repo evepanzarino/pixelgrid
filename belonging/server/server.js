@@ -1844,11 +1844,30 @@ app.post('/api/stickers/upload', requireAuth, upload.single('file'), async (req,
       'INSERT INTO stickers (shortcode, file_url, created_by) VALUES (?, ?, ?)',
       [shortcode, fileUrl, req.user.id]
     );
-    res.json({ shortcode, file_url: fileUrl });
+    const [result] = await pool.execute('SELECT id FROM stickers WHERE shortcode = ?', [shortcode]);
+    res.json({ id: result[0]?.id, shortcode, file_url: fileUrl });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Shortcode already exists' });
     console.error('Sticker upload error:', error);
     res.status(500).json({ error: 'Failed to upload sticker' });
+  }
+});
+
+// DELETE /api/stickers/:id - delete a custom sticker
+app.delete('/api/stickers/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [stickers] = await pool.execute('SELECT created_by, file_url FROM stickers WHERE id = ?', [id]);
+    if (stickers.length === 0) return res.status(404).json({ error: 'Sticker not found' });
+    const sticker = stickers[0];
+    if (sticker.created_by !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    try { fs.unlinkSync(path.join(uploadsDir, path.basename(sticker.file_url))); } catch {}
+    await pool.execute('DELETE FROM stickers WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete sticker' });
   }
 });
 

@@ -5003,6 +5003,7 @@ const StickerPicker = ({ onSelect, onClose, customStickers: initialCustom, onSti
   const [uploading, setUploading] = React.useState(false);
   const [shortcode, setShortcode] = React.useState('');
   const [error, setError] = React.useState('');
+  const [pendingFile, setPendingFile] = React.useState(null);
   const fileRef = React.useRef(null);
   const [customStickers, setCustomStickers] = React.useState(initialCustom || []);
 
@@ -5010,44 +5011,59 @@ const StickerPicker = ({ onSelect, onClose, customStickers: initialCustom, onSti
     if (!initialCustom) {
       fetch(`${window.location.origin}/api/stickers`)
         .then(r => r.json())
-        .then(data => setCustomStickers(data.map(s => ({ name: s.shortcode, file_url: s.file_url }))))
+        .then(data => setCustomStickers(data.map(s => ({ id: s.id, name: s.shortcode, file_url: s.file_url }))))
         .catch(() => {});
     }
   }, [initialCustom]);
 
-  const handleUpload = async (e) => {
+  const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setError('');
-    // Validate square
     const img = new window.Image();
     const url = URL.createObjectURL(file);
-    img.onload = async () => {
+    img.onload = () => {
       URL.revokeObjectURL(url);
       if (img.width !== img.height) {
         setError('Image must be square (equal width and height)');
-        return;
+        setPendingFile(null);
+      } else {
+        setPendingFile(file);
       }
-      if (!shortcode.trim()) { setError('Enter a shortcode first'); return; }
-      setUploading(true);
-      try {
-        const token = localStorage.getItem('token');
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('shortcode', shortcode.trim().toLowerCase());
-        const res = await fetch(`${window.location.origin}/api/stickers/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
-        const data = await res.json();
-        if (!res.ok) { setError(data.error || 'Upload failed'); }
-        else {
-          const newS = { name: data.shortcode, file_url: data.file_url };
-          setCustomStickers(prev => [...prev, newS]);
-          setShortcode('');
-          if (onStickerUploaded) onStickerUploaded(data);
-        }
-      } catch { setError('Upload failed'); }
-      setUploading(false);
     };
     img.src = url;
+    e.target.value = '';
+  };
+
+  const handleSubmit = async () => {
+    if (!pendingFile) { setError('Choose an image first'); return; }
+    if (!shortcode.trim()) { setError('Enter a shortcode first'); return; }
+    setUploading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const fd = new FormData();
+      fd.append('file', pendingFile);
+      fd.append('shortcode', shortcode.trim().toLowerCase());
+      const res = await fetch(`${window.location.origin}/api/stickers/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Upload failed'); }
+      else {
+        setCustomStickers(prev => [...prev, { id: data.id, name: data.shortcode, file_url: data.file_url }]);
+        setShortcode('');
+        setPendingFile(null);
+        if (onStickerUploaded) onStickerUploaded(data);
+      }
+    } catch { setError('Upload failed'); }
+    setUploading(false);
+  };
+
+  const handleDelete = async (id) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${window.location.origin}/api/stickers/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) setCustomStickers(prev => prev.filter(s => s.id !== id));
+    } catch {}
   };
 
   return (
@@ -5064,24 +5080,32 @@ const StickerPicker = ({ onSelect, onClose, customStickers: initialCustom, onSti
           </button>
         ))}
         {customStickers.map(s => (
-          <button key={s.name} className="sticker-pick-btn" title={`:${s.name}:`} onClick={() => { onSelect(`:${s.name}:`); onClose(); }}>
-            <img src={s.file_url} alt={s.name} className="sticker-pick-img" />
-            <span className="sticker-pick-label">{s.name}</span>
-          </button>
+          <div key={s.name} className="sticker-pick-wrap">
+            <button className="sticker-pick-btn" title={`:${s.name}:`} onClick={() => { onSelect(`:${s.name}:`); onClose(); }}>
+              <img src={s.file_url} alt={s.name} className="sticker-pick-img" />
+              <span className="sticker-pick-label">{s.name}</span>
+            </button>
+            {user && s.id && (
+              <button className="sticker-delete-btn" title="Delete sticker" onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }}>×</button>
+            )}
+          </div>
         ))}
       </div>
       {user && (
         <div className="sticker-upload-area">
+          <button className="sticker-img-btn" onClick={() => fileRef.current?.click()} title="Choose image">
+            {pendingFile ? '✓' : '🖼'}
+          </button>
           <input
             className="sticker-shortcode-input"
-            placeholder="shortcode (e.g. mycat)"
+            placeholder=":shortcode: — Image must be a square"
             value={shortcode}
             onChange={e => setShortcode(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
           />
-          <button className="sticker-upload-btn" onClick={() => fileRef.current?.click()} disabled={uploading}>
+          <button className="sticker-upload-btn" onClick={handleSubmit} disabled={uploading}>
             {uploading ? '⏳' : '+ Add'}
           </button>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} />
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileSelect} />
           {error && <div className="sticker-upload-error">{error}</div>}
         </div>
       )}
