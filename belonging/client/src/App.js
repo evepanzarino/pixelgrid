@@ -2351,21 +2351,29 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
         </select>
       </div>
 
-      {/* Avatar + draft textarea side by side */}
+      {/* Avatar + split title/body inputs */}
       <div className="composer-input-row">
         <div className="composer-avatar-wrap">
           {currentUser?.profile_picture
             ? <img src={currentUser.profile_picture} alt="" className="composer-avatar" />
             : <div className="composer-avatar-placeholder" />}
         </div>
-        <textarea
-          ref={bodyRef}
-          className="composer-draft"
-          placeholder={'Title…\n\nWhat\'s on your mind?'}
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          rows={4}
-        />
+        <div className="composer-fields">
+          <input
+            className="composer-title-input"
+            placeholder="Title…"
+            value={draft.split('\n')[0]}
+            onChange={e => setDraft(e.target.value + '\n' + draft.split('\n').slice(1).join('\n'))}
+          />
+          <textarea
+            ref={bodyRef}
+            className="composer-draft"
+            placeholder="What's on your mind?"
+            value={draft.split('\n').slice(1).join('\n')}
+            onChange={e => setDraft(draft.split('\n')[0] + '\n' + e.target.value)}
+            rows={3}
+          />
+        </div>
       </div>
 
       {/* Action row: upload | sticker | → post */}

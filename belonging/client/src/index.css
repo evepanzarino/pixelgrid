@@ -2052,11 +2052,14 @@ body {
 /* ── Post Composer ──────────────────────────────── */
 .post-composer { background: white; border: 1px solid #e8e8e8; border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
 .composer-error { background: #fee; color: #c00; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 10px; }
-.composer-draft { flex: 1; width: 100%; border: none; outline: none; resize: none; font-size: 1rem; line-height: 1.6; background: transparent; color: #333; min-height: 90px; font-family: inherit; margin-bottom: 0; font-weight: 700; }
-.composer-draft::placeholder { color: #bbb; font-weight: 400; }
-.composer-actions { display: flex; align-items: center; gap: 8px; }
-.composer-btn-stack { display: flex; flex-direction: column; gap: 4px; }
-.composer-btn { width: 44px; height: 44px; border: none; background: #f4f4f6; border-radius: 10px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+.composer-fields { display: flex; flex-direction: column; flex: 1; gap: 4px; }
+.composer-title-input { width: 100%; border: none; outline: none; font-size: 1rem; font-weight: 700; color: #222; background: transparent; font-family: inherit; padding: 0; }
+.composer-title-input::placeholder { color: #bbb; font-weight: 400; }
+.composer-draft { width: 100%; border: none; outline: none; resize: none; font-size: 0.95rem; line-height: 1.5; background: transparent; color: #444; min-height: 52px; font-family: inherit; font-weight: 400; padding: 0; }
+.composer-draft::placeholder { color: #bbb; }
+.composer-actions { display: flex; align-items: center; gap: 6px; }
+.composer-btn-stack { display: flex; flex-direction: column; gap: 2px; }
+.composer-btn { width: 32px; height: 32px; border: none; background: #f4f4f6; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
 .composer-btn:hover { background: #e8e8ee; }
 .composer-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .composer-post-btn { background: #667eea; color: white; font-size: 1.3rem; }
@@ -2093,8 +2096,9 @@ body {
 .composer-cancel:hover { color: #333; }
 @media (max-width: 1024px) {
   .post-composer { padding: 3vw; border-radius: 3vw; }
-  .composer-draft { font-size: 3.5vw; min-height: 20vw; }
-  .composer-btn { width: 10vw; height: 10vw; font-size: 4.5vw; border-radius: 2vw; }
+  .composer-title-input { font-size: 4vw; }
+  .composer-draft { font-size: 3.5vw; min-height: 12vw; }
+  .composer-btn { width: 8vw; height: 8vw; font-size: 4vw; border-radius: 2vw; }
   .composer-meta { gap: 2vw; padding-top: 2vw; margin-top: 2vw; }
   .composer-tribes-wrap, .composer-location-wrap { padding: 1.5vw 2vw; border-radius: 2vw; }
   .composer-meta-input { font-size: 3vw; }
