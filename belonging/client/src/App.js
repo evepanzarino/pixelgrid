@@ -688,7 +688,7 @@ const SwitchAccountsMenu = ({ currentUser, logout, login, loginWithToken }) => {
   return (
     <div className="switch-accounts-wrap" ref={ref}>
       <button className="switch-accounts-btn" onClick={() => setOpen(o => !o)}>
-        ⇄
+        switch accounts
       </button>
       {open && (
         <div className="switch-accounts-dropdown">
@@ -820,17 +820,19 @@ const Navbar = ({ onLevelUpUpdate }) => {
               levelUpCount={levelUpCount}
               setLevelUpCount={setLevelUpCount}
             />
-            {user.username === user.email ? (
-              <Link to={`${BASE_PATH}/complete-profile`} style={{ color: '#e67e22', fontSize: '0.85rem' }}>Choose a username</Link>
-            ) : (
-              <Link to={`${BASE_PATH}/${user.username}`} className="navbar-user-link">
-                {user.profile_picture
-                  ? <img src={user.profile_picture} alt="" className="navbar-user-avatar" />
-                  : <div className="navbar-user-avatar-placeholder" />}
-                @{user.username}
-              </Link>
-            )}
-            <SwitchAccountsMenu currentUser={user} logout={logout} login={login} loginWithToken={loginWithToken} />
+            <div className="navbar-user-stack">
+              {user.username === user.email ? (
+                <Link to={`${BASE_PATH}/complete-profile`} style={{ color: '#e67e22', fontSize: '0.85rem' }}>Choose a username</Link>
+              ) : (
+                <Link to={`${BASE_PATH}/${user.username}`} className="navbar-user-link">
+                  {user.profile_picture
+                    ? <img src={user.profile_picture} alt="" className="navbar-user-avatar" />
+                    : <div className="navbar-user-avatar-placeholder" />}
+                  @{user.username}
+                </Link>
+              )}
+              <SwitchAccountsMenu currentUser={user} logout={logout} login={login} loginWithToken={loginWithToken} />
+            </div>
           </div>
         ) : (
           <div className="navbar-top-user">
