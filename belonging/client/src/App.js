@@ -2103,9 +2103,13 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
           ))}
         </select>
 
+      </div>
+
+      {/* Privacy row */}
+      <div className="composer-privacy-row">
         <select className="composer-privacy-select" value={privacy} onChange={e => setPrivacy(e.target.value)}>
           <option value="public">🌍 public</option>
-          <option value="friends">👥 friends</option>
+          <option value="mutuals">👥 mutuals</option>
           <option value="private">🔒 private</option>
         </select>
       </div>
