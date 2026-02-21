@@ -2114,13 +2114,13 @@ body {
 }
 
 .mobile-nav-icon {
-  font-size: 5.5vw;
+  font-size: 7.5vw;
   line-height: 1;
 }
 
 .mobile-nav-svg {
-  width: 5.5vw;
-  height: 5.5vw;
+  width: 7.5vw;
+  height: 7.5vw;
   object-fit: contain;
   display: block;
 }
