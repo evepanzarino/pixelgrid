@@ -2062,6 +2062,15 @@ body {
 .trend-lb-score { display: flex; align-items: baseline; gap: 3px; margin-bottom: 10px; }
 .trend-lb-score-num { font-size: 1.5rem; font-weight: 800; color: #667eea; line-height: 1; }
 .trend-lb-score-label { font-size: 0.75rem; color: #aaa; font-weight: 600; }
+.trend-ranked-list { margin-top: 12px; border: 1px solid #eee; border-radius: 12px; overflow: hidden; }
+.trend-ranked-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f4f4f4; transition: background 0.12s; }
+.trend-ranked-row:last-child { border-bottom: none; }
+.trend-ranked-row:hover { background: #f8f9ff; }
+.trend-ranked-num { font-size: 0.85rem; font-weight: 700; color: #bbb; width: 24px; flex-shrink: 0; text-align: center; }
+.trend-ranked-text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.trend-ranked-user { font-size: 0.8rem; color: #667eea; font-weight: 600; }
+.trend-ranked-tagline { font-size: 0.9rem; color: #333; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trend-ranked-score { font-size: 0.8rem; font-weight: 700; color: #aaa; flex-shrink: 0; }
 
 @media (max-width: 1024px) {
   .trends-page { padding: 4vw; }

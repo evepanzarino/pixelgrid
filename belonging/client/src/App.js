@@ -5656,6 +5656,27 @@ const TrendsPage = () => {
                 </div>
               )
             }
+            {data.posts.length > 3 && (
+              <div className="trend-ranked-list">
+                {data.posts.slice(3).map((post, i) => {
+                  const rank = i + 4;
+                  const eng = (post.like_count|0) + (post.comment_count|0)*2 + (post.repost_count|0)*3 + (post.favorite_count|0)*2;
+                  return (
+                    <Link key={post.id} to={`${BASE_PATH}/post/${post.id}`} className="trend-ranked-row">
+                      <span className="trend-ranked-num">#{rank}</span>
+                      {post.profile_picture
+                        ? <img src={post.profile_picture} alt="" className="trend-avatar" />
+                        : <div className="trend-avatar-placeholder" />}
+                      <div className="trend-ranked-text">
+                        <span className="trend-ranked-user">@{post.username}</span>
+                        {post.tagline && <span className="trend-ranked-tagline">{post.tagline}</span>}
+                      </div>
+                      <span className="trend-ranked-score">{eng} pts</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </section>
         </>
       )}
