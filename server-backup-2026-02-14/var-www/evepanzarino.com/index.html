@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eve Panzarino</title>
+    <link href="style.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
+
+    <style>
+                                                @media (min-width: 630px) and (max-width: 1024px) {
+                                                  .topbar-container {
+                                                    padding-left: 6vw;
+                                                    padding-right: 6vw;
+                                                  }
+                                                }
+                                        @media (min-width: 800px) and (max-width: 1024px) {
+                                          .nav-menu-grid.sticky-offset {
+                                            margin-top: 9vw;
+                                          }
+                                        }
+                                @media (max-width: 1024px) {
+                                  .logo-menu.sticky {
+                                    width: 97vw;
+                                    height: auto;
+                                    position: fixed;
+                                  }
+                                }
+                        @media (max-width: 1024px) {
+                          .nav-menu-grid.sticky-offset {
+                            margin-top: 9vw;
+                          }
+                        }
+                @media (max-width: 800px) {
+                  .nav-menu-item, .nav-menu-item a {
+                    font-size: 3vw;
+                  }
+                }
+        @media (min-width: 1025px) and (max-width: 1200px) {
+          .logo-menu.sticky {
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            width: 58vw;
+            height: 8vw;
+            z-index: 1001;
+          }
+        }
+        @media (width: 1024px) {
+          .logo-menu.sticky {
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            width: 97vw;
+            height: 8vw;
+            z-index: 1001;
+          }
+        }
+        @media (min-width: 1025px) and (max-width: 1200px) {
+          .logo-menu.sticky {
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            width: 58vw;
+            height: 8vw;
+            z-index: 1001;
+          }
+        }
+        @media (max-width: 630px) {
+          .logo-menu {
+            margin: 0;
+            padding: 0;
+            width: 97vw;
+          }
+          .logo-menu.sticky {
+            width: 100vw;
+            position: fixed;
+          }
+          #topbar{
+            grid-template-columns: repeat(7, 1.4875vw); /* 1.75vw * 0.85 */
+            grid-template-rows: repeat(7, 1.4875vw);
+            max-width: 10.455vw; /* 12.3vw * 0.85 */
+            padding-bottom: 0.85vw; /* 1vw * 0.85 */
+          }
+           #pixelgrid{
+            grid-template-columns: repeat(7, .9vw); /* 1.75vw * 0.85 */
+            grid-template-rows: repeat(7, .9vw);
+          }
+          .eve-title {
+            height: 4.25vw; /* 5vw * 0.85 */
+          }
+          .nav-menu-grid.sticky-offset {
+            margin-top: 10vw;
+          }
+        }
+        @media (min-width: 630px) and (max-width: 800px) {
+          .eve-title {
+            height: 4vw;
+          }
+            .logo-menu.sticky {
+              width: 97vw;
+              position: fixed;
+              padding: 2vw;
+            }
+          #topbar {
+            grid-template-columns: repeat(7, 10px);
+            grid-template-rows: repeat(7, 10px);
+            max-width: 28vw;
+          }
+          .profile-container {
+            background-color: #C48793;
+            text-align: center;
+          }
+          .nav-menu-grid.sticky-offset {
+            margin-top: 12vw;
+          }
+        }
+          @media (min-width:1600px) {
+            .logo-menu.sticky {
+              position: fixed;
+              top: 0px;
+              left: 0px;
+              width: 69vw;
+              z-index: 1001;
+            }
+          }
+          /* The .logo-menu.sticky style is now only set in media queries for proper override order. */
+
+        /* Removed duplicate @media (max-width: 1024px) block that set .nav-menu-grid.sticky-offset margin-top to 9vw, to prevent override issues. */
+
+
+@media (min-width: 800px) and (max-width: 1024px) {
+          .logo-menu.sticky {
+            width: 97vw;
+            position: fixed;
+          }
+
+@media (min-width: 630px) and (max-width: 800px) {
+            .logo-menu.sticky {
+              width: 97vw;
+              position: fixed;
+              padding: 2vw;
+            }
+}
+
+@media (min-width: 1200px) and (max-width: 1399px) {
+  .logo-menu.sticky {
+    width: 58vw;
+        @media (min-width: 1024px) and (max-width: 1200px) {
+          .logo-menu.sticky {
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            width: 58vw;
+            height: 8vw;
+            z-index: 1001;
+          }
+        }
+    margin-left: 39vw;
+    position: fixed;
+    background-color: #000000;
+    text-align: center;
+    padding: 1vw;
+    height: 8vw;
+    margin-top: 0vw;
+    padding-left: 2vw;
+    top: 0px;
+    left: 0px;
+    z-index: 1001;
+  }
+}
+    </style>
+</head>
+<header>
+<div class="logo-menu">
+    <div class="topbar-container" id="contact">
+        <a href="tel:5617676146" class="contact">561-767-6146</a>
+    </div>
+    <div class="logo-title-center">
+        <div class="logo" id="topbar">
+            <div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div>
+            <div class="logo-pixels"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels"></div>
+            <div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div>
+            <div class="logo-pixels"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels"></div>
+            <div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div>
+            <div class="logo-pixels"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels"></div><div class="logo-pixels" style="background: white;"></div><div class="logo-pixels"></div>
+            <div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div>
+        </div>
+        <img src="/images/EveTitle.svg" alt="Eve Panzarino" class="eve-title">
+    </div>
+    <div class="topbar-container" id="portfolio">
+        <a href="#portfolio-section" class="Portfolio">Portfolio</a>
+    </div>
+</div>
+<div class="nav-menu-grid">
+<div class="nav-menu-item">
+<a href="/blog">Blog</a>
+</div>
+<a href="https://instagram.com/evepanzarino" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+<a href="https://youtube.com/@evepanzarino" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+<a href="https://facebook.com/eveldapanzarino" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+<a href="https://bsky.app/profile/evepanzarino.bsky.social" aria-label="Bluesky" class="bluesky-icon"><img src="/images/bluesky-logo.svg" alt="Bluesky"></a> 
+<a href="https://github.com/evepanzarino" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+<div class="nav-menu-item">
+    <a href="/dev-blog">Dev Blog</a>
+</div>
+</header>
+
+    <div class="profile-container">
+
+
+    <img class="profile-image" src="/images/evepanzarino.png" style="border-radius: 100%;" alt="Eve Panzarino"/>
+    <h1>Eve Panzarino</h1>
+    <p id="degree-school" style="margin-bottom: 0; color: #ffffff;"><em>Web Dev</em> - Full Sail University</p>
+
+    </div>
+    <div class="section-stack">
+      <div class="projects" style="background-color: #ddbac1;">
+        <h1>Projects</h1>
+      </div>
+      <div class="Keeping-it-Real-by-Making-it-Teal">
+        <img src="/images/cancer-ribbon.svg" alt="Cancer Ribbon" style="height:5.5vw;vertical-align:middle;margin-left:1vw;">
+        <a href="/Keeping-it-Real-by-Making-it-Teal" style="font-weight: 800;">Keeping it Real by Making it Teal</a>
+        <img src="/images/cancer-ribbon.svg" alt="Cancer Ribbon" style="height:5.5vw;vertical-align:middle;margin-left:1vw;">
+      </div>
+    </div>
+    <a href="/pixelgrid" style="text-decoration: none; color: inherit;">
+      <div class="pixelgrid-banner">
+        <div class="logo-title-center">
+          <div class="logo" id="pixelgrid">
+            <div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div>
+            <div class="logo-pixels"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels"></div>
+            <div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div>
+            <div class="logo-pixels"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels"></div>
+            <div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div>
+            <div class="logo-pixels"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels"></div><div class="logo-pixels" style="background: #000000;"></div><div class="logo-pixels"></div>
+            <div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div><div class="logo-pixels"></div>
+          </div>
+          <img src="/images/pixelgrid.svg" alt="PixelGrid Logo" class="pixelgrid-svg" style="height: 2.75vw; margin-left: -2.5vw; vertical-align: middle;">
+        </div>
+      </div>
+    </a>
+    <div class="content">
+    </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var logoMenu = document.querySelector('.logo-menu');
+  var navMenu = document.querySelector('.nav-menu-grid');
+  if (!logoMenu || !navMenu) return;
+
+  function stickLogoMenu() {
+    var rect = logoMenu.getBoundingClientRect();
+    var isSticky = rect.top <= 0;
+    if (isSticky) {
+      logoMenu.classList.add('sticky');
+      if (window.innerWidth <= 1024) {
+        navMenu.classList.add('sticky-offset');
+      } else {
+        navMenu.classList.remove('sticky-offset');
+      }
+    } else {
+      logoMenu.classList.remove('sticky');
+      navMenu.classList.remove('sticky-offset');
+    }
+  }
+
+  window.addEventListener('scroll', stickLogoMenu);
+  window.addEventListener('resize', stickLogoMenu);
+  stickLogoMenu(); // Initial call
+});
+</script>
+</html>

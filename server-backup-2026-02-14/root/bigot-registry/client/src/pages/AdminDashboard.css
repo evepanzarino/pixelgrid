@@ -1,0 +1,216 @@
+.admin-dashboard {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.admin-header {
+  margin-bottom: 30px;
+}
+
+.admin-header h1 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.admin-header p {
+  color: #666;
+  margin: 0;
+}
+
+.admin-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+  font-size: 18px;
+}
+
+.admin-error {
+  background: #fee;
+  color: #c00;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #fcc;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+.tab-button {
+  padding: 10px 20px;
+  border: none;
+  background: #f5f5f5;
+  color: #666;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tab-button:hover {
+  background: #e8e8e8;
+}
+
+.tab-button.active {
+  background: #0066cc;
+  color: white;
+}
+
+.admin-content {
+  min-height: 300px;
+}
+
+.pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.empty-message {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+  font-size: 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.pending-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pending-info {
+  flex: 1;
+}
+
+.pending-info h3 {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.pending-meta {
+  color: #888;
+  font-size: 13px;
+  margin: 0 0 10px 0;
+}
+
+.pending-description,
+.pending-content {
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 8px 0;
+  background: #f8f8f8;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.pending-location {
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+}
+
+.pending-link {
+  margin: 8px 0 0 0;
+}
+
+.pending-link a {
+  color: #0066cc;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.pending-link a:hover {
+  text-decoration: underline;
+}
+
+.pending-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.approve-btn,
+.deny-btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.approve-btn {
+  background: #28a745;
+  color: white;
+}
+
+.approve-btn:hover:not(:disabled) {
+  background: #218838;
+}
+
+.deny-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.deny-btn:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.approve-btn:disabled,
+.deny-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refresh-btn {
+  display: block;
+  margin: 30px auto 0;
+  padding: 12px 24px;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.refresh-btn:hover {
+  background: #e0e0e0;
+}
+
+@media (max-width: 600px) {
+  .pending-item {
+    flex-direction: column;
+  }
+
+  .pending-actions {
+    flex-direction: row;
+    width: 100%;
+  }
+
+  .approve-btn,
+  .deny-btn {
+    flex: 1;
+  }
+}

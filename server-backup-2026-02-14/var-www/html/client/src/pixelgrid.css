@@ -1,0 +1,20 @@
+/* PixelGrid styles */
+
+.pixel {
+  box-sizing: border-box;
+  border: 0.1vw solid transparent !important;
+  transition: none;
+}
+
+.pixel-light:hover {
+  border: 0.1vw solid #000000 !important;
+}
+
+.pixel-dark:hover {
+  border: 0.1vw solid #fefefe !important;
+}
+
+/* Hide scrollbars but keep scrolling functionality */
+div::-webkit-scrollbar {
+  display: none;
+}

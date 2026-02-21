@@ -1,0 +1,5186 @@
+import { useEffect, useState, useRef, useCallback, memo } from "react";
+import { flushSync } from "react-dom";
+import "./pixelgrid.css";
+
+// Memoized pixel component to prevent unnecessary re-renders
+const DrawingPixel = memo(({ 
+  color, 
+  index, 
+  isHovered, 
+  isLineStart, 
+  isCurveEnd, 
+  isInLinePreview,
+  isSelected,
+  isInSelectionRect,
+  isSelectionStartPoint,
+  isInDragPreview,
+  isDrawing,
+  zoomFactor,
+  activeDrawingTool,
+  onPointerDown,
+  onPointerUp,
+  onPointerEnter,
+  onPointerMove,
+  onPointerLeave
+}) => {
+  // Border and visual feedback logic
+  let borderStyle = '';
+  let borderColor = 'transparent';
+  let borderWidth = `${0.1 * zoomFactor}vw`;
+  let opacity = 1;
+  let boxShadow = 'none';
+
+  // Debug logging for white pixels
+  if (color === '#ffffff' && (isSelectionStartPoint || isInSelectionRect || isSelected)) {
+    console.log(`White pixel ${index}: isSelectionStartPoint=${isSelectionStartPoint}, isInSelectionRect=${isInSelectionRect}, isSelected=${isSelected}`);
+  }
+  
+  // Dim original position during drag preview
+  if (isSelected && isDrawing && activeDrawingTool === "select" && isInDragPreview === false) {
+    opacity = 0.3;
+  }
+  
+  // Show preview at new position with full opacity and purple border
+  if (isInDragPreview) {
+    borderColor = '#9C27B0';
+    borderWidth = `${0.2 * zoomFactor}vw`;
+    boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
+  } else if (isSelectionStartPoint) {
+    // Use same contrast detection as line/curve previews
+    const isLight = (() => {
+      // If no color is set, pixel appears white, so treat as light
+      if (!color || color.length < 7) return true;
+      const r = parseInt(color.substring(1, 3), 16);
+      const g = parseInt(color.substring(3, 5), 16);
+      const b = parseInt(color.substring(5, 7), 16);
+      const brightness = (r + g + b) / 3;
+      return brightness > 127;
+    })();
+    borderColor = isLight ? '#000000' : '#CCCCCC';
+    borderWidth = `${0.2 * zoomFactor}vw`;
+    boxShadow = `0 0 ${0.6 * zoomFactor}vw ${0.3 * zoomFactor}vw ${borderColor}`;
+  } else if (isInSelectionRect) {
+    // Use same contrast detection as line/curve previews
+    const isLight = (() => {
+      // If no color is set, pixel appears white, so treat as light
+      if (!color || color.length < 7) return true;
+      const r = parseInt(color.substring(1, 3), 16);
+      const g = parseInt(color.substring(3, 5), 16);
+      const b = parseInt(color.substring(5, 7), 16);
+      const brightness = (r + g + b) / 3;
+      return brightness > 127;
+    })();
+    borderColor = isLight ? '#000000' : '#CCCCCC';
+    borderWidth = `${0.2 * zoomFactor}vw`;
+  } else if (isSelected && activeDrawingTool !== "select") {
+    // Don't show borders for selected pixels when select tool is active - overlay handles it
+    // Use same contrast detection as line/curve previews
+    const isLight = (() => {
+      // If no color is set, pixel appears white, so treat as light
+      if (!color || color.length < 7) return true;
+      const r = parseInt(color.substring(1, 3), 16);
+      const g = parseInt(color.substring(3, 5), 16);
+      const b = parseInt(color.substring(5, 7), 16);
+      const brightness = (r + g + b) / 3;
+      return brightness > 127;
+    })();
+    borderColor = isLight ? '#000000' : '#CCCCCC';
+    borderWidth = `${0.2 * zoomFactor}vw`;
+  } else if (isCurveEnd || isLineStart || isInLinePreview) {
+    // Use proper contrast detection for line/curve previews
+    const isLight = (() => {
+      // If no color is set, pixel appears white, so treat as light
+      if (!color || color.length < 7) return true;
+      const r = parseInt(color.substring(1, 3), 16);
+      const g = parseInt(color.substring(3, 5), 16);
+      const b = parseInt(color.substring(5, 7), 16);
+      const brightness = (r + g + b) / 3;
+      return brightness > 127;
+    })();
+    borderColor = isLight ? '#000000' : '#CCCCCC';
+    borderWidth = `${0.2 * zoomFactor}vw`;
+  } else if (isHovered && !isDrawing) {
+    // Use proper contrast detection for hover
+    const isLight = (() => {
+      // If no color is set, pixel appears white, so treat as light
+      if (!color || color.length < 7) return true;
+      const r = parseInt(color.substring(1, 3), 16);
+      const g = parseInt(color.substring(3, 5), 16);
+      const b = parseInt(color.substring(5, 7), 16);
+      const brightness = (r + g + b) / 3;
+      return brightness > 127;
+    })();
+    borderColor = isLight ? '#000000' : '#CCCCCC';
+    borderWidth = `${0.15 * zoomFactor}vw`;
+  }
+  
+  borderStyle = `${borderWidth} solid ${borderColor}`;
+  
+  // Debug final border for white pixels
+  if (color === '#ffffff' && borderColor !== 'transparent') {
+    console.log(`White pixel ${index} final border: ${borderStyle}`);
+  }
+  
+  return (
+    <div
+      data-pixel-index={index}
+      style={{ 
+        background: color, 
+        boxSizing: 'border-box',
+        border: borderStyle,
+        boxShadow,
+        opacity,
+        position: 'relative'
+      }}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onClick={() => {}}
+      onPointerEnter={onPointerEnter}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
+    />
+  );
+});
+
+export default function PixelGrid() {
+  const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const [isDrawing, setIsDrawing] = useState(false);
+  
+  // Load saved data from localStorage or use defaults
+  const [primaryColor, setPrimaryColor] = useState(() => {
+    try {
+      return localStorage.getItem("pixelgrid_primaryColor") || "#000000";
+    } catch { return "#000000"; }
+  });
+  const [secondaryColor, setSecondaryColor] = useState(() => {
+    try {
+      return localStorage.getItem("pixelgrid_secondaryColor") || "#ffffff";
+    } catch { return "#ffffff"; }
+  });
+  
+  const [activeTool, setActiveTool] = useState("primary"); // "primary" or "secondary"
+  const [showColorMenu, setShowColorMenu] = useState(true);
+  const [showFileMenu, setShowFileMenu] = useState(false);
+  const [showViewMenu, setShowViewMenu] = useState(false);
+  const [viewMode, setViewMode] = useState("drawing"); // "drawing" or "layers"
+  const [showColorEditor, setShowColorEditor] = useState(false);
+  const [editingColor, setEditingColor] = useState(null); // "primary" or "secondary"
+  const [hoveredPixel, setHoveredPixel] = useState(null);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [isDraggingSlider, setIsDraggingSlider] = useState(false);
+  const [layersScrollPosition, setLayersScrollPosition] = useState(0);
+  const [isDraggingLayersSlider, setIsDraggingLayersSlider] = useState(false);
+  const [activeDrawingTool, setActiveDrawingTool] = useState("pencil"); // "pencil", "line", "curve", "bucket", "select", "movegroup"
+  const [lineStartPixel, setLineStartPixel] = useState(null); // For line/curve tool: first click position
+  const [lineEndPixel, setLineEndPixel] = useState(null); // For line tool apply/preview
+  const [curveEndPixel, setCurveEndPixel] = useState(null); // For curve tool adjustment mode
+  const [curveCurveAmount, setCurveCurveAmount] = useState(0); // Curve adjustment: -100 to 100%
+  const [selectionStart, setSelectionStart] = useState(null); // Rectangle selection start
+  const [selectionEnd, setSelectionEnd] = useState(null); // Rectangle selection end (during drag)
+  const [selectedPixels, setSelectedPixels] = useState([]); // Array of selected pixel indices
+  const [selectAllPixels, setSelectAllPixels] = useState(true); // Toggle: select all pixels vs only colored pixels (defaults to true)
+  const [showLayersMenu, setShowLayersMenu] = useState(false); // Show layers menu
+  
+  // Background image state
+  const [backgroundImage, setBackgroundImage] = useState(() => {
+    try {
+      return localStorage.getItem("pixelgrid_backgroundImage") || null;
+    } catch { return null; }
+  });
+  const [backgroundOpacity, setBackgroundOpacity] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pixelgrid_backgroundOpacity");
+      return saved ? parseFloat(saved) : 0.5;
+    } catch { return 0.5; }
+  });
+  const backgroundInputRef = useRef(null);
+  
+  const [pixelGroups, setPixelGroups] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pixelgrid_pixelGroups");
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+  
+  const [groups, setGroups] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pixelgrid_groups");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  
+  const [activeLayer, setActiveLayer] = useState(null); // Currently selected layer for drawing/editing
+  const [renameLayer, setRenameLayer] = useState(null); // Layer being renamed
+  const [renameValue, setRenameValue] = useState(""); // Temporary value while renaming
+  const [layerDragStart, setLayerDragStart] = useState(null); // { row, col } for moving layer pixels
+  const [movingLayer, setMovingLayer] = useState(null); // Layer name being moved
+  
+  // Layer reorder drag-and-drop state
+  const [draggedLayer, setDraggedLayer] = useState(null);
+  const [dragOverLayer, setDragOverLayer] = useState(null);
+  
+  // Lazy-loaded tool modules
+  const [loadedTools, setLoadedTools] = useState({});
+  const [toolsLoading, setToolsLoading] = useState({});
+  
+  const color = activeTool === "primary" ? primaryColor : secondaryColor;
+  const gridRef = useRef(null);
+  const layersMenuRef = useRef(null);
+  
+  // Refs to hold current values for event handlers without causing re-renders
+  const dragStateRef = useRef({
+    layerDragStart: null,
+    activeLayer: null,
+    isDrawing: false,
+    selectedPixels: [],
+    lineStartPixel: null,
+    lineEndPixel: null,
+    curveEndPixel: null,
+    movingLayer: null
+  });
+  
+  // Update refs whenever state changes
+  useEffect(() => {
+    dragStateRef.current = {
+      layerDragStart,
+      activeLayer,
+      isDrawing,
+      selectedPixels,
+      lineStartPixel,
+      lineEndPixel,
+      curveEndPixel,
+      movingLayer
+    };
+  }, [layerDragStart, activeLayer, isDrawing, selectedPixels, lineStartPixel, lineEndPixel, curveEndPixel, movingLayer]);
+  
+  // Lazy load tool module when needed
+  const loadTool = useCallback(async (toolName) => {
+    if (loadedTools[toolName] || toolsLoading[toolName]) return;
+    
+    setToolsLoading(prev => ({ ...prev, [toolName]: true }));
+    
+    try {
+      const module = await import(`./tools/${toolName}Tool.js`);
+      setLoadedTools(prev => ({ ...prev, [toolName]: module[`${toolName}Tool`] }));
+    } catch (error) {
+      console.error(`Failed to load ${toolName} tool:`, error);
+    } finally {
+      setToolsLoading(prev => ({ ...prev, [toolName]: false }));
+    }
+  }, [loadedTools, toolsLoading]);
+  
+  // Load tool when drawing tool changes
+  useEffect(() => {
+    if (activeDrawingTool && activeDrawingTool !== 'pencil') {
+      loadTool(activeDrawingTool);
+    }
+  }, [activeDrawingTool, loadTool]);
+
+  // Reset line/curve state when leaving those tools
+  useEffect(() => {
+    if (activeDrawingTool !== 'line' && activeDrawingTool !== 'curve') {
+      setLineStartPixel(null);
+      setLineEndPixel(null);
+      setCurveEndPixel(null);
+    }
+    if (activeDrawingTool !== 'line') {
+      setLineEndPixel(null);
+    }
+  }, [activeDrawingTool]);
+
+  // Handle scrollbar slider dragging with global pointer move
+  useEffect(() => {
+    if (!isDraggingSlider) return;
+
+    const handlePointerMove = (e) => {
+      if (!gridRef.current) return;
+      
+      // Get the slider track bounds
+      const scrollbarTrack = document.querySelector('[data-scrollbar-track="true"]');
+      if (!scrollbarTrack) return;
+      
+      const rect = scrollbarTrack.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const percent = Math.max(0, Math.min(1, x / rect.width));
+      const maxScroll = gridRef.current.scrollWidth - gridRef.current.clientWidth;
+      const newScrollLeft = percent * maxScroll;
+      gridRef.current.scrollLeft = newScrollLeft;
+      setScrollPosition(newScrollLeft);
+    };
+
+    const handlePointerUp = () => {
+      setIsDraggingSlider(false);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: false, capture: true });
+    window.addEventListener('pointerup', handlePointerUp, { capture: true });
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove, { capture: true });
+      window.removeEventListener('pointerup', handlePointerUp, { capture: true });
+    };
+  }, [isDraggingSlider]);
+
+  // Handle layers scrollbar slider dragging with global pointer move
+  useEffect(() => {
+    if (!isDraggingLayersSlider) return;
+
+    const handlePointerMove = (e) => {
+      if (!layersMenuRef.current) return;
+      
+      // Get the slider track bounds
+      const scrollbarTrack = document.querySelector('[data-layers-scrollbar-track="true"]');
+      if (!scrollbarTrack) return;
+      
+      const rect = scrollbarTrack.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      const percent = Math.max(0, Math.min(1, y / rect.height));
+      const maxScroll = layersMenuRef.current.scrollHeight - layersMenuRef.current.clientHeight;
+      const newScrollTop = percent * maxScroll;
+      layersMenuRef.current.scrollTop = newScrollTop;
+      setLayersScrollPosition(newScrollTop);
+    };
+
+    const handlePointerUp = () => {
+      setIsDraggingLayersSlider(false);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: false, capture: true });
+    window.addEventListener('pointerup', handlePointerUp, { capture: true });
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove, { capture: true });
+      window.removeEventListener('pointerup', handlePointerUp, { capture: true });
+    };
+  }, [isDraggingLayersSlider]);
+
+  // Handle touch drawing on mobile - track finger position to find pixel under touch
+  useEffect(() => {
+    if (!isDrawing || activeDrawingTool !== "pencil") return;
+
+    const handleTouchMove = (e) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        if (element && element.hasAttribute('data-pixel-index')) {
+          const pixelIndex = parseInt(element.getAttribute('data-pixel-index'), 10);
+          if (!isNaN(pixelIndex) && pixelIndex !== hoveredPixel) {
+            setHoveredPixel(pixelIndex);
+            // Paint directly by updating pixel colors
+            setPixelColors((prev) => {
+              if (prev[pixelIndex] === color) return prev;
+              const copy = [...prev];
+              copy[pixelIndex] = color;
+              return copy;
+            });
+          }
+        }
+      }
+    };
+
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      window.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [isDrawing, activeDrawingTool, hoveredPixel, color]);
+
+  // Ensure line/curve preview updates even when pointer is over overlays (desktop & mobile)
+  // Also set hoveredPixel immediately on touch/pointer down so preview appears without holding/dragging
+  useEffect(() => {
+    if (lineStartPixel === null) return;
+    if (!(activeDrawingTool === "line" || activeDrawingTool === "curve")) return;
+
+    const updateHoverFromEvent = (e) => {
+      const point = e.touches && e.touches.length ? e.touches[0] : e;
+      const el = document.elementFromPoint(point.clientX, point.clientY);
+      if (el && el.hasAttribute('data-pixel-index')) {
+        const idx = parseInt(el.getAttribute('data-pixel-index'), 10);
+        if (!Number.isNaN(idx) && idx !== hoveredPixel) {
+          setHoveredPixel(idx);
+        }
+      }
+    };
+
+    window.addEventListener('pointermove', updateHoverFromEvent, { passive: true });
+    window.addEventListener('touchmove', updateHoverFromEvent, { passive: true });
+    window.addEventListener('pointerdown', updateHoverFromEvent, { passive: true });
+    window.addEventListener('touchstart', updateHoverFromEvent, { passive: true });
+
+    return () => {
+      window.removeEventListener('pointermove', updateHoverFromEvent);
+      window.removeEventListener('touchmove', updateHoverFromEvent);
+      window.removeEventListener('pointerdown', updateHoverFromEvent);
+      window.removeEventListener('touchstart', updateHoverFromEvent);
+    };
+  }, [lineStartPixel, activeDrawingTool, hoveredPixel]);
+
+  // Zoom factor for drawing area based on screen size
+  const getZoomFactor = () => {
+    if (size.w <= 768) return  2.75; // Mobile
+    if (size.w <= 1024) return 1.75; // Tablet
+    if (size.w <= 1650) return 1.25;
+    return 1; // Desktop
+  };
+
+  // Logo and title pixel size based on screen size
+  const getLogoPixelSize = () => {
+    if (size.w > 1650) return 1.075; // Desktop: 7vw / 7 = 1vw per cell
+    if (size.w <= 1024) return 1.43; // Mobile/Tablet: 10vw / 7 = 1.43vw
+    return 1; // Mid-range
+  };
+
+  const getTitlePixelSize = () => {
+    if (size.w > 1650) return 0.75; // Desktop: scaled down
+    return 0.75; // Same size on all screen sizes
+  };
+
+  const zoomFactor = getZoomFactor();
+  const logoPixelSize = getLogoPixelSize();
+  const titlePixelSize = getTitlePixelSize();
+  const cols = 200; // Fixed 200 columns
+  const basePixelSize = 0.75; // Base pixel size in vw
+  const displayPixelSize = basePixelSize * zoomFactor;
+  
+  // Calculate rows needed to fill the screen height
+  const pixelSizeInPx = (displayPixelSize / 100) * size.w; // Convert vw to px
+  const rows = Math.ceil(size.h / pixelSizeInPx);
+  const totalPixels = cols * rows;
+
+  // Initialize pixelColors with saved data or defaults
+  const [pixelColors, setPixelColors] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pixelgrid_pixelColors");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.length === totalPixels) return parsed;
+        // If size changed, extend or trim array
+        const newArray = Array(totalPixels).fill("#ffffff");
+        const copyLength = Math.min(parsed.length, totalPixels);
+        for (let i = 0; i < copyLength; i++) {
+          newArray[i] = parsed[i];
+        }
+        return newArray;
+      }
+    } catch { }
+    return Array(totalPixels).fill("#ffffff");
+  });
+
+  const fileInputRef = useRef(null);
+  const saveTimerRef = useRef(null);
+  
+  // Ensure Background layer always exists
+  useEffect(() => {
+    const hasBackground = groups.some(g => g.name === "Background");
+    if (!hasBackground) {
+      setGroups(prevGroups => [
+        ...prevGroups.filter(g => g.name !== "Background"),
+        { name: "Background", zIndex: 0, pixels: {} }
+      ]);
+    }
+  }, []); // Run only once on mount
+  
+  // Debounced save to localStorage (only save after 500ms of no changes)
+  useEffect(() => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    saveTimerRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem("pixelgrid_pixelColors", JSON.stringify(pixelColors));
+      } catch (error) {
+        console.error("Failed to save pixel colors:", error);
+      }
+    }, 500);
+    
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [pixelColors]);
+  
+  // Save groups and pixelGroups to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_groups", JSON.stringify(groups));
+    } catch (error) {
+      console.error("Failed to save groups:", error);
+    }
+  }, [groups]);
+  
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_pixelGroups", JSON.stringify(pixelGroups));
+    } catch (error) {
+      console.error("Failed to save pixel groups:", error);
+    }
+  }, [pixelGroups]);
+  
+  // Save colors to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_primaryColor", primaryColor);
+    } catch (error) {
+      console.error("Failed to save primary color:", error);
+    }
+  }, [primaryColor]);
+  
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_secondaryColor", secondaryColor);
+    } catch (error) {
+      console.error("Failed to save secondary color:", error);
+    }
+  }, [secondaryColor]);
+  
+  // Save background settings to localStorage
+  useEffect(() => {
+    try {
+      if (backgroundImage) {
+        localStorage.setItem("pixelgrid_backgroundImage", backgroundImage);
+      } else {
+        localStorage.removeItem("pixelgrid_backgroundImage");
+      }
+    } catch (error) {
+      console.error("Failed to save background image:", error);
+    }
+  }, [backgroundImage]);
+  
+  useEffect(() => {
+    try {
+      localStorage.setItem("pixelgrid_backgroundOpacity", backgroundOpacity.toString());
+    } catch (error) {
+      console.error("Failed to save background opacity:", error);
+    }
+  }, [backgroundOpacity]);
+  
+  // Update pixel array when totalPixels changes, preserving existing data
+  useEffect(() => {
+    setPixelColors((prev) => {
+      if (prev.length === totalPixels) return prev;
+      const newArray = Array(totalPixels).fill("#ffffff");
+      // Copy over existing colors
+      const copyLength = Math.min(prev.length, totalPixels);
+      for (let i = 0; i < copyLength; i++) {
+        newArray[i] = prev[i];
+      }
+      return newArray;
+    });
+  }, [totalPixels]);
+
+  useEffect(() => {
+    function handleResize() {
+      setSize({ w: window.innerWidth, h: window.innerHeight });
+    }
+    
+    const handlePointerMove = (e) => {
+      const state = dragStateRef.current;
+      // Track drag position for selected pixels move on mobile/desktop
+      if (state.layerDragStart !== null && state.selectedPixels.length > 0 && state.isDrawing && gridRef.current) {
+        e.preventDefault(); // Prevent scrolling on mobile
+        
+        const rect = gridRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left + gridRef.current.scrollLeft;
+        const y = e.clientY - rect.top + gridRef.current.scrollTop;
+        
+        // Calculate which pixel we're over
+        const pixelSizeVw = displayPixelSize; // Already in vw units
+        const pixelSizePx = (pixelSizeVw * window.innerWidth) / 100;
+        const col = Math.floor(x / pixelSizePx);
+        const row = Math.floor(y / pixelSizePx);
+        
+        // Update drag position in ref for preview rendering
+        dragStateRef.current.layerDragCurrent = { row, col };
+      }
+    };
+    
+    const handleTouchMove = (e) => {
+      const state = dragStateRef.current;
+      // Handle touch drag for mobile
+      if (state.layerDragStart !== null && state.selectedPixels.length > 0 && state.isDrawing && gridRef.current) {
+        e.preventDefault(); // Prevent scrolling
+        
+        const touch = e.touches[0];
+        if (!touch) return;
+        
+        const rect = gridRef.current.getBoundingClientRect();
+        const x = touch.clientX - rect.left + gridRef.current.scrollLeft;
+        const y = touch.clientY - rect.top + gridRef.current.scrollTop;
+        
+        // Calculate which pixel we're over based on cursor position
+        const pixelSizeVw = displayPixelSize;
+        const pixelSizePx = (pixelSizeVw * window.innerWidth) / 100;
+        const col = Math.floor(x / pixelSizePx);
+        const row = Math.floor(y / pixelSizePx);
+        
+        // Update drag position in ref for preview rendering
+        dragStateRef.current.layerDragCurrent = { row, col };
+      }
+    };
+    
+    const stopDrawing = () => {
+      const state = dragStateRef.current;
+      
+      // Finalize selected pixels move if dragging
+      if (state.layerDragStart !== null && state.selectedPixels.length > 0) {
+        const currentDragPos = state.layerDragCurrent || { row: state.layerDragStart.startRow, col: state.layerDragStart.startCol };
+        const deltaRow = currentDragPos.row - state.layerDragStart.startRow;
+        const deltaCol = currentDragPos.col - state.layerDragStart.startCol;
+        
+        if (deltaRow !== 0 || deltaCol !== 0) {
+          moveLayerSelection(deltaRow, deltaCol, state.selectedPixels);
+        }
+        
+        // Clear drag state
+        setLayerDragStart(null);
+        dragStateRef.current.layerDragCurrent = null;
+      }
+      
+      setIsDrawing(false);
+      
+      // Don't clear hoveredPixel if we're in line/curve mode with points selected
+      const lineToolActive = activeDrawingTool === "line" && (state.lineStartPixel !== null || state.lineEndPixel !== null);
+      const curveToolActive = activeDrawingTool === "curve" && (state.lineStartPixel !== null || state.curveEndPixel !== null);
+      
+      if (!(lineToolActive || curveToolActive)) {
+        setHoveredPixel(null);
+      }
+    };
+
+    const debugPointerDown = (e) => {
+      const target = e.target;
+      console.log("=== GLOBAL POINTER DOWN ===", {
+        tagName: target.tagName,
+        hasPixelIndex: target.hasAttribute('data-pixel-index'),
+        pixelIndex: target.getAttribute('data-pixel-index'),
+        classList: Array.from(target.classList),
+        id: target.id,
+        hasDataPixelGrid: target.hasAttribute('data-pixel-grid'),
+        parentTagName: target.parentElement?.tagName,
+        parentHasPixelIndex: target.parentElement?.hasAttribute('data-pixel-index'),
+        computedPointerEvents: window.getComputedStyle(target).pointerEvents
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("pointermove", handlePointerMove, { passive: false });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("pointerup", stopDrawing);
+    window.addEventListener("touchend", stopDrawing);
+    window.addEventListener("pointerdown", debugPointerDown, { capture: true });
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("pointerup", stopDrawing);
+      window.removeEventListener("touchend", stopDrawing);
+      window.removeEventListener("pointerdown", debugPointerDown, { capture: true });
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDrawingTool]);
+
+  function paintPixel(e, index) {
+    // Always immediate update for responsive feel
+    setPixelColors((prev) => {
+      // Skip if color is already the same
+      if (prev[index] === color) return prev;
+      const copy = [...prev];
+      copy[index] = color;
+      return copy;
+    });
+  }
+
+  function normalizeHexInput(raw) {
+    if (!raw) return "#";
+    const v = raw.startsWith("#") ? raw.slice(1) : raw;
+    return "#" + v.slice(0, 6);
+  }
+
+  function isLightColor(hex) {
+    if (!hex || hex.length < 7) return false;
+    const r = parseInt(hex.substring(1, 3), 16);
+    const g = parseInt(hex.substring(3, 5), 16);
+    const b = parseInt(hex.substring(5, 7), 16);
+    // Simple brightness calculation - sum of RGB values
+    // Higher threshold for better contrast detection
+    const brightness = (r + g + b) / 3;
+    return brightness > 127; // Mid-point of 0-255 range
+  }
+
+  function getContrastBorderColor(bgColor) {
+    return isLightColor(bgColor) ? "#000000" : "#ffffff";
+  }
+
+  function getLinePixels(start, end) {
+    // Bresenham's line algorithm
+    const x0 = start % cols;
+    const y0 = Math.floor(start / cols);
+    const x1 = end % cols;
+    const y1 = Math.floor(end / cols);
+    
+    const pixels = [];
+    const dx = Math.abs(x1 - x0);
+    const dy = Math.abs(y1 - y0);
+    const sx = x0 < x1 ? 1 : -1;
+    const sy = y0 < y1 ? 1 : -1;
+    let err = dx - dy;
+    
+    let x = x0;
+    let y = y0;
+    
+    while (true) {
+      const index = y * cols + x;
+      if (index >= 0 && index < pixelColors.length) {
+        pixels.push(index);
+      }
+      
+      if (x === x1 && y === y1) break;
+      
+      const e2 = 2 * err;
+      if (e2 > -dy) {
+        err -= dy;
+        x += sx;
+      }
+      if (e2 < dx) {
+        err += dx;
+        y += sy;
+      }
+    }
+    
+    return pixels;
+  }
+
+  function getQuadraticBezierPixels(startIndex, endIndex, curvePercent) {
+    const x0 = startIndex % cols;
+    const y0 = Math.floor(startIndex / cols);
+    const x2 = endIndex % cols;
+    const y2 = Math.floor(endIndex / cols);
+    
+    // Calculate control point based on midpoint and curve percentage
+    const midX = (x0 + x2) / 2;
+    const midY = (y0 + y2) / 2;
+    
+    // Perpendicular offset based on curve amount
+    const dx = x2 - x0;
+    const dy = y2 - y0;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const offset = (distance * curvePercent) / 100;
+    
+    // Control point perpendicular to the line
+    const x1 = midX - (dy / distance) * offset;
+    const y1 = midY + (dx / distance) * offset;
+    
+    const pixels = [];
+    const steps = 100;
+    
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const u = 1 - t;
+      
+      // Quadratic bezier formula: B(t) = (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
+      const x = Math.round(u * u * x0 + 2 * u * t * x1 + t * t * x2);
+      const y = Math.round(u * u * y0 + 2 * u * t * y1 + t * t * y2);
+      
+      const index = y * cols + x;
+      if (!pixels.includes(index)) {
+        pixels.push(index);
+      }
+    }
+    
+    return pixels;
+  }
+
+  function drawLine(startIndex, endIndex) {
+    const linePixels = getLinePixels(startIndex, endIndex);
+    setPixelColors((prev) => {
+      const copy = [...prev];
+      linePixels.forEach(i => {
+        copy[i] = color;
+      });
+      return copy;
+    });
+  }
+
+  // Build regions map: which region does each pixel belong to
+  function buildRegionsMap(colors) {
+    const totalPixels = colors.length;
+    const regionMap = new Array(totalPixels).fill(-1);
+    let regionId = 0;
+    
+    for (let i = 0; i < totalPixels; i++) {
+      if (regionMap[i] !== -1) continue; // Already assigned
+      
+      // Start a new region with BFS
+      const color = colors[i];
+      const queue = [i];
+      regionMap[i] = regionId;
+      
+      while (queue.length > 0) {
+        const idx = queue.shift();
+        const row = Math.floor(idx / 200);
+        const col = idx % 200;
+        
+        // Check 4-directional neighbors (not diagonal)
+        const neighbors = [
+          { idx: idx - 200, row: row - 1, col: col },     // up
+          { idx: idx + 200, row: row + 1, col: col },     // down
+          { idx: idx - 1, row: row, col: col - 1 },       // left
+          { idx: idx + 1, row: row, col: col + 1 }        // right
+        ];
+        
+        for (const n of neighbors) {
+          if (n.row < 0 || n.row >= Math.floor(totalPixels / 200)) continue;
+          if (n.col < 0 || n.col >= 200) continue;
+          if (regionMap[n.idx] !== -1) continue; // Already assigned
+          if (colors[n.idx] !== color) continue; // Different color
+          
+          regionMap[n.idx] = regionId;
+          queue.push(n.idx);
+        }
+      }
+      
+      regionId++;
+    }
+    
+    return regionMap;
+  }
+
+  function paintBucket(startIndex) {
+    setPixelColors((prev) => {
+      const targetColor = prev[startIndex];
+      const fillColor = color;
+      
+      // Don't fill if already the same color
+      if (targetColor === fillColor) return prev;
+      
+      const copy = [...prev];
+      
+      // Build region map to identify connected regions
+      const regionMap = buildRegionsMap(copy);
+      const targetRegion = regionMap[startIndex];
+      
+      // Fill all pixels in the same region
+      for (let i = 0; i < copy.length; i++) {
+        if (regionMap[i] === targetRegion) {
+          copy[i] = fillColor;
+        }
+      }
+      
+      return copy;
+    });
+  }
+
+  // Get all pixels in selection rectangle (for preview)
+  function getSelectionRectangle(start, end) {
+    if (start === null || end === null) return [];
+    
+    const startRow = Math.floor(start / 200);
+    const startCol = start % 200;
+    const endRow = Math.floor(end / 200);
+    const endCol = end % 200;
+    
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    const minCol = Math.min(startCol, endCol);
+    const maxCol = Math.max(startCol, endCol);
+    
+    const pixels = [];
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        pixels.push(row * 200 + col);
+      }
+    }
+    return pixels;
+  }
+
+  // Get pixels in selection rectangle (only colored pixels or grouped pixels)
+  function getSelectionPixels(start, end) {
+    if (start === null || end === null) return [];
+    
+    const startRow = Math.floor(start / 200);
+    const startCol = start % 200;
+    const endRow = Math.floor(end / 200);
+    const endCol = end % 200;
+    
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    const minCol = Math.min(startCol, endCol);
+    const maxCol = Math.max(startCol, endCol);
+    
+    const pixels = [];
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        const pixelIndex = row * 200 + col;
+        
+        if (selectAllPixels) {
+          // Select all pixels in rectangle, regardless of color
+          pixels.push(pixelIndex);
+        } else {
+          // Only select pixels that:
+          // 1. Are not null/empty (have been painted with a color)
+          // 2. OR are already part of a group (even if empty)
+          if ((pixelColors[pixelIndex] !== null && pixelColors[pixelIndex] !== "#ffffff") || pixelGroups[pixelIndex]) {
+            pixels.push(pixelIndex);
+          }
+        }
+      }
+    }
+    return pixels;
+  }
+
+  // Create layer from selected pixels
+  function createLayer(layerName) {
+    if (selectedPixels.length === 0) return;
+    
+    const newGroups = [...groups];
+    const existingGroup = newGroups.find(g => g.name === layerName);
+    const zIndex = existingGroup ? existingGroup.zIndex : groups.length;
+    
+    if (!existingGroup) {
+      newGroups.push({ name: layerName, zIndex });
+      setGroups(newGroups);
+    }
+    
+    const newPixelGroups = { ...pixelGroups };
+    selectedPixels.forEach(pixelIndex => {
+      newPixelGroups[pixelIndex] = { group: layerName, zIndex };
+    });
+    setPixelGroups(newPixelGroups);
+    
+    // Set newly created layer as active
+    setActiveLayer(layerName);
+    setSelectionStart(null);
+    setSelectionEnd(null);
+    // Keep selected pixels for potential further operations
+  }
+
+  // Extract a layer to __selected__ for moving
+  function extractLayerToSelected(layerName) {
+    const layer = groups.find(g => g.name === layerName);
+    if (!layer) return null;
+
+    // Get all pixels that belong to this layer
+    const layerPixelIndices = Object.keys(pixelGroups)
+      .filter(idx => pixelGroups[parseInt(idx)].group === layerName)
+      .map(idx => parseInt(idx));
+    
+    if (layerPixelIndices.length === 0) return null;
+
+    // Get pixel data
+    const layerPixels = {};
+    layerPixelIndices.forEach(idx => {
+      layerPixels[idx] = pixelColors[idx];
+    });
+
+    // Create __selected__ layer with original layer info
+    const selectedLayer = {
+      name: "__selected__",
+      originalLayerName: layerName,
+      zIndex: layer.zIndex,
+      pixels: layerPixels
+    };
+
+    // Add __selected__ to groups, keep original layer
+    setGroups(prevGroups => {
+      const withoutSelected = prevGroups.filter(g => g.name !== "__selected__");
+      return [...withoutSelected, selectedLayer];
+    });
+
+    // Update pixelGroups to point to __selected__
+    setPixelGroups(prevPixelGroups => {
+      const updated = { ...prevPixelGroups };
+      layerPixelIndices.forEach(idx => {
+        updated[idx] = { group: "__selected__", zIndex: layer.zIndex };
+      });
+      return updated;
+    });
+
+    return {
+      layerName,
+      pixelIndices: layerPixelIndices,
+      zIndex: layer.zIndex
+    };
+  }
+
+  // Restore __selected__ back to original layer after move
+  function restoreSelectedToLayer() {
+    const selectedLayer = groups.find(g => g.name === "__selected__");
+    if (!selectedLayer || !selectedLayer.originalLayerName) return;
+
+    const originalLayerName = selectedLayer.originalLayerName;
+    const originalLayer = groups.find(g => g.name === originalLayerName);
+    if (!originalLayer) return;
+
+    // Get current __selected__ pixels (after move)
+    const selectedPixelIndices = Object.keys(pixelGroups)
+      .filter(idx => pixelGroups[parseInt(idx)].group === "__selected__")
+      .map(idx => parseInt(idx));
+
+    // Get pixel data from __selected__
+    const movedPixels = {};
+    selectedPixelIndices.forEach(idx => {
+      movedPixels[idx] = pixelColors[idx];
+    });
+
+    // Update the original layer with new pixel positions
+    setGroups(prevGroups => {
+      return prevGroups
+        .filter(g => g.name !== "__selected__")
+        .map(g => {
+          if (g.name === originalLayerName) {
+            return { ...g, pixels: movedPixels };
+          }
+          return g;
+        });
+    });
+
+    // Update pixelGroups back to original layer name
+    setPixelGroups(prevPixelGroups => {
+      const updated = { ...prevPixelGroups };
+      selectedPixelIndices.forEach(idx => {
+        updated[idx] = { group: originalLayerName, zIndex: selectedLayer.zIndex };
+      });
+      return updated;
+    });
+
+    // Re-extract the layer to keep it selected
+    setTimeout(() => {
+      const extracted = extractLayerToSelected(originalLayerName);
+      if (extracted) {
+        setActiveGroup("__selected__");
+        setSelectedPixels(extracted.pixelIndices);
+      } else {
+        setActiveGroup(null);
+      }
+    }, 0);
+  }
+
+  // Move group pixels
+  function moveGroup(groupName, deltaRow, deltaCol) {
+    const groupPixels = Object.keys(pixelGroups)
+      .filter(idx => pixelGroups[idx].group === groupName)
+      .map(idx => parseInt(idx));
+    
+    if (groupPixels.length === 0) return;
+    
+    // Get colors and positions for this group's pixels
+    const pixelData = groupPixels.map(idx => ({
+      oldIndex: idx,
+      color: pixelColors[idx],
+      row: Math.floor(idx / 200),
+      col: idx % 200,
+      zIndex: pixelGroups[idx].zIndex
+    }));
+    
+    // Update pixelColors - only clear pixels that belong to THIS group
+    setPixelColors(prev => {
+      const copy = [...prev];
+      
+      // Clear old positions ONLY if they belong to this group
+      pixelData.forEach(p => {
+        if (pixelGroups[p.oldIndex]?.group === groupName) {
+          // Check if there's a pixel from another layer at this position
+          const otherLayerPixel = Object.keys(pixelGroups).find(idx => 
+            parseInt(idx) === p.oldIndex && 
+            pixelGroups[idx].group !== groupName &&
+            pixelGroups[idx].zIndex < p.zIndex
+          );
+          
+          if (otherLayerPixel) {
+            // Don't clear - there's a layer below, let it show
+            copy[p.oldIndex] = prev[otherLayerPixel] || "#ffffff";
+          } else {
+            copy[p.oldIndex] = "#ffffff";
+          }
+        }
+      });
+      
+      // Set new positions - these will layer on top based on z-index
+      pixelData.forEach(p => {
+        const newRow = p.row + deltaRow;
+        const newCol = p.col + deltaCol;
+        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
+          const newIndex = newRow * 200 + newCol;
+          // Only set if this layer should be on top, or if empty
+          const existingPixelGroup = pixelGroups[newIndex];
+          if (!existingPixelGroup || existingPixelGroup.zIndex < p.zIndex) {
+            copy[newIndex] = p.color;
+          }
+        }
+      });
+      
+      return copy;
+    });
+    
+    // Update pixel groups mapping
+    const newPixelGroups = { ...pixelGroups };
+    
+    // Remove old positions
+    pixelData.forEach(p => {
+      delete newPixelGroups[p.oldIndex];
+    });
+    
+    // Add new positions
+    pixelData.forEach(p => {
+      const newRow = p.row + deltaRow;
+      const newCol = p.col + deltaCol;
+      if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
+        const newIndex = newRow * 200 + newCol;
+        newPixelGroups[newIndex] = { group: groupName, zIndex: p.zIndex };
+      }
+    });
+    
+    setPixelGroups(newPixelGroups);
+    
+    // Update groups array if it has a pixels property
+    setGroups(prevGroups => {
+      return prevGroups.map(g => {
+        if (g.name === groupName && g.pixels) {
+          const newPixels = {};
+          // Move pixels in the group's pixels object
+          pixelData.forEach(p => {
+            const newRow = p.row + deltaRow;
+            const newCol = p.col + deltaCol;
+            if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
+              const newIndex = newRow * 200 + newCol;
+              newPixels[newIndex] = p.color;
+            }
+          });
+          return { ...g, pixels: newPixels };
+        }
+        return g;
+      });
+    });
+  }
+
+  // Move selected pixels (not in a group)
+  function moveSelectedPixels(deltaRow, deltaCol, pixelsToMove = null) {
+    const selectedPixelsArray = pixelsToMove || selectedPixels;
+    console.log("moveSelectedPixels called:", { deltaRow, deltaCol, selectedPixelsCount: selectedPixelsArray.length });
+    if (selectedPixelsArray.length === 0) {
+      console.log("No selected pixels, returning early");
+      return;
+    }
+    
+    console.log("Setting pixel colors...");
+    setPixelColors(prev => {
+      console.log("Inside setPixelColors updater, prev length:", prev.length);
+      const copy = [...prev];
+      
+      // Get colors and positions of selected pixels from current state
+      const pixelData = selectedPixelsArray.map(idx => ({
+        oldIndex: idx,
+        color: prev[idx],
+        row: Math.floor(idx / 200),
+        col: idx % 200,
+        pixelGroup: pixelGroups[idx]
+      }));
+      
+      console.log("Moving pixels:", pixelData.slice(0, 3), "...");
+      console.log("First pixel before:", { index: pixelData[0].oldIndex, color: copy[pixelData[0].oldIndex] });
+      
+      // Clear old positions - check for layers underneath
+      pixelData.forEach(p => {
+        // Check if there's a pixel from another layer at this position
+        const otherLayerPixel = Object.keys(pixelGroups).find(idx => 
+          parseInt(idx) === p.oldIndex && 
+          pixelGroups[idx].group !== (p.pixelGroup?.group) &&
+          pixelGroups[idx].zIndex < (p.pixelGroup?.zIndex || 0)
+        );
+        
+        if (otherLayerPixel) {
+          // Don't clear - there's a layer below
+          copy[p.oldIndex] = prev[otherLayerPixel] || "#ffffff";
+        } else {
+          copy[p.oldIndex] = "#ffffff";
+        }
+      });
+      
+      console.log("First pixel after clear:", { index: pixelData[0].oldIndex, color: copy[pixelData[0].oldIndex] });
+      
+      // Set new positions
+      pixelData.forEach(p => {
+        const newRow = p.row + deltaRow;
+        const newCol = p.col + deltaCol;
+        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
+          const newIndex = newRow * 200 + newCol;
+          // Only set if this should be on top or if empty
+          const existingPixelGroup = pixelGroups[newIndex];
+          const currentZIndex = p.pixelGroup?.zIndex || 9999; // Selected pixels get high z-index
+          if (!existingPixelGroup || existingPixelGroup.zIndex < currentZIndex) {
+            copy[newIndex] = p.color;
+            console.log("Set pixel", newIndex, "to", p.color);
+          }
+        }
+      });
+      
+      console.log("Returning updated copy");
+      return copy;
+    });
+    
+    console.log("Updating selected pixels...");
+    // Update selected pixels to new positions
+    const newSelectedPixels = selectedPixelsArray.map(idx => {
+      const row = Math.floor(idx / 200);
+      const col = idx % 200;
+      const newRow = row + deltaRow;
+      const newCol = col + deltaCol;
+      if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < 200) {
+        return newRow * 200 + newCol;
+      }
+      return null;
+    }).filter(idx => idx !== null);
+    
+    console.log("New selected pixels:", newSelectedPixels.slice(0, 5));
+    setSelectedPixels(newSelectedPixels);
+    console.log("moveSelectedPixels complete");
+  }
+
+  function saveToHTML() {
+    const data = {
+      pixelColors: pixelColors,
+      pixelGroups: pixelGroups,
+      groups: groups
+    };
+    const dataString = JSON.stringify(data);
+    const html = `
+<body style="margin:0; overflow-x:hidden;">
+<div style="display:grid;grid-template-columns:repeat(200,0.75vw);grid-auto-rows:0.75vw;">
+${pixelColors.map((c, i) => {
+  const group = pixelGroups[i];
+  const style = `width:0.75vw;height:0.75vw;background:${c};${group ? `position:relative;z-index:${group.zIndex}` : ''}`;
+  return `<div style="${style}"${group ? ` id="${group.group}"` : ''}></div>`;
+}).join("")}
+</div>
+<script>
+const savedData = ${dataString};
+// Data includes: pixelColors, pixelGroups, groups
+</script>
+</body>
+</html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pixel-art.html";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function loadFromHTML(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      // Try new format first (with groups)
+      const matchData = text.match(/const savedData = ({[^;]+})/);
+      if (matchData) {
+        try {
+          const data = JSON.parse(matchData[1]);
+          if (data.pixelColors) setPixelColors(data.pixelColors);
+          if (data.pixelGroups) setPixelGroups(data.pixelGroups);
+          if (data.groups) setGroups(data.groups);
+          return;
+        } catch (err) {
+          console.error("Failed to parse new format:", err);
+        }
+      }
+      // Fallback to old format (just colors)
+      const matchColors = text.match(/const colors = (\[[^;]+\])/);
+      if (matchColors) {
+        try {
+          const arr = JSON.parse(matchColors[1]);
+          setPixelColors(arr);
+        } catch (err) {
+          console.error("Failed to parse old format:", err);
+        }
+      }
+    };
+    reader.readAsText(file);
+  }
+  
+  // Handle background image upload
+  function handleBackgroundUpload(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setBackgroundImage(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+  
+  // Remove background image
+  function removeBackgroundImage() {
+    setBackgroundImage(null);
+  }
+
+  // Track selection overlay element for rendering border around entire selection
+  const selectionOverlayRef = useRef(null);
+  const selectionBorderColorRef = useRef('#000000');
+  
+  // Calculate border color only when selection is finalized (not during drag)
+  useEffect(() => {
+    if (!isDrawing && selectionStart !== null && selectionEnd !== null && activeDrawingTool === "select") {
+      const startRow = Math.floor(selectionStart / 200);
+      const startCol = selectionStart % 200;
+      const endRow = Math.floor(selectionEnd / 200);
+      const endCol = selectionEnd % 200;
+      
+      const minRow = Math.min(startRow, endRow);
+      const maxRow = Math.max(startRow, endRow);
+      const minCol = Math.min(startCol, endCol);
+      const maxCol = Math.max(startCol, endCol);
+      
+      // Sample a few pixels to determine border color (not all pixels for performance)
+      let totalBrightness = 0;
+      let sampleCount = 0;
+      const maxSamples = 100; // Limit samples for performance
+      const rowStep = Math.max(1, Math.floor((maxRow - minRow + 1) / 10));
+      const colStep = Math.max(1, Math.floor((maxCol - minCol + 1) / 10));
+      
+      for (let row = minRow; row <= maxRow && sampleCount < maxSamples; row += rowStep) {
+        for (let col = minCol; col <= maxCol && sampleCount < maxSamples; col += colStep) {
+          const index = row * 200 + col;
+          const color = pixelColors[index];
+          if (color && color.length >= 7) {
+            const r = parseInt(color.substring(1, 3), 16);
+            const g = parseInt(color.substring(3, 5), 16);
+            const b = parseInt(color.substring(5, 7), 16);
+            totalBrightness += (r + g + b) / 3;
+          } else {
+            totalBrightness += 255; // White pixels
+          }
+          sampleCount++;
+        }
+      }
+      
+      if (sampleCount > 0) {
+        const avgBrightness = totalBrightness / sampleCount;
+        selectionBorderColorRef.current = avgBrightness > 127 ? '#000000' : '#CCCCCC';
+      }
+    }
+  }, [isDrawing, selectionStart, selectionEnd, activeDrawingTool, pixelColors]);
+  
+  // Update selection overlay position when selection changes
+  useEffect(() => {
+    const overlayEl = selectionOverlayRef.current;
+    const gridEl = gridRef.current;
+    if (!overlayEl || !gridEl) return;
+    
+    // Use hoveredPixel if actively selecting, otherwise use selectionEnd
+    let effectiveEnd = selectionEnd;
+    if (activeDrawingTool === "select" && isDrawing && hoveredPixel !== null) {
+      effectiveEnd = hoveredPixel;
+    }
+    
+    if (activeDrawingTool === "select" && selectionStart !== null && effectiveEnd !== null) {
+      const startRow = Math.floor(selectionStart / 200);
+      const startCol = selectionStart % 200;
+      const endRow = Math.floor(effectiveEnd / 200);
+      const endCol = effectiveEnd % 200;
+      
+      const minRow = Math.min(startRow, endRow);
+      const maxRow = Math.max(startRow, endRow);
+      const minCol = Math.min(startCol, endCol);
+      const maxCol = Math.max(startCol, endCol);
+      
+      // Calculate pixel positions for absolute positioning
+      const top = minRow * displayPixelSize;
+      const left = minCol * displayPixelSize;
+      const width = (maxCol - minCol + 1) * displayPixelSize;
+      const height = (maxRow - minRow + 1) * displayPixelSize;
+      
+      // Position overlay using absolute positioning
+      overlayEl.style.top = `${top}vw`;
+      overlayEl.style.left = `${left}vw`;
+      overlayEl.style.width = `${width}vw`;
+      overlayEl.style.height = `${height}vw`;
+      overlayEl.style.border = `${0.2 * zoomFactor}vw dashed ${selectionBorderColorRef.current}`;
+      overlayEl.style.display = 'block';
+    } else {
+      overlayEl.style.display = 'none';
+    }
+  }, [selectionStart, selectionEnd, hoveredPixel, activeDrawingTool, isDrawing, zoomFactor, displayPixelSize]);
+
+  return (
+    <div className="pixelgrid-container" style={{ width: "100vw", overflow: "hidden" }}>
+
+      {/* TOP BAR */}
+      <div style={{
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "auto",
+        background: "rgb(255, 255, 255)",
+        borderBottomWidth: "0.3vw",
+        borderBottomStyle: "solid",
+        borderBottomColor: "rgb(0, 0, 0)",
+        display: "grid",
+        alignItems: "center",
+        gridTemplateColumns: `${logoPixelSize * 7}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw ${titlePixelSize * 4}vw ${titlePixelSize * 3}vw ${titlePixelSize * 5}vw ${titlePixelSize * 4}vw ${titlePixelSize * 2}vw ${titlePixelSize * 4}vw .75vw auto auto auto auto`,
+        zIndex: 20
+      }}>
+        <div className="logo" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: `repeat(7, ${logoPixelSize}vw)`,
+          gridTemplateRows: `repeat(7, ${logoPixelSize}vw)`,
+        }}>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels" style={{background: "black"}}></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+<div className="logo-pixels"></div>
+          
+        </div>
+
+        <div className="title-letter-1" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: `repeat(4, ${titlePixelSize}vw)`,
+          gridTemplateRows: `repeat(7, ${titlePixelSize}vw)`,
+          padding: 0,
+          width: `${titlePixelSize * 4}vw`
+        }}>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+<div className="title-p"></div>
+          </div>
+
+        <div className="title-letter-2" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: `repeat(2, ${titlePixelSize}vw)`,
+          gridTemplateRows: `repeat(7, ${titlePixelSize}vw)`,
+          width: `${titlePixelSize * 2}vw`
+        }}>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "#000000"}}></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "#000000"}}></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "#000000"}}></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+        </div>
+
+                <div className="title-letter-3" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: `repeat(4, ${titlePixelSize}vw)`,
+          gridTemplateRows: `repeat(7, ${titlePixelSize}vw)`,
+          width: `${titlePixelSize * 4}vw`
+        }}>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x" style={{backgroundColor:"#000000"}}></div>
+<div className="title-x"></div>
+<div className="title-x" style={{backgroundColor:"#000000"}}></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x" style={{backgroundColor:"#000000"}}></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x" style={{backgroundColor:"#000000"}}></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x" style={{backgroundColor:"#000000"}}></div>
+<div className="title-x"></div>
+<div className="title-x" style={{backgroundColor:"#000000"}}></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+<div className="title-x"></div>
+        </div>
+
+        <div className="title-letter-4" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: `repeat(4, ${titlePixelSize}vw)`,
+          gridTemplateRows: `repeat(7, ${titlePixelSize}vw)`,
+          width: `${titlePixelSize * 4}vw`
+        }}>
+<div className="title-e"></div>
+<div className="title-e"></div>
+<div className="title-e"></div>
+<div className="title-e"></div>
+<div className="title-e"></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e"></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e"></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e"></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e"></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e"></div>
+<div className="title-e"></div>
+<div className="title-e"></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e" style={{backgroundColor: "#000000"}}></div>
+<div className="title-e"></div>
+<div className="title-e"></div>
+<div className="title-e"></div>
+<div className="title-e"></div>
+        </div>
+
+<div className="title-letter-5" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: `repeat(3, ${titlePixelSize}vw)`,
+          gridTemplateRows: `repeat(7, ${titlePixelSize}vw)`,
+          width: `${titlePixelSize * 3}vw`
+        }}>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l" style={{backgroundColor: "#000000"}}></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l" style={{backgroundColor: "#000000"}}></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l" style={{backgroundColor: "#000000"}}></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l" style={{backgroundColor: "#000000"}}></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l" style={{backgroundColor: "#000000"}}></div>
+<div className="title-l" style={{backgroundColor: "#000000"}}></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+<div className="title-l"></div>
+        </div>
+
+ <div className="title-letter-6" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: `repeat(5, ${titlePixelSize}vw)`,
+          gridTemplateRows: `repeat(7, ${titlePixelSize}vw)`,
+          width: `${titlePixelSize * 5}vw`
+        }}>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g"></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g" style={{backgroundColor: "#000000"}}></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+<div className="title-g"></div>
+        </div>
+ <div className="title-letter-7" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: `repeat(4, ${titlePixelSize}vw)`,
+          gridTemplateRows: `repeat(7, ${titlePixelSize}vw)`,
+          width: `${titlePixelSize * 4}vw`
+        }}>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r" style={{backgroundColor:"#000000"}}></div>
+<div className="title-r" style={{backgroundColor:"#000000"}}></div>
+<div className="title-r" style={{backgroundColor:"#000000"}}></div>
+<div className="title-r"></div>
+<div className="title-r" style={{backgroundColor:"#000000"}}></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r" style={{backgroundColor:"#000000"}}></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r" style={{backgroundColor: "#000000"}}></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+<div className="title-r"></div>
+        </div>
+<div className="title-letter-8" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: `repeat(2, ${titlePixelSize}vw)`,
+          gridTemplateRows: `repeat(7, ${titlePixelSize}vw)`,
+          width: `${titlePixelSize * 2}vw`
+        }}>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "#000000"}}></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "#000000"}}></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "#000000"}}></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i" style={{backgroundColor: "rgb(0, 0, 0)"}}></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+<div className="title-i"></div>
+        </div>
+
+<div className="title-letter-9" style={{
+          display: "grid",
+          position: "relative",
+          gridTemplateColumns: `repeat(4, ${titlePixelSize}vw)`,
+          gridTemplateRows: `repeat(7, ${titlePixelSize}vw)`,
+          width: `${titlePixelSize * 4}vw`
+        }}>
+          <div className="title-d"></div>
+<div className="title-d"></div>
+<div className="title-d"></div>
+<div className="title-d"></div>
+<div className="title-d"></div>
+<div className="title-d"></div>
+<div className="title-d"></div>
+<div className="title-d" style={{backgroundColor: "#000000"}}></div>
+<div className="title-d"></div>
+<div className="title-d"></div>
+<div className="title-d"></div>
+<div className="title-d" style={{backgroundColor: "#000000"}}></div>
+<div className="title-d"></div>
+<div className="title-d" style={{backgroundColor: "#000000"}}></div>
+<div className="title-d" style={{backgroundColor: "#000000"}}></div>
+<div className="title-d" style={{backgroundColor: "#000000"}}></div>
+<div className="title-d"></div>
+<div className="title-d" style={{backgroundColor: "#000000"}}></div>
+<div className="title-d"></div>
+<div className="title-d" style={{backgroundColor: "#000000"}}></div>
+<div className="title-d"></div>
+<div className="title-d" style={{backgroundColor: "#000000"}}></div>
+<div className="title-d" style={{backgroundColor: "#000000"}}></div>
+<div className="title-d" style={{backgroundColor: "#000000"}}></div>
+<div className="title-d"></div>
+<div className="title-d"></div>
+<div className="title-d"></div>
+<div className="title-d"></div>
+        </div>
+        <div className="title-pixel-padding"></div>
+
+        {/* FILE BUTTON */}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setShowFileMenu(v => !v)}
+            style={{
+              background: "#222",
+              color: "#ffffff",
+              width: "100%",
+              cursor: "pointer",
+              fontSize: "2vw"
+            }}
+          >
+            File
+          </button>
+
+          {showFileMenu && (
+            <div style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              background: "#222",
+              display: "grid",
+              width: "100%",
+              boxShadow: "0 0.6vw 2vw rgba(0,0,0,0.5)",
+              zIndex: 30
+            }}>
+              <div
+                onClick={() => {
+                  setShowFileMenu(false);
+                  saveToHTML();
+                }}
+                style={{
+                  cursor: "pointer",
+                  color: "#ffffff",
+                  textAlign: "center",
+                  fontSize: ".9vw",
+                  borderBottom: "0.2vw solid #333",
+                  padding: "0.5vw"
+                }}
+              >
+                Save
+              </div>
+
+              <div
+                onClick={() => {
+                  setShowFileMenu(false);
+                  // trigger hidden file input to load HTML file
+                  fileInputRef.current && fileInputRef.current.click();
+                }}
+                style={{
+                  cursor: "pointer",
+                  color: "#ffffff",
+                  textAlign: "center",
+                  fontSize: ".9vw",
+                  borderBottom: "0.2vw solid #333",
+                  padding: "0.5vw"
+                }}
+              >
+                Load
+              </div>
+              
+              <div
+                onClick={() => {
+                  setShowFileMenu(false);
+                  // trigger hidden background image input
+                  backgroundInputRef.current && backgroundInputRef.current.click();
+                }}
+                style={{
+                  cursor: "pointer",
+                  color: "#ffffff",
+                  textAlign: "center",
+                  fontSize: ".9vw",
+                  borderBottom: "0.2vw solid #333",
+                  padding: "0.5vw"
+                }}
+              >
+                {backgroundImage ? "Change Background" : "Upload Background"}
+              </div>
+              
+              {backgroundImage && (
+                <div
+                  onClick={() => {
+                    removeBackgroundImage();
+                    setShowFileMenu(false);
+                  }}
+                  style={{
+                    cursor: "pointer",
+                    color: "#ff9800",
+                    textAlign: "center",
+                    fontSize: ".9vw",
+                    borderBottom: "0.2vw solid #333",
+                    padding: "0.5vw"
+                  }}
+                >
+                  Remove Background
+                </div>
+              )}
+
+              <div
+                onClick={() => {
+                  if (window.confirm("Clear all pixels, groups, and layers? This will also clear localStorage.")) {
+                    setPixelColors(Array(totalPixels).fill("#ffffff"));
+                    setPixelGroups({});
+                    setGroups([]);
+                    setActiveGroup(null);
+                    setSelectedPixels([]);
+                    setSelectionStart(null);
+                    setSelectionEnd(null);
+                    // Clear localStorage
+                    try {
+                      localStorage.removeItem("pixelgrid_pixelColors");
+                      localStorage.removeItem("pixelgrid_pixelGroups");
+                      localStorage.removeItem("pixelgrid_groups");
+                    } catch (err) {
+                      console.error("Failed to clear localStorage:", err);
+                    }
+                  }
+                  setShowFileMenu(false);
+                }}
+                style={{
+                  cursor: "pointer",
+                  color: "#f44336",
+                  textAlign: "center",
+                  fontSize: ".9vw",
+                  padding: "0.5vw"
+                }}
+              >
+                Clear All
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* VIEW BUTTON */}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setShowViewMenu(v => !v)}
+            style={{
+              background: "#222",
+              color: "#ffffff",
+              width: "100%",
+              cursor: "pointer",
+              fontSize: "2vw"
+            }}
+          >
+            Modes
+          </button>
+
+          {showViewMenu && (
+            <div style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              background: "#222",
+              display: "grid",
+              width: "100%",
+              boxShadow: "0 0.6vw 2vw rgba(0,0,0,0.5)",
+              zIndex: 30
+            }}>
+              <div
+                onClick={() => {
+                  setViewMode("drawing");
+                  setShowViewMenu(false);
+                  setActiveDrawingTool("pencil");
+                  setActiveGroup(null);
+                }}
+                style={{
+                  cursor: "pointer",
+                  color: viewMode === "drawing" ? "#4CAF50" : "white",
+                  textAlign: "center",
+                  fontSize: ".9vw",
+                  borderBottom: "0.2vw solid #333",
+                  padding: "0.5vw",
+                  fontWeight: viewMode === "drawing" ? "bold" : "normal"
+                }}
+              >
+                Draw Mode
+              </div>
+
+              <div
+                onClick={() => {
+                  setViewMode("layers");
+                  setShowViewMenu(false);
+                  setActiveDrawingTool("select");
+                }}
+                style={{
+                  cursor: "pointer",
+                  color: viewMode === "layers" ? "#4CAF50" : "white",
+                  textAlign: "center",
+                  fontSize: ".9vw",
+                  padding: "0.5vw",
+                  fontWeight: viewMode === "layers" ? "bold" : "normal"
+                }}
+              >
+                Layer Mode
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* hidden file input used by Load action */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".html"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const f = e.target.files && e.target.files[0];
+            if (f) loadFromHTML(f);
+            // clear selection so same file can be reloaded if needed
+            e.target.value = null;
+          }}
+        />
+        
+        {/* hidden file input for background image */}
+        <input
+          ref={backgroundInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const f = e.target.files && e.target.files[0];
+            if (f) handleBackgroundUpload(f);
+            // clear selection so same file can be reloaded if needed
+            e.target.value = null;
+          }}
+        />
+      </div>
+
+      {/* SIDEBAR */}
+
+<div className="grid-sidebar-wrapper" style={{display: "flex"}}>
+
+      <div style={{
+        background: "#fefefe",
+        position: "relative",
+        display: "inline-flex",
+        width: size.w <= 1024 ? "10vw" : "7vw",
+        flexDirection: "column",
+        gap: "1vw",
+        alignItems: "center",
+        borderRight: "0.2vw solid #000000",
+      }}>
+        {/* TOOLS SECTION */}
+        <div style={{ width: "100%", textAlign: "center", paddingTop: "1vw" }}>
+          <div style={{ color: "#000000", fontSize: "1.5vw", marginBottom: "0" }}><b>Tools</b></div>
+          <div style={{ display: "flex", gap: "0", justifyContent: "center", flexWrap: "wrap", padding: "0 0.5vw" }}>
+            {viewMode === "drawing" && (
+              <>
+                <button
+                  onClick={() => {
+                    setActiveDrawingTool("pencil");
+                    setActiveGroup(null);
+                    setLineStartPixel(null);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: activeDrawingTool === "pencil" ? "#333" : "#fefefe",
+                    color: activeDrawingTool === "pencil" ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: activeDrawingTool === "pencil" ? "0px 0px .2vw .2vw #000000" : "none",
+                  }}
+                >
+                  <i className="fas fa-paintbrush"></i>
+                </button>
+                <button
+                  onClick={async () => {
+                    await loadTool("line");
+                    setActiveDrawingTool("line");
+                    setActiveGroup(null);
+                    setLineStartPixel(null);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: activeDrawingTool === "line" ? "#333" : "#fefefe",
+                    color: activeDrawingTool === "line" ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: activeDrawingTool === "line" ? "0px 0px .2vw .2vw #000000" : "none",
+                  }}
+                >
+                  <i className="fas fa-slash"></i>
+                </button>
+                <button
+                  onClick={async () => {
+                    await loadTool("curve");
+                    setActiveDrawingTool("curve");
+                    setActiveGroup(null);
+                    setLineStartPixel(null);
+                    setCurveEndPixel(null);
+                    setCurveCurveAmount(0);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: activeDrawingTool === "curve" ? "#333" : "#fefefe",
+                    color: activeDrawingTool === "curve" ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: activeDrawingTool === "curve" ? "0px 0px .2vw .2vw #000000" : "none",
+                  }}
+                >
+                  <i className="fas fa-bezier-curve"></i>
+                </button>
+                <button
+                  onClick={async () => {
+                    await loadTool("bucket");
+                    setActiveDrawingTool("bucket");
+                    setActiveGroup(null);
+                    setLineStartPixel(null);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: activeDrawingTool === "bucket" ? "#333" : "#fefefe",
+                    color: activeDrawingTool === "bucket" ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "3vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: activeDrawingTool === "bucket" ? "0px 0px .2vw .2vw #000000" : "none",
+                  }}
+                >
+                  <i className="fas fa-fill-drip"></i>
+                </button>
+                <button
+                  onClick={async () => {
+                    await loadTool("select");
+                    setViewMode("layers");
+                    setActiveDrawingTool("select");
+                    setActiveGroup(null);
+                    setLineStartPixel(null);
+                    setSelectionStart(null);
+                    setSelectionEnd(null);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: "#fefefe",
+                    color: "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "4vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    position: "relative",
+                  }}
+                >
+                  <i className="fas fa-arrows-alt" style={{
+                    position: "absolute",
+                    fontSize: size.w <= 1024 ? "1.5vw" : "1.5vw",
+                    opacity: 0.3,
+                  }}></i>
+                  <i className="fas fa-vector-square"></i>
+                </button>
+              </>
+            )}
+            {viewMode === "layers" && (
+              <>
+                <button
+                  onClick={async () => {
+                    await loadTool("select");
+                    setActiveDrawingTool("select");
+                    setActiveGroup(null);
+                    setLineStartPixel(null);
+                    setSelectionStart(null);
+                    setSelectionEnd(null);
+                  }}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: activeDrawingTool === "select" ? "#333" : "#fefefe",
+                    color: activeDrawingTool === "select" ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "4vw" : "4vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: activeDrawingTool === "select" ? "0px 0px .2vw .2vw #000000" : "none",
+                    position: "relative",
+                  }}
+                >
+                  <i className="fas fa-arrows-alt" style={{
+                    position: "absolute",
+                    fontSize: size.w <= 1024 ? "1.5vw" : "1.5vw",
+                    opacity: 0.3,
+                  }}></i>
+                  <i className="fas fa-vector-square"></i>
+                </button>
+                <button
+                  onClick={() => setShowLayersMenu(!showLayersMenu)}
+                  style={{
+                    width: size.w <= 1024 ? "8vw" : "6vw",
+                    height: size.w <= 1024 ? "8vw" : "6vw",
+                    background: showLayersMenu ? "#333" : "#fefefe",
+                    color: showLayersMenu ? "#fff" : "#000",
+                    border: "0.3vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: size.w <= 1024 ? "3vw" : "3vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: showLayersMenu ? "0px 0px .2vw .2vw #000000" : "none",
+                  }}
+                >
+                  <i className="fas fa-layer-group"></i>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* COLOR MENU HEADER */}
+        <div style={{ width: "100%", position: "relative" }}>
+          <button
+            onClick={() => setShowColorMenu(prev => !prev)}
+            style={{
+              background: "#333",
+              color: "#ffffff",
+              width: "100%",
+              cursor: "pointer",
+              paddingTop:".75vw",
+              paddingBottom:".75vw",
+              fontSize: "1.75vw",
+            }}
+          >
+            {showColorMenu ? "▼ Color" : "► Color"}
+          </button>
+        </div>
+
+        {/* COLOR MENU CONTENT */}
+        {showColorMenu && (
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "1vw",
+            width: "100%",
+            transition: "max-height 0.3s ease",
+          }}>
+            {/* PRIMARY COLOR */}
+            <div style={{ width: "100%", textAlign: "center" }}>
+              <div style={{ color: "#0000000", fontSize: "1.5vw", marginBottom: "0" }}><b>Primary</b></div>
+              <div
+                onClick={() => {
+                  if (activeTool === "primary") {
+                    setEditingColor("primary");
+                    setShowColorEditor(true);
+                  } else {
+                    setActiveTool("primary");
+                  }
+                }}
+                style={{
+                  width: size.w <= 1024 ? "8vw" : "6vw",
+                  height: size.w <= 1024 ? "8vw" : "6vw",
+                  background: primaryColor,
+                  border: activeTool === "primary" 
+                    ? (isLightColor(primaryColor) ? "0.4vw solid #000000" : "0.4vw solid #ffffff")
+                    : (isLightColor(primaryColor) ? "0.3vw solid #000000" : "0.3vw solid #ffffff"),
+                  cursor: "pointer",
+                  margin: "0 auto",
+                  boxShadow: activeTool === "primary" 
+                    ? "0px 0px .2vw .2vw #000000"
+                    : "none",
+                }}
+              />
+            </div>
+
+            {/* SECONDARY COLOR */}
+            <div style={{ width: "100%", textAlign: "center" }}>
+              <div style={{ color: "#000000", fontSize: "1.5vw", marginBottom: "0" }}><b>Secondary</b></div>
+              <div
+                onClick={() => {
+                  if (activeTool === "secondary") {
+                    setEditingColor("secondary");
+                    setShowColorEditor(true);
+                  } else {
+                    setActiveTool("secondary");
+                  }
+                }}
+                style={{
+                  width: size.w <= 1024 ? "8vw" : "6vw",
+                  height: size.w <= 1024 ? "8vw" : "6vw",
+                  background: secondaryColor,
+                  border: activeTool === "secondary" 
+                    ? (isLightColor(secondaryColor) ? "0.4vw solid #000000" : "0.4vw solid #ffffff")
+                    : (isLightColor(secondaryColor) ? "0.3vw solid #000000" : "0.3vw solid #ffffff"),
+                  cursor: "pointer",
+                  margin: "0 auto",
+                  boxShadow: activeTool === "secondary" 
+                    ? (isLightColor(secondaryColor) ? "0 0 1vw rgba(0,0,0,0.5)" : "0 0 1vw rgba(255,255,255,0.5)") 
+                    : "none",
+                }}
+              />
+
+            </div>
+          </div>
+        )}
+        
+        {/* BACKGROUND OPACITY CONTROL */}
+        {backgroundImage && (
+          <div style={{
+            width: "100%",
+            padding: "1vw",
+            borderTop: "0.2vw solid #ddd",
+            marginTop: "1vw"
+          }}>
+            <div style={{ 
+              color: "#000000", 
+              fontSize: "1.5vw", 
+              marginBottom: "0",
+              textAlign: "center"
+            }}>
+              <b>Background Opacity</b>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={backgroundOpacity}
+              onChange={(e) => setBackgroundOpacity(parseFloat(e.target.value))}
+              style={{
+                width: "100%",
+                cursor: "pointer"
+              }}
+            />
+            <div style={{
+              textAlign: "center",
+              fontSize: "1.2vw",
+              color: "#666",
+              marginTop: "0.3vw"
+            }}>
+              {Math.round(backgroundOpacity * 100)}%
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* GRID CONTAINER WITH BACKGROUND */}
+      <div style={{
+        position: "relative",
+        flex: 1,
+        overflow: "hidden"
+      }}>
+        {/* BACKGROUND IMAGE LAYER - Fixed to viewport */}
+        {backgroundImage && (
+          <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 0,
+            pointerEvents: "none",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "flex-start",
+            overflow: "hidden",
+            padding: 0
+          }}>
+            <img
+              src={backgroundImage}
+              alt="Background"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                width: "auto",
+                height: "auto",
+                objectFit: "contain",
+                objectPosition: "top left",
+                opacity: backgroundOpacity
+              }}
+            />
+          </div>
+        )}
+        
+        {/* GRID - Scrollable with transparent background */}
+        <div 
+          ref={gridRef}
+          data-pixel-grid="true"
+          onScroll={(e) => {
+            if (size.w <= 1024) {
+              setScrollPosition(e.target.scrollLeft);
+            }
+          }}
+          onPointerDown={(e) => {
+            // If click didn't hit a pixel directly (e.g., clicked on grid gap/border),
+            // find the pixel at this location and trigger its handler
+            if (!e.target.hasAttribute('data-pixel-index')) {
+              console.log("=== GRID DELEGATION START ===", { 
+                hasGridRef: !!gridRef.current, 
+                target: e.target.tagName,
+                targetHasIndex: e.target.hasAttribute('data-pixel-index')
+              });
+              
+              if (!gridRef.current) {
+                console.error("Grid ref is null!");
+                return;
+              }
+              
+              const rect = gridRef.current.getBoundingClientRect();
+              const x = e.clientX - rect.left + gridRef.current.scrollLeft;
+              const y = e.clientY - rect.top + gridRef.current.scrollTop;
+              
+              // Convert viewport units to pixels
+              const pixelSizeInPx = (displayPixelSize * window.innerWidth) / 100;
+              const col = Math.floor(x / pixelSizeInPx);
+              const row = Math.floor(y / pixelSizeInPx);
+              
+              console.log("Calculated position:", { row, col, x, y, pixelSizeInPx, displayPixelSize });
+              
+              if (row >= 0 && row < rows && col >= 0 && col < 200) {
+                const pixelIndex = row * 200 + col;
+                console.log("Grid click delegated to pixel:", pixelIndex, { row, col, x, y });
+                
+                // Instead of trying to find and click the DOM element, 
+                // just execute the pixel's click logic directly
+                if (activeDrawingTool === "select") {
+                  console.log("=== DELEGATED PIXEL CLICK ===", { 
+                    pixel: pixelIndex, 
+                    tool: activeDrawingTool, 
+                    width: size.w, 
+                    isSelected: selectedPixels.includes(pixelIndex) 
+                  });
+                  
+                  // Check for mobile two-click mode first
+                  if (size.w <= 1024) {
+                    if (selectedPixels.includes(pixelIndex)) {
+                      // Clicking on already selected pixel - enable drag-to-move
+                      e.preventDefault();
+                      console.log("Mobile (delegated): Starting drag on selected pixel", pixelIndex);
+                      const startRow = Math.floor(pixelIndex / 200);
+                      const startCol = pixelIndex % 200;
+                      const dragState = { pixelIndex, startRow, startCol };
+                      
+                      console.log("DRAG INIT DEBUG (delegated):", { 
+                        clickedPixel: pixelIndex, 
+                        startRow, 
+                        startCol, 
+                        selectedPixels: selectedPixels.slice(0, 5),
+                        selectedPixelsLength: selectedPixels.length
+                      });
+                      
+                      // Update ref immediately BEFORE flushSync
+                      dragStateRef.current.activeGroup = "__selected__";
+                      dragStateRef.current.groupDragStart = dragState;
+                      dragStateRef.current.groupDragCurrent = null;
+                      dragStateRef.current.isDrawing = true;
+                      
+                      // Set all drag state AND force render in single flushSync block
+                      flushSync(() => {
+                        setActiveGroup("__selected__");
+                        setGroupDragStart(dragState);
+                        setGroupDragCurrent(null);
+                        setIsDrawing(true);
+                        setRenderTrigger(prev => prev + 1); // Forces immediate render
+                      });
+                      
+                      console.log("Mobile drag initialized (delegated):", { startRow, startCol, activeGroup: "__selected__" });
+                      console.log(">>> IMMEDIATELY AFTER flushSync - ref state:", dragStateRef.current);
+                      console.log(">>> IMMEDIATELY AFTER flushSync - ref state:", dragStateRef.current);
+                    } else if (selectionStart === null && !activeGroup) {
+                      // First click: set selection start (only if no layer is active)
+                      console.log("Mobile first click (delegated) - setting selection start to", pixelIndex);
+                      setSelectionStart(pixelIndex);
+                      setSelectionEnd(null);
+                      setSelectedPixels([]);
+                    }
+                  } else {
+                    // Desktop mode
+                    if (selectedPixels.includes(pixelIndex)) {
+                      // Clicking on selected pixel - start drag
+                      const startRow = Math.floor(pixelIndex / 200);
+                      const startCol = pixelIndex % 200;
+                      const dragState = { pixelIndex, startRow, startCol, clientX: e.clientX, clientY: e.clientY };
+                      
+                      console.log("DRAG INIT DEBUG (delegated, desktop):", { 
+                        clickedPixel: pixelIndex, 
+                        startRow, 
+                        startCol, 
+                        selectedPixels: selectedPixels.slice(0, 5),
+                        selectedPixelsLength: selectedPixels.length
+                      });
+                      
+                      // Update ref immediately BEFORE flushSync
+                      dragStateRef.current.activeGroup = "__selected__";
+                      dragStateRef.current.groupDragStart = dragState;
+                      dragStateRef.current.groupDragCurrent = null;
+                      dragStateRef.current.isDrawing = true;
+                      
+                      // Set all drag state AND force render in single flushSync block
+                      flushSync(() => {
+                        setActiveGroup("__selected__");
+                        setGroupDragStart(dragState);
+                        setGroupDragCurrent(null);
+                        setIsDrawing(true);
+                        setRenderTrigger(prev => prev + 1); // Forces immediate render
+                      });
+                      
+                      console.log(">>> IMMEDIATELY AFTER flushSync (desktop) - ref state:", dragStateRef.current);
+                      
+                      console.log("Desktop drag initialized (delegated):", { startRow, startCol, activeGroup: "__selected__" });
+                    } else if (!activeGroup) {
+                      // Start new selection (only if no layer is active)
+                      setSelectionStart(pixelIndex);
+                      setSelectionEnd(pixelIndex);
+                      setSelectedPixels([]);
+                      setIsDrawing(true);
+                    }
+                  }
+                }
+              } else {
+                console.log("Click outside grid bounds:", { row, col, rows, maxRow: rows - 1 });
+              }
+            } else {
+              console.log("Click hit pixel directly:", e.target.getAttribute('data-pixel-index'));
+            }
+          }}
+          style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(200, ${displayPixelSize}vw)`,
+            gridTemplateRows: `repeat(${rows}, ${displayPixelSize}vw)`,
+            userSelect: "none",
+            position: "relative",
+            zIndex: 1,
+            overflow: "auto",
+            scrollBehavior: "auto",
+            msOverflowStyle: "none",
+            scrollbarWidth: "none",
+            willChange: "transform",
+            height: "100%",
+            width: "100%",
+            background: "transparent",
+            cursor: activeDrawingTool === "select" ? "crosshair" : "default"
+          }}>
+        
+        {/* Selection overlay - absolute positioned inside grid to scroll with content */}
+        <div 
+          ref={selectionOverlayRef}
+          style={{
+            display: 'none',
+            pointerEvents: 'none',
+            boxSizing: 'border-box',
+            position: 'absolute',
+            zIndex: 100,
+            cursor: 'crosshair'
+          }}
+        />
+        
+        {(pixelColors || []).map((c, i) => {
+          // Completely isolate drawing mode from layer calculations for performance
+          if (viewMode === "drawing") {
+            // DRAWING MODE - Minimal calculations for maximum performance
+            
+            const isHovered = hoveredPixel === i;
+            const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
+            const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
+            const isSelected = selectedPixels.includes(i);
+            // Don't show individual pixel borders for select tool - overlay handles it
+            const isInSelectionRect = activeGroup !== null && activeGroup !== "__selected__" && 
+                pixelGroups[i]?.group === activeGroup;
+            const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
+            
+            // Line/curve preview calculations - use fixed end when chosen, otherwise hover
+            let isInLinePreview = false;
+            if (activeDrawingTool === "line" && lineStartPixel !== null) {
+              const previewTarget = lineEndPixel !== null ? lineEndPixel : hoveredPixel;
+              if (previewTarget !== null && previewTarget !== lineStartPixel) {
+                isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
+              }
+            } else if (activeDrawingTool === "curve" && lineStartPixel !== null) {
+              if (curveEndPixel !== null) {
+                // Curve adjustment mode - show bezier curve
+                isInLinePreview = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount).includes(i);
+              } else {
+                // Waiting for second point - show straight line preview
+                const previewTarget = hoveredPixel;
+                if (previewTarget !== null && previewTarget !== lineStartPixel) {
+                  isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
+                }
+              }
+            }
+            
+            // Calculate preview position during selected pixels drag
+            // Use ref values to get immediate updates, not state (which updates async)
+            const dragState = dragStateRef.current;
+            let isInDragPreview = false;
+            let dragPreviewColor = c;
+            
+            if (dragState.groupDragStart !== null && dragState.activeGroup === "__selected__" && dragState.isDrawing) {
+              // Calculate which source pixel should appear at this position
+              const currentDragPos = dragState.groupDragCurrent || { row: dragState.groupDragStart.startRow, col: dragState.groupDragStart.startCol };
+              const deltaRow = currentDragPos.row - dragState.groupDragStart.startRow;
+              const deltaCol = currentDragPos.col - dragState.groupDragStart.startCol;
+              const currentRow = Math.floor(i / 200);
+              const currentCol = i % 200;
+              const sourceRow = currentRow - deltaRow;
+              const sourceCol = currentCol - deltaCol;
+              const sourceIndex = sourceRow * 200 + sourceCol;
+              isInDragPreview = dragState.selectedPixels.includes(sourceIndex);
+              
+              if (isInDragPreview) {
+                // Use source pixel color, defaulting to white if null/undefined
+                dragPreviewColor = pixelColors[sourceIndex] !== null && pixelColors[sourceIndex] !== undefined
+                  ? pixelColors[sourceIndex] 
+                  : '#ffffff';
+              }
+            }
+            
+            // Make white pixels transparent when background image is loaded
+            const displayColor = isInDragPreview ? dragPreviewColor : c;
+            const pixelColor = (backgroundImage && displayColor === '#ffffff') ? 'transparent' : displayColor;
+            
+            return (
+              <DrawingPixel
+                key={i}
+                color={pixelColor}
+                index={i}
+                isHovered={isHovered}
+                isLineStart={isLineStart}
+                isCurveEnd={isCurveEnd}
+                isInLinePreview={isInLinePreview}
+                isSelected={isSelected}
+                isInSelectionRect={isInSelectionRect}
+                isSelectionStartPoint={isSelectionStartPoint}
+                isInDragPreview={isInDragPreview}
+                isDrawing={isDrawing}
+                zoomFactor={zoomFactor}
+                activeDrawingTool={activeDrawingTool}
+                onPointerDown={(e) => {
+                  console.log("=== POINTER DOWN ===", { pixel: i, tool: activeDrawingTool, width: size.w, isSelected: selectedPixels.includes(i) });
+                  if (activeDrawingTool === "select") {
+                    // Check for mobile two-click mode first
+                    if (size.w <= 1024) {
+                      console.log("Clicked pixel", i, "isSelected:", selectedPixels.includes(i), "selectedPixels.length:", selectedPixels.length);
+                      if (selectedPixels.includes(i)) {
+                        // Clicking on already selected pixel - enable drag-to-move
+                        e.preventDefault(); // Prevent default touch behavior
+                        e.stopPropagation(); // Prevent parent handlers from also triggering
+                        console.log("Mobile: Starting drag on selected pixel", i);
+                        const startRow = Math.floor(i / 200);
+                        const startCol = i % 200;
+                        const dragState = { pixelIndex: i, startRow, startCol, clientX: e.clientX, clientY: e.clientY };
+                        
+                        console.log("DRAG INIT DEBUG:", { 
+                          clickedPixel: i, 
+                          startRow, 
+                          startCol, 
+                          selectedPixels: selectedPixels.slice(0, 5),
+                          selectedPixelsLength: selectedPixels.length
+                        });
+                        
+                        setActiveGroup("__selected__");
+                        setGroupDragStart(dragState);
+                        setGroupDragCurrent(null); // Will be set on first pointer move
+                        setIsDrawing(true);
+                        
+                        // Also update ref immediately for event handlers
+                        dragStateRef.current.activeGroup = "__selected__";
+                        dragStateRef.current.groupDragStart = dragState;
+                        dragStateRef.current.groupDragCurrent = null;
+                        dragStateRef.current.isDrawing = true;
+                        
+                        console.log("Mobile drag initialized:", { startRow, startCol, activeGroup: "__selected__" });
+                      } else if (selectionStart === null && !activeGroup) {
+                        // First click: set selection start (only if no layer is active)
+                        console.log("Mobile first click - setting selection start to", i);
+                        setSelectionStart(i);
+                        setSelectionEnd(null);
+                        setSelectedPixels([]);
+                      } else {
+                        // Second click: finalize selection
+                        console.log("Mobile second click - finalizing selection from", selectionStart, "to", i);
+                        setSelectionEnd(i);
+                        const selected = getSelectionPixels(selectionStart, i);
+                        console.log("Selected pixels:", selected);
+                        setSelectedPixels(selected);
+                        setSelectionStart(null);
+                        setSelectionEnd(null);
+                      }
+                    } else {
+                      // Desktop mode - use modular tool if available, otherwise fallback
+                      const context = {
+                        pixelGroups,
+                        activeGroup,
+                        selectionStart,
+                        selectionEnd,
+                        selectedPixels,
+                        size,
+                        setActiveGroup,
+                        setGroupDragStart,
+                        setSelectionStart,
+                        setSelectionEnd,
+                        setSelectedPixels,
+                        setIsDrawing,
+                        getSelectionPixels: (start, end) => getSelectionPixels(start, end),
+                        getSelectionRectangle: (start, end) => getSelectionRectangle(start, end)
+                      };
+                      
+                      if (loadedTools.select) {
+                        loadedTools.select.onPointerDown(context, i);
+                      } else {
+                        // Desktop fallback
+                        if (selectedPixels.includes(i)) {
+                          e.stopPropagation(); // Prevent parent handlers from also triggering
+                          const startRow = Math.floor(i / 200);
+                          const startCol = i % 200;
+                          const dragState = { pixelIndex: i, startRow, startCol, clientX: e.clientX, clientY: e.clientY };
+                          
+                          console.log("DRAG INIT DEBUG (Desktop):", { 
+                            clickedPixel: i, 
+                            startRow, 
+                            startCol, 
+                            selectedPixels: selectedPixels.slice(0, 5),
+                            selectedPixelsLength: selectedPixels.length
+                          });
+                          
+                          setActiveGroup("__selected__");
+                          setGroupDragStart(dragState);
+                          setGroupDragCurrent(null); // Will be set on first pointer move
+                          setIsDrawing(true);
+                          
+                          // Also update ref immediately for event handlers
+                          dragStateRef.current.activeGroup = "__selected__";
+                          dragStateRef.current.groupDragStart = dragState;
+                          dragStateRef.current.groupDragCurrent = null;
+                          dragStateRef.current.isDrawing = true;
+                        } else if (!activeGroup) {
+                          // Only start new selection if no layer is active
+                          setSelectionStart(i);
+                          setSelectionEnd(i);
+                          setSelectedPixels([]);
+                          setIsDrawing(true);
+                        }
+                      }
+                    }
+                  } else if (activeDrawingTool === "pencil") {
+                    setIsDrawing(true);
+                    paintPixel(e, i);
+                  } else if (activeDrawingTool === "bucket") {
+                    paintBucket(i);
+                  } else if (activeDrawingTool === "line") {
+                    if (lineStartPixel === null) {
+                      setLineStartPixel(i);
+                      setLineEndPixel(null);
+                    } else if (lineStartPixel === i) {
+                      setLineStartPixel(null);
+                      setLineEndPixel(null);
+                    } else {
+                      setLineEndPixel(i);
+                      setHoveredPixel(i);
+                    }
+                  } else if (activeDrawingTool === "curve") {
+                    if (lineStartPixel === null) {
+                      setLineStartPixel(i);
+                      setCurveEndPixel(null);
+                    } else if (lineStartPixel === i) {
+                      setLineStartPixel(null);
+                      setCurveEndPixel(null);
+                    } else {
+                      setCurveEndPixel(i);
+                      setHoveredPixel(i);
+                    }
+                  }
+                }}
+                onPointerUp={() => {
+                  if (activeDrawingTool === "select") {
+                    // Desktop mode - finalize drag selection
+                    if (size.w > 1024) {
+                      const context = {
+                        selectionStart,
+                        selectionEnd,
+                        size,
+                        getSelectionPixels: (start, end) => getSelectionPixels(start, end),
+                        setSelectedPixels,
+                        setSelectionStart,
+                        setSelectionEnd,
+                        setGroupDragStart
+                      };
+                      
+                      if (loadedTools.select) {
+                        loadedTools.select.onPointerUp(context);
+                      } else {
+                        // Desktop fallback - only finalize selection rectangle, not move
+                        if (selectionStart !== null && selectionEnd !== null && activeGroup !== "__selected__") {
+                          const selected = getSelectionPixels(selectionStart, selectionEnd);
+                          setSelectedPixels(selected);
+                          setSelectionStart(null);
+                          setSelectionEnd(null);
+                        }
+                      }
+                    }
+                    // Mobile mode - selection and move are handled in onPointerDown and global stopDrawing
+                  }
+                  // Note: Selected pixels move finalization is handled in the global stopDrawing handler
+                  // Don't clear isDrawing or groupDragStart here - let global handler do it
+                }}
+                onPointerEnter={() => {
+                  if (activeDrawingTool === "select") {
+                    // Mobile preview - show rectangle when hovering after first click
+                    if (size.w <= 1024 && selectionStart !== null && selectionEnd === null) {
+                      setSelectionEnd(i);
+                    }
+                    // Desktop mode
+                    else if (size.w > 1024 && isDrawing && selectionStart !== null) {
+                      // Only update selectionEnd during active drag
+                      setSelectionEnd(i);
+                    } else if (size.w > 1024 && groupDragStart !== null) {
+                      const context = {
+                        isDrawing,
+                        selectionStart,
+                        selectionEnd,
+                        groupDragStart,
+                        activeGroup,
+                        size,
+                        setSelectionEnd,
+                        moveGroup,
+                        setGroupDragStart
+                      };
+                      
+                      if (loadedTools.select) {
+                        loadedTools.select.onPointerEnter(context, i);
+                      } else {
+                        // Desktop fallback - don't update selectionEnd when dragging a selection
+                        // The drag position is tracked via groupDragCurrent in the global handler
+                      }
+                    }
+                  } else if (isDrawing && activeDrawingTool === "pencil") {
+                    paintPixel(null, i);
+                  }
+                  
+                  // Note: groupDragCurrent for selected pixels move is now handled by global pointermove handler
+                  // for more accurate cursor-to-pixel mapping
+                  
+                  setHoveredPixel(i);
+                }}
+                onPointerMove={() => {
+                  if (hoveredPixel !== i) {
+                    setHoveredPixel(i);
+                  }
+                  
+                  // Track current drag position for visual feedback and mobile support
+                  // On mobile, onPointerEnter doesn't fire reliably during touch drag
+                  if (groupDragStart !== null && activeGroup === "__selected__" && isDrawing) {
+                    const currentRow = Math.floor(i / 200);
+                    const currentCol = i % 200;
+                    console.log("onPointerMove: Setting groupDragCurrent:", { row: currentRow, col: currentCol });
+                    setGroupDragCurrent({ row: currentRow, col: currentCol });
+                  }
+                  
+                  // Mobile-specific: update selection rectangle during drag
+                  if (activeDrawingTool === "select" && size.w <= 1024 && isDrawing && selectionStart !== null && activeGroup !== "__selected__") {
+                    setSelectionEnd(i);
+                  }
+                }}
+                onPointerLeave={() => {
+                  // Clear mobile selection preview when leaving pixel
+                  if (activeDrawingTool === "select" && size.w <= 1024 && selectionStart !== null && selectedPixels.length === 0) {
+                    setSelectionEnd(null);
+                  }
+                  
+                  // For line/curve preview, keep hover when endpoints are selected
+                  const lineToolActive = activeDrawingTool === "line" && (lineStartPixel !== null || lineEndPixel !== null);
+                  const curveToolActive = activeDrawingTool === "curve" && (lineStartPixel !== null || curveEndPixel !== null);
+                  
+                  if (!(lineToolActive || curveToolActive)) {
+                    setHoveredPixel(null);
+                  }
+                }}
+              />
+            );
+          }
+          
+          // LAYERS MODE - Full layer functionality
+          const pixelGroup = pixelGroups[i];
+          const isLineStart = (activeDrawingTool === "line" || activeDrawingTool === "curve") && lineStartPixel === i;
+          const isCurveEnd = activeDrawingTool === "curve" && curveEndPixel === i;
+          
+          // Only calculate these in layers mode
+          const isSelected = selectedPixels.includes(i);
+          const isInSelectionRect = (() => {
+            // Don't show individual pixel borders for select tool - overlay handles it
+            // Only show active group highlight for other tools
+            return activeGroup !== null && activeGroup !== "__selected__" && 
+              pixelGroup?.group === activeGroup;
+          })();
+          const isSelectionStartPoint = activeDrawingTool === "select" && selectionStart === i && selectionEnd === null && size.w <= 1024;
+          const isInActiveGroup = (pixelGroup && pixelGroup.group === activeGroup) || (activeGroup === "__selected__" && selectedPixels.includes(i));
+          const isMoveGroupHover = activeDrawingTool === "movegroup" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i;
+          const isSelectGroupHover = activeDrawingTool === "select" && (pixelGroup || selectedPixels.includes(i)) && hoveredPixel === i && !isDrawing;
+          
+          // Calculate preview position during group drag
+          let isInDragPreview = false;
+          if (groupDragStart !== null && groupDragCurrent !== null && activeGroup !== null && isDrawing) {
+            const deltaRow = groupDragCurrent.row - groupDragStart.startRow;
+            const deltaCol = groupDragCurrent.col - groupDragStart.startCol;
+            const currentRow = Math.floor(i / 200);
+            const currentCol = i % 200;
+            const sourceRow = currentRow - deltaRow;
+            const sourceCol = currentCol - deltaCol;
+            const sourceIndex = sourceRow * 200 + sourceCol;
+            if (activeGroup === "__selected__") {
+              isInDragPreview = selectedPixels.includes(sourceIndex);
+            } else {
+              isInDragPreview = pixelGroups[sourceIndex]?.group === activeGroup;
+            }
+          }
+          
+          // Show straight line preview or curve preview (only in drawing mode for performance)
+          let isInLinePreview = false;
+          if (activeDrawingTool === "line" && lineStartPixel !== null) {
+            const previewTarget = lineEndPixel !== null ? lineEndPixel : hoveredPixel;
+            if (previewTarget !== null && previewTarget !== lineStartPixel) {
+              isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
+            }
+          } else if (activeDrawingTool === "curve" && lineStartPixel !== null) {
+            if (curveEndPixel !== null) {
+              isInLinePreview = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount).includes(i);
+            } else {
+              const previewTarget = hoveredPixel;
+              if (previewTarget !== null && previewTarget !== lineStartPixel) {
+                isInLinePreview = getLinePixels(lineStartPixel, previewTarget).includes(i);
+              }
+            }
+          }
+          
+          let borderColor = 'transparent';
+          let borderWidth = `${0.1 * zoomFactor}vw`;
+          let boxShadow = 'none';
+          let opacity = 1;
+          let filter = 'none';
+          
+          // Grey out original position during drag preview
+          if (isInActiveGroup && groupDragStart !== null && groupDragCurrent !== null && isDrawing) {
+            filter = 'grayscale(100%)';
+            opacity = 0.3;
+          }
+          
+          // Show preview at new position
+          if (isInDragPreview) {
+            borderColor = '#9C27B0';
+            borderWidth = `${0.2 * zoomFactor}vw`;
+            boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
+          } else if (isSelectionStartPoint) {
+            // Use same contrast detection as line/curve previews
+            const isLight = (() => {
+              // If no color is set, pixel appears white, so treat as light
+              if (!c || c.length < 7) return true;
+              const r = parseInt(c.substring(1, 3), 16);
+              const g = parseInt(c.substring(3, 5), 16);
+              const b = parseInt(c.substring(5, 7), 16);
+              const brightness = (r + g + b) / 3;
+              return brightness > 127;
+            })();
+            borderColor = isLight ? '#000000' : '#CCCCCC';
+            borderWidth = `${0.2 * zoomFactor}vw`;
+            boxShadow = `0 0 ${0.6 * zoomFactor}vw ${0.3 * zoomFactor}vw ${borderColor}`;
+          } else if (isMoveGroupHover || isSelectGroupHover) {
+            borderColor = '#9C27B0';
+            borderWidth = `${0.2 * zoomFactor}vw`;
+            boxShadow = `0 0 ${0.5 * zoomFactor}vw ${0.2 * zoomFactor}vw #9C27B0`;
+          } else if (isInActiveGroup) {
+            // Use same contrast detection as line/curve previews
+            const isLight = (() => {
+              // If no color is set, pixel appears white, so treat as light
+              if (!c || c.length < 7) return true;
+              const r = parseInt(c.substring(1, 3), 16);
+              const g = parseInt(c.substring(3, 5), 16);
+              const b = parseInt(c.substring(5, 7), 16);
+              const brightness = (r + g + b) / 3;
+              return brightness > 127;
+            })();
+            borderColor = isLight ? '#000000' : '#CCCCCC';
+            borderWidth = `${0.2 * zoomFactor}vw`;
+            boxShadow = `0 0 0.5vw ${borderColor}`;
+          } else if (isSelected || isInSelectionRect) {
+            // Use same contrast detection as line/curve previews
+            const isLight = (() => {
+              // If no color is set, pixel appears white, so treat as light
+              if (!c || c.length < 7) return true;
+              const r = parseInt(c.substring(1, 3), 16);
+              const g = parseInt(c.substring(3, 5), 16);
+              const b = parseInt(c.substring(5, 7), 16);
+              const brightness = (r + g + b) / 3;
+              return brightness > 127;
+            })();
+            borderColor = isLight ? '#000000' : '#CCCCCC';
+            borderWidth = `${0.2 * zoomFactor}vw`;
+          } else if (isCurveEnd) {
+            borderColor = getContrastBorderColor(c);
+            borderWidth = `${0.2 * zoomFactor}vw`;
+          } else if (isLineStart || isInLinePreview) {
+            borderColor = getContrastBorderColor(c);
+            borderWidth = `${0.2 * zoomFactor}vw`;
+          }
+          
+          // Get the display color (either current pixel or preview from dragged group)
+          let displayColor = c;
+          if (isInDragPreview) {
+            const deltaRow = groupDragCurrent.row - groupDragStart.startRow;
+            const deltaCol = groupDragCurrent.col - groupDragStart.startCol;
+            const currentRow = Math.floor(i / 200);
+            const currentCol = i % 200;
+            const sourceRow = currentRow - deltaRow;
+            const sourceCol = currentCol - deltaCol;
+            const sourceIndex = sourceRow * 200 + sourceCol;
+            displayColor = pixelColors[sourceIndex] || c;
+          }
+          
+          // Make white pixels transparent when background image is loaded
+          const pixelBackground = (backgroundImage && displayColor === '#ffffff') ? 'transparent' : displayColor;
+          
+          return (
+            <div
+              key={i}
+              style={{ 
+                background: pixelBackground, 
+                boxSizing: 'border-box',
+                border: `${borderWidth} solid ${borderColor}`,
+                boxShadow,
+                position: 'relative',
+                zIndex: pixelGroup ? pixelGroup.zIndex : 0,
+                opacity,
+                filter
+              }}
+              onPointerDown={(e) => {
+                // Check if clicking on a grouped pixel with movegroup tool and group is already selected
+                if (activeDrawingTool === "movegroup" && pixelGroup && activeGroup === pixelGroup.group) {
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
+                  setIsDrawing(true);
+                } else if (activeDrawingTool === "movegroup" && selectedPixels.includes(i)) {
+                  // Moving selected pixels (not in a group yet)
+                  e.stopPropagation();
+                  setActiveGroup("__selected__");
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
+                  setIsDrawing(true);
+                } else if (activeDrawingTool === "select" && pixelGroup && activeGroup === pixelGroup.group) {
+                  // Select tool: clicking on already selected group enables drag-to-move
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
+                  setIsDrawing(true);
+                } else if (activeDrawingTool === "select" && selectedPixels.includes(i)) {
+                  // Select tool: clicking on a selected pixel enables drag-to-move
+                  e.stopPropagation();
+                  setActiveGroup("__selected__");
+                  setGroupDragStart({ pixelIndex: i, startRow: Math.floor(i / 200), startCol: i % 200, clientX: e.clientX, clientY: e.clientY });
+                  setIsDrawing(true);
+                } else if (activeDrawingTool === "select") {
+                  // Mobile two-click selection mode
+                  if (size.w <= 1024) {
+                    if (selectionStart === null) {
+                      // First click: set selection start
+                      console.log("Mobile first click - setting selection start to", i);
+                      setActiveGroup(null); // Close any layer selection
+                      setSelectionStart(i);
+                      setSelectionEnd(null);
+                      setSelectedPixels([]);
+                      // Don't set isDrawing for mobile mode
+                    } else {
+                      // Second click: finalize selection
+                      console.log("Mobile second click - finalizing selection from", selectionStart, "to", i);
+                      setSelectionEnd(i);
+                      const selected = getSelectionPixels(selectionStart, i);
+                      console.log("Selected pixels:", selected);
+                      setSelectedPixels(selected);
+                      setSelectionStart(null);
+                      setSelectionEnd(null);
+                    }
+                  } else {
+                    // Desktop drag selection mode
+                    setActiveGroup(null); // Close any layer selection
+                    setSelectionStart(i);
+                    setSelectionEnd(i);
+                    setIsDrawing(true);
+                  }
+                } else if (activeDrawingTool === "line") {
+                  if (lineStartPixel === null) {
+                    // First click: set start point
+                    setLineStartPixel(i);
+                  } else if (lineStartPixel === i) {
+                    // Clicking same pixel - cancel
+                    setLineStartPixel(null);
+                  } else {
+                    // Second click: draw straight line immediately
+                    drawLine(lineStartPixel, i);
+                    setLineStartPixel(null);
+                  }
+                } else if (activeDrawingTool === "curve") {
+                  if (lineStartPixel === null) {
+                    // First click: set start point
+                    setLineStartPixel(i);
+                  } else if (lineStartPixel === i) {
+                    // Clicking same pixel - cancel
+                    setLineStartPixel(null);
+                  } else {
+                    // Second click: enter adjustment mode
+                    setCurveEndPixel(i);
+                  }
+                }
+              }}
+              onPointerUp={(e) => {
+                if (activeDrawingTool === "select") {
+                  // Desktop mode - finalize drag selection
+                  if (size.w > 1024 && selectionStart !== null) {
+                    const selected = getSelectionPixels(selectionStart, selectionEnd || selectionStart);
+                    setSelectedPixels(selected);
+                    setSelectionStart(null);
+                    setSelectionEnd(null);
+                    setIsDrawing(false);
+                  }
+                  // Mobile mode - selection is handled in onPointerDown
+                } else if (groupDragStart !== null && activeGroup !== null) {
+                  // Finalize group move
+                  const currentRow = Math.floor(i / 200);
+                  const currentCol = i % 200;
+                  const deltaRow = currentRow - groupDragStart.startRow;
+                  const deltaCol = currentCol - groupDragStart.startCol;
+                  
+                  if (deltaRow !== 0 || deltaCol !== 0) {
+                    if (activeGroup === "__selected__") {
+                      moveSelectedPixels(deltaRow, deltaCol);
+                      // Restore __selected__ back to original layer
+                      restoreSelectedToLayer();
+                    } else {
+                      moveGroup(activeGroup, deltaRow, deltaCol);
+                    }
+                  } else {
+                    // No movement, just deselect
+                    if (activeGroup === "__selected__") {
+                      restoreSelectedToLayer();
+                    }
+                  }
+                  
+                  setGroupDragStart(null);
+                  setGroupDragCurrent(null);
+                  setIsDrawing(false);
+                }
+              }}
+              onClick={(e) => {
+                if (activeDrawingTool === "pencil") {
+                  // Pencil tool handled by onPointerDown
+                }
+              }}
+              onPointerEnter={() => {
+                if (activeDrawingTool === "select") {
+                  // Mobile preview - show rectangle when hovering after first click
+                  if (size.w <= 1024 && selectionStart !== null && selectionEnd === null) {
+                    setSelectionEnd(i);
+                  }
+                  // Desktop drag selection
+                  else if (size.w > 1024 && isDrawing) {
+                    setSelectionEnd(i);
+                  }
+                }
+                setHoveredPixel(i);
+              }}
+              onPointerMove={(e) => {
+                setHoveredPixel(i);
+                
+                // Track current drag position for visual feedback (no actual move yet)
+                if (groupDragStart !== null && activeGroup !== null && isDrawing) {
+                  const currentRow = Math.floor(i / 200);
+                  const currentCol = i % 200;
+                  setGroupDragCurrent({ row: currentRow, col: currentCol });
+                }
+              }}
+              onPointerLeave={() => {
+                // Clear mobile selection preview when leaving pixel
+                if (activeDrawingTool === "select" && size.w <= 1024 && selectionStart !== null && selectedPixels.length === 0) {
+                  setSelectionEnd(null);
+                }
+                setHoveredPixel(null);
+              }}
+            />
+          );
+        })}
+      </div>
+      </div>
+      {/* End of GRID CONTAINER WITH BACKGROUND */}
+      
+      </div>
+      {/* End of grid-sidebar-wrapper */}
+      
+      {/* MOBILE/TABLET BOTTOM SCROLLBAR */}
+      {size.w <= 1024 && (
+        <div 
+          onWheel={(e) => {
+            // Allow wheel scrolling when over the scrollbar
+            e.stopPropagation();
+            if (gridRef.current) {
+              const newScrollLeft = Math.max(0, Math.min(
+                gridRef.current.scrollWidth - gridRef.current.clientWidth,
+                scrollPosition + e.deltaY
+              ));
+              gridRef.current.scrollLeft = newScrollLeft;
+              setScrollPosition(newScrollLeft);
+            }
+          }}
+          style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          width: "100%",
+          height: "10vw",
+          display: "grid",
+          gridTemplateColumns: "10vw 1fr 10vw",
+          background: "#fefefe",
+          borderTop: "0.2vw solid #000000",
+          zIndex: 100
+        }}>
+          {/* Left scroll button */}
+          <div 
+            onPointerDown={() => {
+              if (gridRef.current) {
+                const newScrollLeft = Math.max(0, scrollPosition - 100);
+                gridRef.current.scrollLeft = newScrollLeft;
+                setScrollPosition(newScrollLeft);
+              }
+            }}
+            style={{
+              width: "10vw",
+              height: "10vw",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#fefefe",
+              borderRight: "0.2vw solid #000000",
+              cursor: "pointer",
+              fontSize: "5vw",
+              userSelect: "none"
+            }}
+          >
+            ◀
+          </div>
+
+          {/* Slider track */}
+          <div 
+            data-scrollbar-track="true"
+            style={{
+              width: "100%",
+              height: "10vw",
+              background: "#fefefe",
+              position: "relative",
+              padding: "1vw",
+              display: "flex",
+              alignItems: "center"
+            }}
+          >
+            <div
+              onPointerDown={(e) => {
+                setIsDraggingSlider(true);
+                const rect = e.currentTarget.parentElement.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const percent = x / rect.width;
+                const maxScroll = gridRef.current ? gridRef.current.scrollWidth - gridRef.current.clientWidth : 0;
+                if (gridRef.current) {
+                  const newScrollLeft = percent * maxScroll;
+                  gridRef.current.scrollLeft = newScrollLeft;
+                  setScrollPosition(newScrollLeft);
+                }
+              }}
+              style={{
+                width: "100%",
+                height: "8vw",
+                background: "#ffffff",
+                border: "0.2vw solid #000000",
+                position: "relative",
+                cursor: "pointer",
+                touchAction: "none"
+              }}
+            >
+              {/* Slider thumb */}
+              <div style={{
+                position: "absolute",
+                left: `calc(${gridRef.current ? Math.min(74.5, Math.max(0, (scrollPosition / (gridRef.current.scrollWidth - gridRef.current.clientWidth)) * 100)) : 0}% - 0px)`,
+                top: "0",
+                width: "20vw",
+                height: "8vw",
+                background: "#ffffff",
+                pointerEvents: "none"
+              }} />
+            </div>
+          </div>
+
+          {/* Right scroll button */}
+          <div 
+            onPointerDown={() => {
+              if (gridRef.current) {
+                const newScrollLeft = Math.min(
+                  gridRef.current.scrollWidth - gridRef.current.clientWidth,
+                  scrollPosition + 100
+                );
+                gridRef.current.scrollLeft = newScrollLeft;
+                setScrollPosition(newScrollLeft);
+              }
+            }}
+            style={{
+              width: "10vw",
+              height: "10vw",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#fefefe",
+              borderLeft: "0.2vw solid #000000",
+              cursor: "pointer",
+              fontSize: "5vw",
+              userSelect: "none"
+            }}
+          >
+            ▶
+          </div>
+        </div>
+      )}
+
+      {/* COLOR EDITOR OVERLAY */}
+      {showColorEditor && (
+        <div
+          onClick={() => setShowColorEditor(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              padding: "2vw",
+              minWidth: "5vw",
+              display: "flex",
+              flexDirection: "column",
+              gap: "1vw",
+            }}
+          >
+            <div style={{ color: "white", fontSize: "2vw", textAlign: "center" }}>
+              Edit {editingColor === "primary" ? "Primary" : "Secondary"} Color
+            </div>
+            
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <input
+                type="color"
+                value={editingColor === "primary" ? primaryColor : secondaryColor}
+                onChange={(e) => {
+                  if (editingColor === "primary") {
+                    setPrimaryColor(e.target.value);
+                  } else {
+                    setSecondaryColor(e.target.value);
+                  }
+                }}
+                style={{
+                  width: "10vw",
+                  height: "10vw",
+                  border: "0.3vw solid #000000",
+                  cursor: "pointer",
+                }}
+              />
+            </div>
+
+            <input
+              type="text"
+              value={editingColor === "primary" ? primaryColor : secondaryColor}
+              onChange={(e) => {
+                const val = normalizeHexInput(e.target.value);
+                if (editingColor === "primary") {
+                  setPrimaryColor(val);
+                } else {
+                  setSecondaryColor(val);
+                }
+              }}
+              maxLength={7}
+              style={{
+                width: "100%",
+                background: "#111",
+                border: "0.2vw solid #000000",
+                color: "#ffffff",
+                textAlign: "center",
+                borderRadius: "0.5vw",
+                fontSize: "1.5vw",
+                padding: "1vw",
+              }}
+            />
+
+            <button
+              onClick={() => setShowColorEditor(false)}
+              style={{
+                color: "#ffffff",
+                fontSize: "1.3vw",
+                padding: "1vw",
+                cursor: "pointer",
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* LINE APPLY OVERLAY */}
+      {activeDrawingTool === "line" && lineStartPixel !== null && lineEndPixel !== null && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: size.w <= 1024 ? "10vw" : "0",
+            left: size.w <= 1024 ? "10vw" : "10vw",
+            right: 0,
+            background: "#ffffff",
+            padding: "1vw",
+            borderTop: "0.3vw solid #000000",
+            zIndex: 1000,
+            display: "flex",
+            justifyContent: "center",
+            gap: "1vw"
+          }}
+        >
+          <button
+            onClick={() => {
+              setLineStartPixel(null);
+              setLineEndPixel(null);
+              setHoveredPixel(null);
+            }}
+            style={{
+              background: "#ffffff",
+              color: "#ffffff",
+              border: "0.2vw solid #000",
+              padding: "1vw 3vw",
+              cursor: "pointer",
+              fontSize: "1.3vw",
+              fontWeight: "bold"
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              if (lineStartPixel !== null && lineEndPixel !== null) {
+                drawLine(lineStartPixel, lineEndPixel);
+              }
+              setLineStartPixel(null);
+              setLineEndPixel(null);
+              setHoveredPixel(null);
+            }}
+            style={{
+              background: "#4CAF50",
+              color: "#ffffff",
+              border: "0.2vw solid #000",
+              padding: "1vw 3vw",
+              cursor: "pointer",
+              fontSize: "1.3vw",
+              fontWeight: "bold"
+            }}
+          >
+            Apply
+          </button>
+        </div>
+      )}
+
+      {/* CURVE ADJUSTMENT OVERLAY */}
+      {activeDrawingTool === "curve" && lineStartPixel !== null && curveEndPixel !== null && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: size.w <= 1024 ? "10vw" : "0",
+            left: size.w <= 1024 ? "10vw" : "10vw",
+            right: 0,
+            background: "#ffffff",
+            padding: "1vw",
+            borderTop: "0.3vw solid #000000",
+            zIndex: 1000,
+            display: "flex",
+            flexDirection: "column",
+            gap: "1vw",
+            alignItems: "center"
+          }}
+        >
+          <input
+            type="number"
+            min="-100"
+            max="100"
+            value={curveCurveAmount}
+            onChange={(e) => setCurveCurveAmount(Math.min(100, Math.max(-100, Number(e.target.value))))}
+            style={{
+              width: "12vw",
+              padding: "1vw",
+              fontSize: "1.5vw",
+              border: "0.2vw solid #000000",
+              textAlign: "center"
+            }}
+          />
+          
+          <input
+            type="range"
+            min="-100"
+            max="100"
+            value={curveCurveAmount}
+            onChange={(e) => setCurveCurveAmount(Number(e.target.value))}
+            style={{ width: "80%" }}
+          />
+          
+          <div style={{ display: "flex", gap: "1vw" }}>
+            <button
+              onClick={() => {
+                setLineStartPixel(null);
+                setCurveEndPixel(null);
+                setCurveCurveAmount(0);
+                setHoveredPixel(null);
+              }}
+              style={{
+                background: "#ffffff",
+                color: "#ffffff",
+                border: "0.2vw solid #000",
+                padding: "1vw 3vw",
+                cursor: "pointer",
+                fontSize: "1.3vw",
+                fontWeight: "bold"
+              }}
+            >
+              Cancel
+            </button>
+            
+            <button
+              onClick={() => {
+                if (curveCurveAmount === 0) {
+                  drawLine(lineStartPixel, curveEndPixel);
+                } else {
+                  const curvePixels = getQuadraticBezierPixels(lineStartPixel, curveEndPixel, curveCurveAmount);
+                  setPixelColors((prev) => {
+                    const copy = [...prev];
+                    curvePixels.forEach(idx => {
+                      copy[idx] = color;
+                    });
+                    return copy;
+                  });
+                }
+                setLineStartPixel(null);
+                setCurveEndPixel(null);
+                setCurveCurveAmount(0);
+                setHoveredPixel(null);
+              }}
+              style={{
+                background: "#4CAF50",
+                color: "#ffffff",
+                border: "0.2vw solid #000",
+                padding: "1vw 3vw",
+                cursor: "pointer",
+                fontSize: "1.3vw",
+                fontWeight: "bold"
+              }}
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* RIGHT SIDEBAR CONTAINER - Desktop Grid Layout */}
+      {viewMode === "layers" && size.w > 1024 && (activeDrawingTool === "select" || showLayersMenu) && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          width: "25vw",
+          height: "100vh",
+          display: "grid",
+          gridTemplateRows: activeDrawingTool === "select" && showLayersMenu ? "auto 1fr" : "1fr",
+          zIndex: 1000
+        }}>
+          {/* SELECT MENU - Row 1 */}
+          {activeDrawingTool === "select" && (
+            <div style={{
+              background: "#ffffff",
+              color: "#ffffff",
+              padding: "0",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0",
+              borderLeft: "0.3vw solid #000000",
+              borderBottom: showLayersMenu ? "0.3vw solid #000000" : "none",
+              overflowY: "auto"
+            }}>
+              
+              {/* Select Menu Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0" }}>
+                <div style={{ display: "flex", gap: "0", alignItems: "center" }}>
+                  <div style={{ fontSize: "2vw", fontWeight: "bold" }}>
+                    Select
+                  </div>
+                  {/* Selection Mode Toggle */}
+                  <button
+                    onClick={() => setSelectAllPixels(!selectAllPixels)}
+                    style={{
+                      background: "#ffffff",
+                      color: "#ffffff",
+                      padding: "0",
+                      cursor: "pointer",
+                      fontSize: "1.5vw",
+                      fontWeight: "bold",
+                      whiteSpace: "nowrap",
+                      border: "0.2vw solid #ffffff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "0",
+                      width: "10vw",
+                      height: "5vw"
+                    }}
+                    title={selectAllPixels ? "Selecting all pixels in box" : "Selecting only colored pixels"}
+                  >
+                    <i className={selectAllPixels ? "fas fa-check-square" : "fas fa-square"}></i>
+                    {selectAllPixels ? "All" : "Color"}
+                  </button>
+                </div>
+                <div style={{ display: "flex", gap: "0" }}>
+                  <button
+                    onClick={() => setShowLayersMenu(!showLayersMenu)}
+                    style={{
+                      background: showLayersMenu ? "#333" : "#fefefe",
+                      color: showLayersMenu ? "#fff" : "#000",
+                      border: "0.2vw solid #000",
+                      padding: "0",
+                      cursor: "pointer",
+                      fontSize: "1.2vw",
+                      fontWeight: "bold",
+                      width: "10vw",
+                      height: "10vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                  >
+                    <i className="fas fa-layer-group"></i>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveDrawingTool("pencil");
+                      setSelectedPixels([]);
+                      setSelectionStart(null);
+                      setSelectionEnd(null);
+                    }}
+                    style={{
+                      background: "#666",
+                      color: "#ffffff",
+                      border: "0.2vw solid #000",
+                      padding: "0",
+                      cursor: "pointer",
+                      fontSize: "1.5vw",
+                      fontWeight: "bold",
+                      width: "10vw",
+                      height: "10vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              
+              {/* Selected Pixels Count */}
+              {selectedPixels.length > 0 && (
+                <div style={{ fontSize: "0.7vw", color: "#4CAF50", fontWeight: "bold", whiteSpace: "nowrap", textAlign: "center" }}>
+                  ({selectedPixels.length} selected)
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* LAYERS MENU - Row 2 */}
+          {showLayersMenu && (
+            <div style={{
+              background: "#ffffff",
+              color: "#ffffff",
+              display: "grid",
+              gridTemplateColumns: "1fr 5vw",
+              gap: "0",
+              borderLeft: "0.3vw solid #000000"
+            }}>
+              
+              {/* Scrollable Content Area */}
+              <div 
+                ref={layersMenuRef}
+                onScroll={(e) => {
+                  setLayersScrollPosition(e.target.scrollTop);
+                }}
+                style={{
+                  padding: "0",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none"
+                }}
+              >
+              
+              {/* Layers Menu Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0" }}>
+                <div style={{ fontSize: "2vw", fontWeight: "bold", color: "#000000" }}>
+                  Layers
+                </div>
+                <button
+                  onClick={() => setShowLayersMenu(false)}
+                  style={{
+                    background: "#666",
+                    color: "#ffffff",
+                    border: "0.2vw solid #000",
+                    padding: "0",
+                    cursor: "pointer",
+                    fontSize: "1.5vw",
+                    fontWeight: "bold",
+                    width: "10vw",
+                    height: "10vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {/* Group Creation Section */}
+              <div style={{ display: "flex", gap: "0", alignItems: "center", marginBottom: "0" }}>
+                <input
+                  type="text"
+                  placeholder="Group name"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && e.target.value.trim()) {
+                      createGroup(e.target.value.trim());
+                      e.target.value = "";
+                    }
+                  }}
+                  style={{
+                    padding: "0",
+                    fontSize: "1.5vw",
+                    border: "0.2vw solid #000000",
+                    textAlign: "center",
+                    background: "#ffffff",
+                    color: "#ffffff",
+                    flex: 1,
+                    lineHeight: "10vw"
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    const input = document.querySelector('input[placeholder="Group name"]');
+                    if (input && input.value.trim()) {
+                      createGroup(input.value.trim());
+                      input.value = "";
+                    }
+                  }}
+                  style={{
+                    background: "#ffffff",
+                    color: "#ffffff",
+                    border: "0.2vw solid #000",
+                    cursor: "pointer",
+                    fontSize: "1.5vw",
+                    fontWeight: "bold",
+                    whiteSpace: "nowrap",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "10vw",
+                    height: "10vw",
+                    borderRadius: "0"
+                  }}
+                >
+                  + New Group
+                </button>
+              </div>
+              
+              {/* Layers Grid - Desktop */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "auto 15vw auto auto auto",
+                gap: "0",
+                alignItems: "center",
+                background: "#1a1a1a",
+                padding: "0",
+                borderRadius: "0",
+                fontSize: "0.7vw"
+              }}>
+                {/* Header Row */}
+                <div style={{ fontWeight: "bold", padding: "0", color: "white" }}>Z</div>
+                <div style={{ fontWeight: "bold", padding: "0", color: "white" }}>Name</div>
+                <div style={{ fontWeight: "bold", padding: "0", color: "white" }}>Up</div>
+                <div style={{ fontWeight: "bold", padding: "0", color: "white" }}>Down</div>
+                <div style={{ fontWeight: "bold", padding: "0", color: "white" }}>Del</div>
+                
+                {/* Layer Rows - Sorted by z-index descending */}
+                {[...groups]
+                  .filter(g => g.name !== "__selected__")
+                  .sort((a, b) => {
+                  // Background layer always at bottom
+                  if (a.name === "Background") return 1;
+                  if (b.name === "Background") return -1;
+                  return b.zIndex - a.zIndex;
+                }).map((group, index) => (
+                  <div
+                    key={group.name}
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedLayer(group.name);
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      setDragOverLayer(group.name);
+                    }}
+                    onDragLeave={() => {
+                      setDragOverLayer(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (draggedLayer && draggedLayer !== group.name) {
+                        // Swap z-indices
+                        const draggedGroup = groups.find(g => g.name === draggedLayer);
+                        const targetGroup = groups.find(g => g.name === group.name);
+                        
+                        if (draggedGroup && targetGroup) {
+                          const tempZ = draggedGroup.zIndex;
+                          const newGroups = groups.map(g => {
+                            if (g.name === draggedLayer) return { ...g, zIndex: targetGroup.zIndex };
+                            if (g.name === group.name) return { ...g, zIndex: tempZ };
+                            return g;
+                          });
+                          setGroups(newGroups);
+                          
+                          // Update pixelGroups
+                          const newPixelGroups = {};
+                          Object.keys(pixelGroups).forEach(idx => {
+                            const pg = pixelGroups[idx];
+                            if (pg.group === draggedLayer) {
+                              newPixelGroups[idx] = { ...pg, zIndex: targetGroup.zIndex };
+                            } else if (pg.group === group.name) {
+                              newPixelGroups[idx] = { ...pg, zIndex: tempZ };
+                            } else {
+                              newPixelGroups[idx] = pg;
+                            }
+                          });
+                          setPixelGroups(newPixelGroups);
+                        }
+                      }
+                      setDraggedLayer(null);
+                      setDragOverLayer(null);
+                    }}
+                    style={{
+                      display: "contents",
+                      cursor: "grab"
+                    }}
+                  >
+                    {/* Z-Index */}
+                    <div style={{
+                      fontSize: "3vw",
+                      fontWeight: "bold",
+                      padding: "0",
+                      background: "#000000",
+                      color: "#ffffff",
+                      borderRadius: "0",
+                      textAlign: "center",
+                      border: "0.15vw solid #ffffff",
+                      cursor: "grab",
+                      width: "10vw",
+                      height: "10vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}>
+                      {group.zIndex}
+                    </div>
+                    
+                    {/* Layer Name */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0", flex: 1 }}>
+                      <div style={{ position: "relative", display: "flex" }}>
+                        <div
+                          onClick={() => {
+                            if (group.name === "__selected__") {
+                              // Don't allow clicking __selected__ itself
+                              return;
+                            }
+                            
+                            // Check if this layer is currently active (extracted to __selected__)
+                            const selectedLayer = groups.find(g => g.name === "__selected__");
+                            const isThisLayerActive = selectedLayer && selectedLayer.originalLayerName === group.name;
+                            
+                            if (isThisLayerActive) {
+                              // Deselect if clicking the currently active layer
+                              restoreSelectedToLayer();
+                            } else {
+                              // If another layer is active, restore it first
+                              if (activeGroup === "__selected__") {
+                                restoreSelectedToLayer();
+                              }
+                              // Extract this layer to __selected__ for moving
+                              const extracted = extractLayerToSelected(group.name);
+                              if (extracted) {
+                                setActiveGroup("__selected__");
+                                setSelectedPixels(extracted.pixelIndices);
+                                setSelectionStart(null);
+                                setSelectionEnd(null);
+                              }
+                            }
+                          }}
+                          style={{
+                            fontSize: "3vw",
+                            padding: "0",
+                            background: (() => {
+                              const selectedLayer = groups.find(g => g.name === "__selected__");
+                              const isActive = selectedLayer && selectedLayer.originalLayerName === group.name;
+                              return isActive ? "#ffffff" : "#000000";
+                            })(),
+                            color: (() => {
+                              const selectedLayer = groups.find(g => g.name === "__selected__");
+                              const isActive = selectedLayer && selectedLayer.originalLayerName === group.name;
+                              return isActive ? "#000000" : "#ffffff";
+                            })(),
+                            borderRadius: "0",
+                            cursor: "pointer",
+                            border: "0.15vw solid #ffffff",
+                            fontWeight: (() => {
+                              const selectedLayer = groups.find(g => g.name === "__selected__");
+                              const isActive = selectedLayer && selectedLayer.originalLayerName === group.name;
+                              return isActive ? "bold" : "normal";
+                            })(),
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            width: "15vw",
+                            lineHeight: "10vw",
+                            height: "10vw"
+                          }}
+                        >
+                          {group.originalLayerName || group.name}
+                        </div>
+                        
+                        {/* Edit/Confirm Button */}
+                        <button
+                          onClick={() => {
+                            if (renameGroup === group.name) {
+                              // Confirm rename
+                              if (renameValue.trim()) {
+                                const newGroups = groups.map(g => 
+                                  g.name === group.name ? { ...g, name: renameValue.trim() } : g
+                                );
+                                setGroups(newGroups);
+                                
+                                const newPixelGroups = {};
+                                Object.keys(pixelGroups).forEach(idx => {
+                                  const pg = pixelGroups[idx];
+                                  newPixelGroups[idx] = pg.group === group.name 
+                                    ? { ...pg, group: renameValue.trim() }
+                                    : pg;
+                                });
+                                setPixelGroups(newPixelGroups);
+                                
+                                if (activeGroup === group.name) {
+                                  setActiveGroup(renameValue.trim());
+                                }
+                              }
+                              setRenameGroup(null);
+                              setRenameValue("");
+                            } else {
+                              // Start rename
+                              setRenameGroup(group.name);
+                              setRenameValue(group.name);
+                            }
+                          }}
+                          style={{
+                            width: "5vw",
+                            height: "10vw",
+                            background: "#000000",
+                            color: "#ffffff",
+                            border: "0.15vw solid #ffffff",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "2.5vw",
+                            fontWeight: "bold",
+                            borderRadius: "0"
+                          }}
+                        >
+                          {renameGroup === group.name ? "✓" : "✎"}
+                        </button>
+                        
+                        {/* Rename Overlay */}
+                        {renameGroup === group.name && (
+                          <input
+                            type="text"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            autoFocus
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "15vw",
+                              height: "10vw",
+                              fontSize: "3vw",
+                              border: "0.15vw solid #000000",
+                              background: "#ffffff",
+                              color: "#000000",
+                              textAlign: "center",
+                              lineHeight: "10vw",
+                              padding: "0",
+                              zIndex: 1000
+                            }}
+                          />
+                        )}
+                      </div>
+                      
+                      {/* Directional Movement Buttons - Show when movegroup tool is active and this layer is active */}
+                      {activeDrawingTool === "movegroup" && activeGroup === group.name && (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0" }}>
+                          {/* Left Button */}
+                          <button
+                            onClick={() => moveGroup(group.name, 0, -1)}
+                            style={{
+                              background: "#ffffff",
+                              color: "#000000",
+                              border: "0.2vw solid #000",
+                              width: "10vw",
+                              height: "10vw",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "2.5vw",
+                              fontWeight: "900",
+                              borderRadius: "0"
+                            }}
+                            title="Move left"
+                          >
+                            ←
+                          </button>
+                          
+                          {/* Up Button */}
+                          <button
+                            onClick={() => moveGroup(group.name, -1, 0)}
+                            style={{
+                              background: "#ffffff",
+                              color: "#000000",
+                              border: "0.2vw solid #000",
+                              width: "10vw",
+                              height: "10vw",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "2.5vw",
+                              fontWeight: "900",
+                              borderRadius: "0"
+                            }}
+                            title="Move up"
+                          >
+                            ↑
+                          </button>
+                          
+                          {/* Down Button */}
+                          <button
+                            onClick={() => moveGroup(group.name, 1, 0)}
+                            style={{
+                              background: "#ffffff",
+                              color: "#000000",
+                              border: "0.2vw solid #000",
+                              width: "10vw",
+                              height: "10vw",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "2.5vw",
+                              fontWeight: "900",
+                              borderRadius: "0"
+                            }}
+                            title="Move down"
+                          >
+                            ↓
+                          </button>
+                          
+                          {/* Right Button */}
+                          <button
+                            onClick={() => moveGroup(group.name, 0, 1)}
+                            style={{
+                              background: "#ffffff",
+                              color: "#000000",
+                              border: "0.2vw solid #000",
+                              width: "10vw",
+                              height: "10vw",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "2.5vw",
+                              fontWeight: "900",
+                              borderRadius: "0"
+                            }}
+                            title="Move right"
+                          >
+                            →
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Move Up Button */}
+                    <button
+                      onClick={() => {
+                        // Prevent moving Background layer
+                        if (group.name === "Background") {
+                          return;
+                        }
+                        const newGroups = groups.map(g => 
+                          g.name === group.name ? { ...g, zIndex: g.zIndex + 1 } : g
+                        );
+                        setGroups(newGroups);
+                        const newPixelGroups = {};
+                        Object.keys(pixelGroups).forEach(idx => {
+                          const pg = pixelGroups[idx];
+                          newPixelGroups[idx] = pg.group === group.name 
+                            ? { ...pg, zIndex: pg.zIndex + 1 }
+                            : pg;
+                        });
+                        setPixelGroups(newPixelGroups);
+                      }}
+                      style={{
+                        background: "#ffffff",
+                        color: "#000000",
+                        border: "0.2vw solid #000",
+                        width: "10vw",
+                      height: "10vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "2.5vw",
+                        fontWeight: "bold",
+                        borderRadius: "0"
+                      }}
+                    >
+                      ▲
+                    </button>
+                    
+                    {/* Move Down Button */}
+                    <button
+                      onClick={() => {
+                        // Prevent moving Background layer
+                        if (group.name === "Background") {
+                          return;
+                        }
+                        const newGroups = groups.map(g => 
+                          g.name === group.name ? { ...g, zIndex: g.zIndex - 1 } : g
+                        );
+                        setGroups(newGroups);
+                        const newPixelGroups = {};
+                        Object.keys(pixelGroups).forEach(idx => {
+                          const pg = pixelGroups[idx];
+                          newPixelGroups[idx] = pg.group === group.name 
+                            ? { ...pg, zIndex: pg.zIndex - 1 }
+                            : pg;
+                        });
+                        setPixelGroups(newPixelGroups);
+                      }}
+                      style={{
+                        background: "#ffffff",
+                        color: "#000000",
+                        border: "0.2vw solid #000",
+                        width: "10vw",
+                      height: "10vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "2.5vw",
+                        fontWeight: "bold",
+                        borderRadius: "0"
+                      }}
+                    >
+                      ▼
+                    </button>
+                    
+                    {/* Delete Button */}
+                    <button
+                      onClick={() => {
+                        // Prevent deleting Background layer
+                        if (group.name === "Background") {
+                          return;
+                        }
+                        if (window.confirm(`Delete layer "${group.name}"? This will ungroup all pixels.`)) {
+                          // Remove group
+                          setGroups(groups.filter(g => g.name !== group.name));
+                          
+                          // Remove pixels from group
+                          const newPixelGroups = {};
+                          Object.keys(pixelGroups).forEach(idx => {
+                            if (pixelGroups[idx].group !== group.name) {
+                              newPixelGroups[idx] = pixelGroups[idx];
+                            }
+                          });
+                          setPixelGroups(newPixelGroups);
+                          
+                          // Clear active group if this was it
+                          if (activeGroup === group.name) {
+                            setActiveGroup(null);
+                          }
+                        }
+                      }}
+                      style={{
+                        background: group.name === "Background" ? "#666666" : "#ffffff",
+                        color: group.name === "Background" ? "#999999" : "#000000",
+                        border: "0.2vw solid #000",
+                        width: "10vw",
+                      height: "10vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                        cursor: group.name === "Background" ? "not-allowed" : "pointer",
+                        fontSize: "2.5vw",
+                        fontWeight: "bold",
+                        borderRadius: "0",
+                        opacity: group.name === "Background" ? 0.5 : 1
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+              </div>
+              
+              {/* Vertical Scrollbar */}
+              <div style={{
+                width: "5vw",
+                background: "#fefefe",
+                borderLeft: "0.2vw solid #000000",
+                display: "flex",
+                flexDirection: "column"
+              }}>
+                {/* Up scroll button */}
+                <div 
+                  onPointerDown={() => {
+                    if (layersMenuRef.current) {
+                      const newScrollTop = Math.max(0, layersScrollPosition - 100);
+                      layersMenuRef.current.scrollTop = newScrollTop;
+                      setLayersScrollPosition(newScrollTop);
+                    }
+                  }}
+                  style={{
+                    width: "5vw",
+                    height: "5vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#000000",
+                    borderBottom: "0.2vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: "2.5vw",
+                    userSelect: "none"
+                  }}
+                >
+                  ▲
+                </div>
+
+                {/* Slider track */}
+                <div 
+                  data-layers-scrollbar-track="true"
+                  style={{
+                    width: "5vw",
+                    flex: 1,
+                    background: "#000000",
+                    position: "relative",
+                    padding: "0.5vw",
+                    display: "flex",
+                    alignItems: "center"
+                  }}
+                >
+                  <div
+                    onPointerDown={(e) => {
+                      setIsDraggingLayersSlider(true);
+                      const rect = e.currentTarget.parentElement.getBoundingClientRect();
+                      const y = e.clientY - rect.top;
+                      const percent = y / rect.height;
+                      const maxScroll = layersMenuRef.current ? layersMenuRef.current.scrollHeight - layersMenuRef.current.clientHeight : 0;
+                      if (layersMenuRef.current) {
+                        const newScrollTop = percent * maxScroll;
+                        layersMenuRef.current.scrollTop = newScrollTop;
+                        setLayersScrollPosition(newScrollTop);
+                      }
+                    }}
+                    style={{
+                      width: "4vw",
+                      height: "100%",
+                      background: "#ffffff",
+                      border: "0.2vw solid #000000",
+                      position: "relative",
+                      cursor: "pointer",
+                      touchAction: "none"
+                    }}
+                  >
+                    {/* Slider thumb */}
+                    <div style={{
+                      position: "absolute",
+                      top: layersMenuRef.current && layersMenuRef.current.scrollHeight > layersMenuRef.current.clientHeight 
+                        ? `${((layersMenuRef.current.scrollTop / (layersMenuRef.current.scrollHeight - layersMenuRef.current.clientHeight)) * (layersMenuRef.current.clientHeight - 70)) / layersMenuRef.current.clientHeight * 100}%`
+                        : "0%",
+                      left: "0",
+                      width: "4vw",
+                      height: "5vw",
+                      background: "#ffffff",
+                      pointerEvents: "none"
+                    }} />
+                  </div>
+                </div>
+
+                {/* Down scroll button */}
+                <div 
+                  onPointerDown={() => {
+                    if (layersMenuRef.current) {
+                      const newScrollTop = Math.min(
+                        layersMenuRef.current.scrollHeight - layersMenuRef.current.clientHeight,
+                        layersScrollPosition + 100
+                      );
+                      layersMenuRef.current.scrollTop = newScrollTop;
+                      setLayersScrollPosition(newScrollTop);
+                    }
+                  }}
+                  style={{
+                    width: "5vw",
+                    height: "5vw",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#fefefe",
+                    borderTop: "0.2vw solid #000000",
+                    cursor: "pointer",
+                    fontSize: "2.5vw",
+                    userSelect: "none"
+                  }}
+                >
+                  ▼
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SELECT MENU - Mobile Only */}
+      {viewMode === "layers" && activeDrawingTool === "select" && size.w <= 1024 && (
+        <div style={{
+          position: "fixed",
+          bottom: showLayersMenu ? "45vw" : "10vw",
+          left: "10vw",
+          right: 0,
+          background: "#ffffff",
+          color: "#ffffff",
+          padding: "0",
+          zIndex: 1001,
+          display: "flex",
+          flexDirection: "column",
+          gap: "0",
+          borderTop: "0.3vw solid #000000",
+          maxHeight: "35vw",
+          overflowY: "auto"
+        }}>
+          
+          {/* Select Menu Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0" }}>
+            <div style={{ display: "flex", gap: "0", alignItems: "center" }}>
+              <div style={{ fontSize: "2vw", fontWeight: "bold" }}>
+                Select
+              </div>
+              {/* Selection Mode Toggle */}
+              <button
+                onClick={() => setSelectAllPixels(!selectAllPixels)}
+                style={{
+                  background: "#ffffff",
+                  color: "#ffffff",
+                  padding: "0",
+                  cursor: "pointer",
+                  fontSize: "1.5vw",
+                  fontWeight: "bold",
+                  whiteSpace: "nowrap",
+                  border: "0.2vw solid #ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0",
+                  width: "10vw",
+                  height: "5vw"
+                }}
+                title={selectAllPixels ? "Selecting all pixels in box" : "Selecting only colored pixels"}
+              >
+                <i className={selectAllPixels ? "fas fa-check-square" : "fas fa-square"}></i>
+                {selectAllPixels ? "All" : "Color"}
+              </button>
+            </div>
+            <div style={{ display: "flex", gap: "0" }}>
+              <button
+                onClick={() => setShowLayersMenu(!showLayersMenu)}
+                style={{
+                  background: showLayersMenu ? "#333" : "#fefefe",
+                  color: showLayersMenu ? "#fff" : "#000",
+                  border: "0.2vw solid #000",
+                  padding: "0",
+                  cursor: "pointer",
+                  fontSize: "1.2vw",
+                  fontWeight: "bold",
+                  width: "10vw",
+                  height: "10vw",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                <i className="fas fa-layer-group"></i>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveDrawingTool("pencil");
+                  setSelectedPixels([]);
+                  setSelectionStart(null);
+                  setSelectionEnd(null);
+                }}
+                style={{
+                  background: "#666",
+                  color: "#ffffff",
+                  border: "0.2vw solid #000",
+                  padding: "0",
+                  cursor: "pointer",
+                  fontSize: "1.5vw",
+                  fontWeight: "bold",
+                  width: "10vw",
+                  height: "10vw",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          
+          {/* Selected Pixels Count */}
+          {selectedPixels.length > 0 && (
+            <div style={{ fontSize: "0.7vw", color: "#4CAF50", fontWeight: "bold", whiteSpace: "nowrap", textAlign: "center" }}>
+              ({selectedPixels.length} selected)
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* LAYERS MENU - Mobile Only */}
+      {viewMode === "layers" && showLayersMenu && size.w <= 1024 && (
+        <div style={{
+          position: "fixed",
+          bottom: "10vw",
+          top: activeDrawingTool === "select" ? "auto" : "20vw",
+          left: "10vw",
+          right: 0,
+          background: "#ffffff",
+          color: "#ffffff",
+          zIndex: 1000,
+          display: "grid",
+          gridTemplateColumns: "1fr 10vw",
+          gap: "0",
+          borderTop: "0.3vw solid #000000",
+          height: activeDrawingTool === "select" ? "35vw" : "auto"
+        }}>
+          
+          {/* Scrollable Content Area - Mobile */}
+          <div
+            ref={layersMenuRef}
+            onScroll={(e) => {
+              setLayersScrollPosition(e.target.scrollTop);
+            }}
+            style={{
+              padding: "0",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0",
+              overflowY: "auto",
+              overflowX: "hidden",
+              scrollbarWidth: "none",
+              msOverflowStyle: "none"
+            }}
+          >
+          
+          {/* Layers Menu Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0" }}>
+            <div style={{ fontSize: "2vw", fontWeight: "bold", color: "#000000" }}>
+              Layers
+            </div>
+            <button
+              onClick={() => setShowLayersMenu(false)}
+              style={{
+                background: "#666",
+                color: "#ffffff",
+                border: "0.2vw solid #000",
+                padding: "0",
+                cursor: "pointer",
+                fontSize: "1.5vw",
+                fontWeight: "bold",
+                width: "10vw",
+                height: "10vw",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              ✕
+            </button>
+          </div>
+          
+          {/* Group Creation Section */}
+          <div style={{ display: "flex", gap: "0", alignItems: "center", marginBottom: "0" }}>
+            <input
+              type="text"
+              placeholder="Group name"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && e.target.value.trim()) {
+                  createGroup(e.target.value.trim());
+                  e.target.value = "";
+                }
+              }}
+              style={{
+                padding: "0",
+                fontSize: "1.5vw",
+                border: "0.2vw solid #000000",
+                textAlign: "center",
+                background: "#ffffff",
+                color: "#ffffff",
+                flex: 1,
+                lineHeight: "10vw"
+              }}
+            />
+            <button
+              onClick={() => {
+                const input = document.querySelector('input[placeholder="Group name"]');
+                if (input && input.value.trim()) {
+                  createGroup(input.value.trim());
+                  input.value = "";
+                }
+              }}
+              style={{
+                background: "#ffffff",
+                color: "#ffffff",
+                border: "0.2vw solid #000",
+                cursor: "pointer",
+                fontSize: "1.5vw",
+                fontWeight: "bold",
+                whiteSpace: "nowrap",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "10vw",
+                height: "10vw",
+                borderRadius: "0"
+              }}
+            >
+              + New Group
+            </button>
+          </div>
+          
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "auto 1fr auto auto auto",
+            gap: "0",
+            alignItems: "center",
+            background: "#1a1a1a",
+            padding: "0",
+            borderRadius: "0",
+            fontSize: "0.7vw"
+          }}>
+            {/* Header Row */}
+            <div style={{ fontWeight: "bold", padding: "0", color: "white" }}>Z</div>
+                <div style={{ fontWeight: "bold", padding: "0", color: "white" }}>Name</div>
+                <div style={{ fontWeight: "bold", padding: "0", color: "white" }}>Up</div>
+                <div style={{ fontWeight: "bold", padding: "0", color: "white" }}>Down</div>
+                <div style={{ fontWeight: "bold", padding: "0", color: "white" }}>Del</div>
+                
+                {/* Layer Rows - Sorted by z-index descending */}
+                {[...groups]
+                  .filter(g => g.name !== "__selected__")
+                  .sort((a, b) => {
+                  // Background layer always at bottom
+                  if (a.name === "Background") return 1;
+                  if (b.name === "Background") return -1;
+                  return b.zIndex - a.zIndex;
+                }).map((group, index) => (
+                  <div
+                    key={group.name}
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedLayer(group.name);
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      setDragOverLayer(group.name);
+                    }}
+                    onDragLeave={() => {
+                      setDragOverLayer(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (draggedLayer && draggedLayer !== group.name) {
+                        // Swap z-indices
+                        const draggedGroup = groups.find(g => g.name === draggedLayer);
+                        const targetGroup = groups.find(g => g.name === group.name);
+                        
+                        if (draggedGroup && targetGroup) {
+                          const tempZ = draggedGroup.zIndex;
+                          const newGroups = groups.map(g => {
+                            if (g.name === draggedLayer) return { ...g, zIndex: targetGroup.zIndex };
+                            if (g.name === group.name) return { ...g, zIndex: tempZ };
+                            return g;
+                          });
+                          setGroups(newGroups);
+                          
+                          // Update pixelGroups
+                          const newPixelGroups = {};
+                          Object.keys(pixelGroups).forEach(idx => {
+                            const pg = pixelGroups[idx];
+                            if (pg.group === draggedLayer) {
+                              newPixelGroups[idx] = { ...pg, zIndex: targetGroup.zIndex };
+                            } else if (pg.group === group.name) {
+                              newPixelGroups[idx] = { ...pg, zIndex: tempZ };
+                            } else {
+                              newPixelGroups[idx] = pg;
+                            }
+                          });
+                          setPixelGroups(newPixelGroups);
+                        }
+                      }
+                      setDraggedLayer(null);
+                      setDragOverLayer(null);
+                    }}
+                    style={{
+                      display: "contents",
+                      cursor: "grab"
+                    }}
+                  >
+                    {/* Z-Index */}
+                    <div style={{
+                      fontSize: "3vw",
+                      fontWeight: "bold",
+                      padding: "0",
+                      background: "#000",
+                      color: "#ffffff",
+                      borderRadius: "0",
+                      textAlign: "center",
+                      border: "0.15vw solid #ffffff",
+                      cursor: "grab",
+                      width: "10vw",
+                      height: "10vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}>
+                      {group.zIndex}
+                    </div>
+                    
+                    {/* Layer Name */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0", flex: 1 }}>
+                      <div style={{ position: "relative", display: "flex" }}>
+                        <div
+                          onClick={() => {
+                            if (group.name === "__selected__") {
+                              // Don't allow clicking __selected__ itself
+                              return;
+                            }
+                            
+                            // Check if this layer is currently active (extracted to __selected__)
+                            const selectedLayer = groups.find(g => g.name === "__selected__");
+                            const isThisLayerActive = selectedLayer && selectedLayer.originalLayerName === group.name;
+                            
+                            if (isThisLayerActive) {
+                              // Deselect if clicking the currently active layer
+                              restoreSelectedToLayer();
+                            } else {
+                              // If another layer is active, restore it first
+                              if (activeGroup === "__selected__") {
+                                restoreSelectedToLayer();
+                              }
+                              // Extract this layer to __selected__ for moving
+                              const extracted = extractLayerToSelected(group.name);
+                              if (extracted) {
+                                setActiveGroup("__selected__");
+                                setSelectedPixels(extracted.pixelIndices);
+                                setSelectionStart(null);
+                                setSelectionEnd(null);
+                              }
+                            }
+                          }}
+                          style={{
+                            fontSize: "3vw",
+                            padding: "0",
+                            background: (() => {
+                              const selectedLayer = groups.find(g => g.name === "__selected__");
+                              const isActive = selectedLayer && selectedLayer.originalLayerName === group.name;
+                              return isActive ? "#ffffff" : "#000000";
+                            })(),
+                            borderRadius: "0",
+                            color: (() => {
+                              const selectedLayer = groups.find(g => g.name === "__selected__");
+                              const isActive = selectedLayer && selectedLayer.originalLayerName === group.name;
+                              return isActive ? "#000000" : "#ffffff";
+                            })(),
+                            cursor: "pointer",
+                            border: (() => {
+                              const selectedLayer = groups.find(g => g.name === "__selected__");
+                              const isActive = selectedLayer && selectedLayer.originalLayerName === group.name;
+                              return isActive ? "0.15vw solid #000000" : "0.15vw solid #fefefe";
+                            })(),
+                            fontWeight: (() => {
+                              const selectedLayer = groups.find(g => g.name === "__selected__");
+                              const isActive = selectedLayer && selectedLayer.originalLayerName === group.name;
+                              return isActive ? "bold" : "normal";
+                            })(),
+                            overflow: "hidden",
+                            lineHeight: "10vw",
+                            height: "10vw",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            flex: 1
+                          }}
+                        >
+                          {group.originalLayerName || group.name}
+                        </div>
+                        
+                        {/* Edit/Confirm Button */}
+                        <button
+                          onClick={() => {
+                            if (renameGroup === group.name) {
+                              // Confirm rename
+                              if (renameValue.trim()) {
+                                const newGroups = groups.map(g => 
+                                  g.name === group.name ? { ...g, name: renameValue.trim() } : g
+                                );
+                                setGroups(newGroups);
+                                
+                                const newPixelGroups = {};
+                                Object.keys(pixelGroups).forEach(idx => {
+                                  const pg = pixelGroups[idx];
+                                  newPixelGroups[idx] = pg.group === group.name 
+                                    ? { ...pg, group: renameValue.trim() }
+                                    : pg;
+                                });
+                                setPixelGroups(newPixelGroups);
+                                
+                                if (activeGroup === group.name) {
+                                  setActiveGroup(renameValue.trim());
+                                }
+                              }
+                              setRenameGroup(null);
+                              setRenameValue("");
+                            } else {
+                              // Start rename
+                              setRenameGroup(group.name);
+                              setRenameValue(group.name);
+                            }
+                          }}
+                          style={{
+                            width: "5vw",
+                            height: "10vw",
+                            background: "#000000",
+                            color: "#ffffff",
+                            border: "0.15vw solid #ffffff",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "2.5vw",
+                            fontWeight: "bold",
+                            borderRadius: "0"
+                          }}
+                        >
+                          {renameGroup === group.name ? "✓" : "✎"}
+                        </button>
+                        
+                        {/* Rename Overlay */}
+                        {renameGroup === group.name && (
+                          <input
+                            type="text"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            autoFocus
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "calc(100% - 5vw)",
+                              height: "10vw",
+                              fontSize: "3vw",
+                              border: "0.15vw solid #000000",
+                              background: "#ffffff",
+                              color: "#000000",
+                              textAlign: "center",
+                              lineHeight: "10vw",
+                              padding: "0",
+                              zIndex: 1000
+                            }}
+                          />
+                        )}
+                      </div>
+                      
+                      {/* Directional Movement Buttons - Show when movegroup tool is active and this layer is active */}
+                      {activeDrawingTool === "movegroup" && activeGroup === group.name && (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0" }}>
+                          {/* Left Button */}
+                          <button
+                            onClick={() => moveGroup(group.name, 0, -1)}
+                            style={{
+                              background: "#ffffff",
+                              color: "#000000",
+                              border: "0.2vw solid #000",
+                              width: "10vw",
+                              height: "10vw",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "2.5vw",
+                              fontWeight: "900",
+                              borderRadius: "0"
+                            }}
+                            title="Move left"
+                          >
+                            ←
+                          </button>
+                          
+                          {/* Up Button */}
+                          <button
+                            onClick={() => moveGroup(group.name, -1, 0)}
+                            style={{
+                              background: "#ffffff",
+                              color: "#000000",
+                              border: "0.2vw solid #000",
+                              width: "10vw",
+                              height: "10vw",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "2.5vw",
+                              fontWeight: "900",
+                              borderRadius: "0"
+                            }}
+                            title="Move up"
+                          >
+                            ↑
+                          </button>
+                          
+                          {/* Down Button */}
+                          <button
+                            onClick={() => moveGroup(group.name, 1, 0)}
+                            style={{
+                              background: "#ffffff",
+                              color: "#000000",
+                              border: "0.2vw solid #000",
+                              width: "10vw",
+                              height: "10vw",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "2.5vw",
+                              fontWeight: "900",
+                              borderRadius: "0"
+                            }}
+                            title="Move down"
+                          >
+                            ↓
+                          </button>
+                          
+                          {/* Right Button */}
+                          <button
+                            onClick={() => moveGroup(group.name, 0, 1)}
+                            style={{
+                              background: "#ffffff",
+                              color: "#000000",
+                              border: "0.2vw solid #000",
+                              width: "10vw",
+                              height: "10vw",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "2.5vw",
+                              fontWeight: "900",
+                              borderRadius: "0"
+                            }}
+                            title="Move right"
+                          >
+                            →
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Move Up Button */}
+                    <button
+                      onClick={() => {
+                        // Prevent moving Background layer
+                        if (group.name === "Background") {
+                          return;
+                        }
+                        const newGroups = groups.map(g => 
+                          g.name === group.name ? { ...g, zIndex: g.zIndex + 1 } : g
+                        );
+                        setGroups(newGroups);
+                        const newPixelGroups = {};
+                        Object.keys(pixelGroups).forEach(idx => {
+                          const pg = pixelGroups[idx];
+                          newPixelGroups[idx] = pg.group === group.name 
+                            ? { ...pg, zIndex: pg.zIndex + 1 }
+                            : pg;
+                        });
+                        setPixelGroups(newPixelGroups);
+                      }}
+                      style={{
+                        background: "#ffffff",
+                        color: "#000000",
+                        border: "0.2vw solid #000",
+                        width: "10vw",
+                      height: "10vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "2.5vw",
+                        fontWeight: "bold",
+                        borderRadius: "0"
+                      }}
+                    >
+                      ▲
+                    </button>
+                    
+                    {/* Move Down Button */}
+                    <button
+                      onClick={() => {
+                        // Prevent moving Background layer
+                        if (group.name === "Background") {
+                          return;
+                        }
+                        const newGroups = groups.map(g => 
+                          g.name === group.name ? { ...g, zIndex: g.zIndex - 1 } : g
+                        );
+                        setGroups(newGroups);
+                        const newPixelGroups = {};
+                        Object.keys(pixelGroups).forEach(idx => {
+                          const pg = pixelGroups[idx];
+                          newPixelGroups[idx] = pg.group === group.name 
+                            ? { ...pg, zIndex: pg.zIndex - 1 }
+                            : pg;
+                        });
+                        setPixelGroups(newPixelGroups);
+                      }}
+                      style={{
+                        background: "#ffffff",
+                        color: "#000000",
+                        border: "0.2vw solid #000",
+                        width: "10vw",
+                      height: "10vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "2.5vw",
+                        fontWeight: "bold",
+                        borderRadius: "0"
+                      }}
+                    >
+                      ▼
+                    </button>
+                    
+                    {/* Delete Button */}
+                    <button
+                      onClick={() => {
+                        // Prevent deleting Background layer
+                        if (group.name === "Background") {
+                          return;
+                        }
+                        if (window.confirm(`Delete layer "${group.name}"? This will ungroup all pixels.`)) {
+                          // Remove group
+                          setGroups(groups.filter(g => g.name !== group.name));
+                          
+                          // Remove pixels from group
+                          const newPixelGroups = {};
+                          Object.keys(pixelGroups).forEach(idx => {
+                            if (pixelGroups[idx].group !== group.name) {
+                              newPixelGroups[idx] = pixelGroups[idx];
+                            }
+                          });
+                          setPixelGroups(newPixelGroups);
+                          
+                          // Clear active group if this was it
+                          if (activeGroup === group.name) {
+                            setActiveGroup(null);
+                          }
+                        }
+                      }}
+                      style={{
+                        background: group.name === "Background" ? "#666666" : "#ffffff",
+                        color: group.name === "Background" ? "#999999" : "#000000",
+                        border: "0.2vw solid #000",
+                        width: "10vw",
+                      height: "10vw",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                        cursor: group.name === "Background" ? "not-allowed" : "pointer",
+                        fontSize: "2.5vw",
+                        fontWeight: "bold",
+                        borderRadius: "0",
+                        opacity: group.name === "Background" ? 0.5 : 1
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+          </div>
+          
+          {/* Vertical Scrollbar - Mobile */}
+          <div style={{
+            width: "10vw",
+            background: "#fefefe",
+            borderLeft: "0.2vw solid #000000",
+            display: "flex",
+            flexDirection: "column"
+          }}>
+            {/* Up scroll button */}
+            <div 
+              onPointerDown={() => {
+                if (layersMenuRef.current) {
+                  const newScrollTop = Math.max(0, layersScrollPosition - 100);
+                  layersMenuRef.current.scrollTop = newScrollTop;
+                  setLayersScrollPosition(newScrollTop);
+                }
+              }}
+              style={{
+                width: "10vw",
+                height: "10vw",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#fefefe",
+                borderBottom: "0.2vw solid #000000",
+                cursor: "pointer",
+                fontSize: "5vw",
+                userSelect: "none"
+              }}
+            >
+              ▲
+            </div>
+
+            {/* Slider track */}
+            <div 
+              data-layers-scrollbar-track="true"
+              style={{
+                width: "10vw",
+                flex: 1,
+                background: "#fefefe",
+                position: "relative",
+                padding: "1vw",
+                display: "flex",
+                alignItems: "center"
+              }}
+            >
+              <div
+                onPointerDown={(e) => {
+                  setIsDraggingLayersSlider(true);
+                  const rect = e.currentTarget.parentElement.getBoundingClientRect();
+                  const y = e.clientY - rect.top;
+                  const percent = y / rect.height;
+                  const maxScroll = layersMenuRef.current ? layersMenuRef.current.scrollHeight - layersMenuRef.current.clientHeight : 0;
+                  if (layersMenuRef.current) {
+                    const newScrollTop = percent * maxScroll;
+                    layersMenuRef.current.scrollTop = newScrollTop;
+                    setLayersScrollPosition(newScrollTop);
+                  }
+                }}
+                style={{
+                  width: "8vw",
+                  height: "100%",
+                  background: "#ffffff",
+                  border: "0.2vw solid #000000",
+                  position: "relative",
+                  cursor: "pointer",
+                  touchAction: "none"
+                }}
+              >
+                {/* Slider thumb */}
+                <div style={{
+                  position: "absolute",
+                  top: layersMenuRef.current && layersMenuRef.current.scrollHeight > layersMenuRef.current.clientHeight 
+                    ? `${((layersMenuRef.current.scrollTop / (layersMenuRef.current.scrollHeight - layersMenuRef.current.clientHeight)) * (layersMenuRef.current.clientHeight - 120)) / layersMenuRef.current.clientHeight * 100}%`
+                    : "0%",
+                  left: "0",
+                  width: "8vw",
+                  height: "8vw",
+                  background: "#ffffff",
+                  pointerEvents: "none"
+                }} />
+              </div>
+            </div>
+
+            {/* Down scroll button */}
+            <div 
+              onPointerDown={() => {
+                if (layersMenuRef.current) {
+                  const newScrollTop = Math.min(
+                    layersMenuRef.current.scrollHeight - layersMenuRef.current.clientHeight,
+                    layersScrollPosition + 100
+                  );
+                  layersMenuRef.current.scrollTop = newScrollTop;
+                  setLayersScrollPosition(newScrollTop);
+                }
+              }}
+              style={{
+                width: "10vw",
+                height: "10vw",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#fefefe",
+                borderTop: "0.2vw solid #000000",
+                cursor: "pointer",
+                fontSize: "5vw",
+                userSelect: "none"
+              }}
+            >
+              ▼
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

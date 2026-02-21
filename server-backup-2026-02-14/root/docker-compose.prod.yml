@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: pixelgrid_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_this_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pixelgrid_db}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - pixelgrid_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  app_server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: pixelgrid_server
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_this_password}
+      DB_NAME: ${MYSQL_DATABASE:-pixelgrid_db}
+      DB_PORT: 3306
+      SERVER_PORT: 5050
+      NODE_ENV: production
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - pixelgrid_network
+
+networks:
+  pixelgrid_network:
+    driver: bridge
+
+volumes:
+  mysql_data:

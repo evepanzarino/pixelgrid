@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Alerts Overlay</title>
+<link rel="stylesheet" href="/overlay/css/overlay.css">
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-start;
+    height: 100vh;
+    padding: 20px;
+  }
+
+  #alert-box {
+    display: none;
+    min-width: 320px;
+    max-width: 420px;
+    padding: 18px 22px;
+    border-radius: var(--border-r);
+    border: 2px solid var(--teal);
+    background: rgba(0,0,0,0.88);
+    animation: slideIn 0.4s cubic-bezier(.25,.8,.25,1) forwards;
+    box-shadow: 0 0 24px rgba(131,189,200,0.4);
+  }
+
+  #alert-box.hide {
+    animation: slideOut 0.4s ease forwards;
+  }
+
+  .alert-icon { font-size: 32px; text-align: center; margin-bottom: 6px; }
+
+  .alert-type {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--teal);
+    margin-bottom: 4px;
+  }
+
+  .alert-user {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 4px;
+  }
+
+  .alert-detail {
+    font-size: 14px;
+    color: var(--rose);
+  }
+
+  .alert-message {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #ccc;
+    font-style: italic;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 8px;
+  }
+
+  /* Per-type accent colors */
+  #alert-box.follow   { border-color: var(--teal);  box-shadow: 0 0 24px rgba(131,189,200,0.5); }
+  #alert-box.sub      { border-color: var(--pink);  box-shadow: 0 0 24px rgba(255,107,157,0.5); }
+  #alert-box.resub    { border-color: var(--pink);  box-shadow: 0 0 24px rgba(255,107,157,0.5); }
+  #alert-box.cheer    { border-color: #a970ff;      box-shadow: 0 0 24px rgba(169,112,255,0.5); }
+  #alert-box.donation { border-color: #ffd700;      box-shadow: 0 0 24px rgba(255,215,0,0.5); }
+</style>
+</head>
+<body>
+<div id="alert-box">
+  <div class="alert-icon" id="alert-icon"></div>
+  <div class="alert-type" id="alert-type"></div>
+  <div class="alert-user" id="alert-user"></div>
+  <div class="alert-detail" id="alert-detail"></div>
+  <div class="alert-message" id="alert-message"></div>
+</div>
+
+<script>
+  const box     = document.getElementById('alert-box');
+  const icon    = document.getElementById('alert-icon');
+  const typeEl  = document.getElementById('alert-type');
+  const userEl  = document.getElementById('alert-user');
+  const detail  = document.getElementById('alert-detail');
+  const msgEl   = document.getElementById('alert-message');
+
+  const ALERT_CONFIG = {
+    follow:   { icon: '🌸', label: 'New Follower',    detail: u => `${u} just followed!`,            duration: 5000 },
+    sub:      { icon: '⭐', label: 'New Subscriber',  detail: u => `${u} just subscribed!`,          duration: 6000 },
+    resub:    { icon: '🎉', label: 'Resubscribed',    detail: (u,a) => `${u} has resubscribed for ${a} months!`, duration: 6000 },
+    cheer:    { icon: '💎', label: 'Cheer',           detail: (u,a) => `${u} cheered ${a} bits!`,    duration: 5000 },
+    donation: { icon: '💖', label: 'Donation',        detail: (u,a) => `${u} donated $${a}!`,        duration: 6000 },
+  };
+
+  let queue = [];
+  let showing = false;
+
+  function showNext() {
+    if (showing || queue.length === 0) return;
+    showing = true;
+    const { type, user, amount, message } = queue.shift();
+    const cfg = ALERT_CONFIG[type] || { icon: '🔔', label: type, detail: u => u, duration: 5000 };
+
+    icon.textContent    = cfg.icon;
+    typeEl.textContent  = cfg.label;
+    userEl.textContent  = user || 'Someone';
+    detail.textContent  = cfg.detail(user || 'Someone', amount || '');
+    msgEl.textContent   = message || '';
+    msgEl.style.display = message ? 'block' : 'none';
+
+    box.className = type;
+    box.classList.remove('hide');
+    box.style.display = 'block';
+
+    setTimeout(() => {
+      box.classList.add('hide');
+      setTimeout(() => {
+        box.style.display = 'none';
+        showing = false;
+        showNext();
+      }, 400);
+    }, cfg.duration);
+  }
+
+  const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/overlay`;
+  let ws;
+
+  function connect() {
+    ws = new WebSocket(WS_URL);
+    ws.onmessage = e => {
+      const data = JSON.parse(e.data);
+      if (data.event !== 'alert') return;
+      queue.push(data);
+      showNext();
+    };
+    ws.onclose = () => setTimeout(connect, 2000);
+    ws.onerror = () => ws.close();
+  }
+
+  connect();
+</script>
+</body>
+</html>
