@@ -2131,10 +2131,6 @@ body {
   line-height: 1;
 }
 
-.mobile-nav-create {
-  position: relative;
-  top: -3vw;
-}
 
 .mobile-nav-create-icon {
   display: flex;
@@ -2143,8 +2139,8 @@ body {
 }
 
 .mobile-nav-create-svg {
-  width: 10vw;
-  height: 10vw;
+  width: 5.5vw;
+  height: 5.5vw;
   object-fit: contain;
   display: block;
 }
