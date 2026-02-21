@@ -5910,11 +5910,11 @@ const MobileNav = () => {
   return (
     <nav className="mobile-nav">
       <Link to={`${BASE_PATH}/feed`} className="mobile-nav-btn">
-        <span className="mobile-nav-icon">🏠</span>
+        <span className="mobile-nav-icon"><img src={`${process.env.PUBLIC_URL}/images/home.svg`} alt="Feed" className="mobile-nav-svg" /></span>
         <span className="mobile-nav-label">Feed</span>
       </Link>
       <Link to={`${BASE_PATH}/trends`} className="mobile-nav-btn">
-        <span className="mobile-nav-icon">🔥</span>
+        <span className="mobile-nav-icon"><img src={`${process.env.PUBLIC_URL}/images/trends.svg`} alt="Trends" className="mobile-nav-svg" /></span>
         <span className="mobile-nav-label">Trends</span>
       </Link>
       <Link to={`${BASE_PATH}/skills`} className="mobile-nav-btn">
@@ -5930,7 +5930,7 @@ const MobileNav = () => {
         <span className="mobile-nav-label">Tribes</span>
       </Link>
       <Link to={`${BASE_PATH}/messages`} className="mobile-nav-btn">
-        <span className="mobile-nav-icon">✉</span>
+        <span className="mobile-nav-icon"><img src={`${process.env.PUBLIC_URL}/images/message.svg`} alt="Messages" className="mobile-nav-svg" /></span>
         <span className="mobile-nav-label">Messages</span>
       </Link>
       <Link to={`${BASE_PATH}/${user.username}`} className="mobile-nav-btn">
