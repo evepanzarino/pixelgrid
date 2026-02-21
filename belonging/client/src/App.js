@@ -2225,13 +2225,16 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
     return html;
   };
 
-  // Insert text at cursor in draft textarea
+  // Insert text at cursor in body textarea (body is draft after first '\n')
   const insertIntoBody = (text) => {
     const ta = bodyRef.current;
+    const titlePart = draft.split('\n')[0];
     if (!ta) { setDraft(prev => prev + text); return; }
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
-    setDraft(prev => prev.substring(0, start) + text + prev.substring(end));
+    const bodyVal = draft.split('\n').slice(1).join('\n');
+    const newBody = bodyVal.substring(0, start) + text + bodyVal.substring(end);
+    setDraft(titlePart + '\n' + newBody);
     setTimeout(() => {
       ta.focus();
       ta.setSelectionRange(start + text.length, start + text.length);
@@ -2366,6 +2369,7 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
             placeholder="Title…"
             value={draft.split('\n')[0]}
             onChange={e => setDraft(e.target.value + '\n' + draft.split('\n').slice(1).join('\n'))}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); bodyRef.current?.focus(); } }}
           />
           <textarea
             ref={bodyRef}
@@ -2375,6 +2379,18 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
             onChange={e => setDraft(draft.split('\n')[0] + '\n' + e.target.value)}
             rows={3}
             onClick={() => { if (!draft.split('\n')[0]) titleRef.current?.focus(); }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const ta = e.target;
+                const start = ta.selectionStart;
+                const end = ta.selectionEnd;
+                const bodyVal = draft.split('\n').slice(1).join('\n');
+                const newBody = bodyVal.substring(0, start) + '<br/>' + bodyVal.substring(end);
+                setDraft(draft.split('\n')[0] + '\n' + newBody);
+                setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + 5; }, 0);
+              }
+            }}
           />
         </div>
       </div>
