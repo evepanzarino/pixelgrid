@@ -5917,7 +5917,7 @@ const MobileNav = () => {
         <span className="mobile-nav-label">Trends</span>
       </Link>
       <Link to={`${BASE_PATH}/skills`} className="mobile-nav-btn">
-        <span className="mobile-nav-icon">⚔</span>
+        <span className="mobile-nav-icon"><img src={`${process.env.PUBLIC_URL}/images/skills.svg`} alt="Skills" className="mobile-nav-svg" /></span>
         <span className="mobile-nav-label">Skills</span>
       </Link>
       <Link to={`${BASE_PATH}/tribes`} className="mobile-nav-btn">
