@@ -1639,7 +1639,7 @@ app.get('/api/messages/conversations/:conversationId', requireAuth, async (req, 
 app.post('/api/messages/conversations/:conversationId', requireAuth, requireNotBanned, requireNotMuted, async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const { content, attachment_ids } = req.body;
+    const { content, attachment_ids, gallery_layout } = req.body;
 
     if ((!content || !content.trim()) && (!attachment_ids || !attachment_ids.length)) {
       return res.status(400).json({ error: 'Message must have content or attachments' });
@@ -1656,9 +1656,11 @@ app.post('/api/messages/conversations/:conversationId', requireAuth, requireNotB
     }
 
     // Insert message
+    const validLayouts = ['auto', '2col', '3col', '4col', '2row', '3row'];
+    const layout = validLayouts.includes(gallery_layout) ? gallery_layout : null;
     const [result] = await pool.execute(
-      'INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)',
-      [conversationId, req.user.id, content || '']
+      'INSERT INTO messages (conversation_id, sender_id, content, gallery_layout) VALUES (?, ?, ?, ?)',
+      [conversationId, req.user.id, content || '', layout]
     );
 
     const messageId = result.insertId;

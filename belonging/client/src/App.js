@@ -4881,6 +4881,34 @@ const MessageAttachment = ({ att }) => {
   );
 };
 
+// ── MessageGallery ────────────────────────────────────────────────────────────
+const MessageGallery = ({ attachments, layout }) => {
+  const images = attachments.filter(a => a.file_type && a.file_type.startsWith('image/'));
+  const others = attachments.filter(a => !a.file_type || !a.file_type.startsWith('image/'));
+  const galleryClass = images.length <= 1 ? 'msg-gallery msg-gallery-single' : `msg-gallery msg-gallery-${layout || 'auto'}`;
+  return (
+    <>
+      {images.length > 0 && (
+        <div className={galleryClass}>
+          {images.map(att => {
+            const src = att.file_url.startsWith('http') ? att.file_url : `${window.location.origin}${att.file_url}`;
+            return (
+              <img
+                key={att.id}
+                src={src}
+                alt={att.file_name}
+                className="msg-gallery-img"
+                onClick={() => window.open(src, '_blank')}
+              />
+            );
+          })}
+        </div>
+      )}
+      {others.map(att => <MessageAttachment key={att.id} att={att} />)}
+    </>
+  );
+};
+
 // ── LinkEmbed ────────────────────────────────────────────────────────────────
 const LinkEmbed = ({ url }) => {
   const [embed, setEmbed] = useState(null);
@@ -5263,6 +5291,7 @@ const MessagesPage = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [attachments, setAttachments] = useState([]); // pre-uploaded attachments
+  const [galleryLayout, setGalleryLayout] = useState('auto');
   const [uploading, setUploading] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const [showStickerPicker, setShowStickerPicker] = useState(false);
@@ -5408,7 +5437,8 @@ const MessagesPage = () => {
         },
         body: JSON.stringify({
           content: newMessage,
-          attachment_ids: attachments.map(a => a.attachmentId)
+          attachment_ids: attachments.map(a => a.attachmentId),
+          gallery_layout: attachments.filter(a => a.file_type && a.file_type.startsWith('image/')).length > 1 ? galleryLayout : null
         })
       });
 
@@ -5418,6 +5448,7 @@ const MessagesPage = () => {
         setMessages(prev => prev.find(m => m.id === data.message.id) ? prev : [...prev, data.message]);
         setNewMessage('');
         setAttachments([]);
+        setGalleryLayout('auto');
         fetchConversations();
       } else {
         const data = await response.json().catch(() => ({}));
@@ -5538,9 +5569,9 @@ const MessagesPage = () => {
                   )}
                   <div className="message-content">
                     {msg.content && <p>{renderMessageWithStickers(msg.content)}</p>}
-                    {(msg.attachments || []).map(att => (
-                      <MessageAttachment key={att.id} att={att} />
-                    ))}
+                    {(msg.attachments || []).length > 0 && (
+                      <MessageGallery attachments={msg.attachments} layout={msg.gallery_layout} />
+                    )}
                     {msg.content && detectUrls(msg.content).map(url => (
                       <LinkEmbed key={url} url={url} />
                     ))}
@@ -5561,6 +5592,26 @@ const MessagesPage = () => {
             {/* Attachment preview strip */}
             {attachments.length > 0 && (
               <div className="attachment-preview-strip">
+                {attachments.filter(a => a.file_type && a.file_type.startsWith('image/')).length > 1 && (
+                  <div className="gallery-layout-picker">
+                    <span className="gallery-layout-label">Layout:</span>
+                    {[
+                      { value: 'auto', label: 'Auto' },
+                      { value: '2col', label: '2 col' },
+                      { value: '3col', label: '3 col' },
+                      { value: '4col', label: '4 col' },
+                      { value: '2row', label: '2 row' },
+                      { value: '3row', label: '3 row' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`gallery-layout-btn${galleryLayout === opt.value ? ' active' : ''}`}
+                        onClick={() => setGalleryLayout(opt.value)}
+                      >{opt.label}</button>
+                    ))}
+                  </div>
+                )}
                 {attachments.map((att, i) => (
                   <div key={i} className="attachment-preview-item">
                     {att.file_type && att.file_type.startsWith('image/') ? (
