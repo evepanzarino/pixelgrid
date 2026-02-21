@@ -2028,6 +2028,7 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
         placeholder={editPost ? 'Title' : 'Title…'}
         value={tagline}
         onChange={e => setTagline(e.target.value)}
+        style={{ marginBottom: '10px' }}
       />
 
       {/* Main row: upload | sticker | body | post */}
@@ -2042,7 +2043,7 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
         <textarea
           ref={bodyRef}
           className="composer-body"
-          placeholder={editPost ? '' : 'What\'s on your mind? (**text** = heading, Enter = line break)'}
+          placeholder={editPost ? '' : 'What\'s on your mind?'}
           value={body}
           onChange={e => setBody(e.target.value)}
           rows={3}
@@ -2149,6 +2150,19 @@ const PostCard = ({ post, onEdit, onDelete, isOwner }) => {
   const [submittingReply, setSubmittingReply] = useState(false);
   const replyInputRef = useRef(null);
   const profileUrl = post.username !== post.email ? `/${post.username}` : `/${post.user_id}`;
+
+  // Extract location/vibe from content HTML, leave clean content for rendering
+  const [cleanContent, postLocation, postVibe] = React.useMemo(() => {
+    const div = document.createElement('div');
+    div.innerHTML = post.content || '';
+    const locEl = div.querySelector('.post-location');
+    const vibeEl = div.querySelector('.post-vibe');
+    const loc = locEl ? locEl.textContent.trim() : '';
+    const vib = vibeEl ? vibeEl.textContent.trim() : '';
+    if (locEl) locEl.remove();
+    if (vibeEl) vibeEl.remove();
+    return [div.innerHTML, loc, vib];
+  }, [post.content]);
 
   // Interaction state
   const [liked, setLiked] = useState(!!post.user_liked);
@@ -2413,10 +2427,10 @@ const PostCard = ({ post, onEdit, onDelete, isOwner }) => {
           )}
         </div>
 
-        {/* Tribe Tags */}
-        {post.tribes && post.tribes.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '10px', marginTop: '5px' }}>
-            {post.tribes.map(tribe => (
+        {/* Tribe Tags + location + vibe */}
+        {(post.tribes?.length > 0 || postLocation || postVibe) && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '10px', marginTop: '5px', alignItems: 'center' }}>
+            {post.tribes?.map(tribe => (
               <Link
                 key={tribe.id}
                 to={`${BASE_PATH}/tribe/${tribe.tag}`}
@@ -2434,6 +2448,16 @@ const PostCard = ({ post, onEdit, onDelete, isOwner }) => {
                 #{tribe.tag}
               </Link>
             ))}
+            {postLocation && (
+              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#f0f4ff', color: '#555', fontWeight: '500' }}>
+                {postLocation}
+              </span>
+            )}
+            {postVibe && (
+              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#fff8f0', color: '#b06000', fontWeight: '500' }}>
+                {postVibe}
+              </span>
+            )}
           </div>
         )}
 
@@ -2449,7 +2473,7 @@ const PostCard = ({ post, onEdit, onDelete, isOwner }) => {
           {post.custom_css && <style>{`.post-${post.id} { } ${post.custom_css}`}</style>}
           <div
             className={`post-${post.id}`}
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: cleanContent }}
             style={{ lineHeight: '1.6' }}
           />
         </div>
