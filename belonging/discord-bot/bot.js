@@ -1084,6 +1084,27 @@ client.on('messageCreate', async (message) => {
         [belongingAccount.id, tagline, content]
       );
       console.log(`#updates: Created post ${postResult.insertId} as @belonging`);
+
+      // Create a thread for comments
+      let threadId = null;
+      try {
+        const thread = await rateLimitQueue.add(async () => {
+          return await message.startThread({
+            name: tagline.substring(0, 100) || 'Update',
+            autoArchiveDuration: 1440
+          });
+        });
+        threadId = thread.id;
+        console.log(`#updates: Created thread ${threadId} for post ${postResult.insertId}`);
+      } catch (threadErr) {
+        console.error(`#updates: Error creating thread:`, threadErr);
+      }
+
+      // Record sync so replies become comments
+      await pool.execute(
+        'INSERT INTO discord_post_sync (post_id, discord_message_id, discord_channel_id, discord_thread_id, discord_user_id, direction) VALUES (?, ?, ?, ?, ?, ?)',
+        [postResult.insertId, message.id, message.channel.id, threadId, message.author.id, 'discord_to_web']
+      );
     } catch (err) {
       console.error('#updates: Error creating post:', err);
     }
