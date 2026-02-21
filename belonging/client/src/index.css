@@ -72,15 +72,18 @@ body {
   opacity: 0.8;
 }
 
+.navbar-logo-link { display: flex; align-items: center; gap: 6px; text-decoration: none; }
+
 .logo-belonging {
   height: 2.5vw;
   width: auto;
   position: relative;
   z-index: 2;
+  flex-shrink: 0;
 }
 
 .belonging-logo {
-  margin-left: 8px;
+  margin-left: 0;
 }
 
 .btn {
