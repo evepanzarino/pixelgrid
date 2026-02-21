@@ -639,17 +639,39 @@ app.get('/api/users/search', async (req, res) => {
 
     const searchTerm = `%${q}%`;
     const [users] = await pool.execute(
-      `SELECT id, username, email, first_name, last_name, created_at 
-       FROM users 
+      `SELECT id, username, email, first_name, last_name, profile_picture, created_at
+       FROM users
        WHERE (username LIKE ? OR first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)
        AND role != 'admin'
-       ORDER BY created_at DESC 
-       LIMIT 50`,
+       ORDER BY created_at DESC
+       LIMIT 20`,
       [searchTerm, searchTerm, searchTerm, searchTerm]
     );
     res.json(users);
   } catch (error) {
     console.error('Error searching users:', error);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
+// Post search
+app.get('/api/posts/search', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length < 2) return res.json([]);
+    const words = q.trim().split(/\s+/).filter(Boolean);
+    const conditions = words.map(() => '(p.tagline LIKE ? OR p.content LIKE ?)').join(' AND ');
+    const params = words.flatMap(w => [`%${w}%`, `%${w}%`]);
+    const [posts] = await pool.execute(
+      `SELECT p.id, p.tagline, p.created_at, u.username, u.profile_picture
+       FROM posts p JOIN users u ON p.user_id = u.id
+       WHERE ${conditions}
+       ORDER BY p.created_at DESC LIMIT 10`,
+      params
+    );
+    res.json(posts);
+  } catch (err) {
+    console.error('Post search error:', err);
     res.status(500).json({ error: 'Search failed' });
   }
 });

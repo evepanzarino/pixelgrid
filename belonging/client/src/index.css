@@ -1885,13 +1885,45 @@ body {
 .switch-accounts-submit:disabled { opacity: 0.5; cursor: default; }
 .switch-accounts-logout { width: 100%; padding: 8px 14px; background: none; border: none; cursor: pointer; text-align: left; font-size: 0.85rem; color: #e74c3c; font-weight: 500; transition: background 0.12s; }
 .switch-accounts-logout:hover { background: #fff0f0; }
-.navbar-user-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-.navbar-user-avatar-placeholder { width: 28px; height: 28px; border-radius: 50%; background: #ddd; flex-shrink: 0; }
+.navbar-user-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #e8e8ff; }
+.navbar-user-avatar-placeholder { width: 38px; height: 38px; border-radius: 50%; background: #ddd; flex-shrink: 0; }
+.navbar-user-link { color: #333; text-decoration: none; font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+.navbar-user-link:hover { color: #667eea; }
+
+/* Second navbar row */
+.navbar-row2 { display: flex; align-items: center; gap: 16px; padding: 6px 24px 6px; border-top: 1px solid #f0f0f0; background: white; }
+.navbar-row2-link { font-size: 0.9rem; font-weight: 600; color: #555; text-decoration: none; padding: 4px 0; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; }
+.navbar-row2-link:hover { color: #667eea; border-bottom-color: #667eea; }
+
+/* Navbar inline search */
+.navbar-search-wrap { position: relative; flex: 1; max-width: 400px; }
+.navbar-search-input { width: 100%; border: 1px solid #e0e0e0; border-radius: 20px; padding: 6px 14px; font-size: 0.88rem; outline: none; background: #f8f8fc; transition: border-color 0.15s; }
+.navbar-search-input:focus { border-color: #667eea; background: white; }
+.navbar-search-spinner { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #aaa; font-size: 0.8rem; }
+.navbar-search-dropdown { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 5000; background: white; border: 1px solid #e0e0e0; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); overflow: hidden; }
+.navbar-search-section { font-size: 0.7rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 14px 4px; margin: 0; }
+.navbar-search-result { display: flex; align-items: center; gap: 10px; padding: 8px 14px; cursor: pointer; transition: background 0.1s; }
+.navbar-search-result:hover { background: #f4f4f8; }
+.navbar-search-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.navbar-search-avatar-placeholder { width: 30px; height: 30px; border-radius: 50%; background: #ddd; flex-shrink: 0; }
+.navbar-search-post-icon { width: 30px; text-align: center; font-size: 1rem; flex-shrink: 0; }
+.navbar-search-post-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.navbar-search-name { font-size: 0.88rem; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.navbar-search-sub { font-size: 0.75rem; color: #aaa; }
+
+/* Feed tabs row */
+.feed-tabs-row { display: flex; gap: 6px; margin-top: 16px; border-bottom: 2px solid #eee; padding-bottom: 0; }
+.feed-tab-plus { font-size: 1.3rem; font-weight: 700; min-width: 40px; color: #667eea !important; }
 
 /* Phase 3: Navbar — hide links on mobile */
 @media (max-width: 1024px) {
-  .navbar { padding: 2vw 3vw; }
+  .navbar { padding: 2vw 3vw; flex-wrap: wrap; }
   .navbar-links { display: none; }
+  .navbar-row2 { width: 100%; padding: 2vw 3vw; gap: 4vw; }
+  .navbar-row2-link { font-size: 3.5vw; }
+  .navbar-search-input { font-size: 3.5vw; padding: 1.5vw 3vw; }
+  .navbar-user-avatar, .navbar-user-avatar-placeholder { width: 9vw; height: 9vw; }
+  .navbar-user-link { font-size: 3.5vw; gap: 2vw; }
 }
 
 /* Phase 4: Feed tabs */

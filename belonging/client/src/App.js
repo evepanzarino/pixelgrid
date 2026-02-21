@@ -566,6 +566,87 @@ const LevelUpBanner = ({ notification, onClear }) => {
   );
 };
 
+// Inline search for second navbar row
+const NavbarSearch = () => {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState({ users: [], posts: [] });
+  const [open, setOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const ref = React.useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (query.length < 2) { setResults({ users: [], posts: [] }); setOpen(false); return; }
+    const t = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const [uRes, pRes] = await Promise.all([
+          fetch(`${window.location.origin}${BASE_PATH === '' ? '' : BASE_PATH}/api/users/search?q=${encodeURIComponent(query)}`),
+          fetch(`${window.location.origin}${BASE_PATH === '' ? '' : BASE_PATH}/api/posts/search?q=${encodeURIComponent(query)}`),
+        ]);
+        const users = uRes.ok ? await uRes.json() : [];
+        const posts = pRes.ok ? await pRes.json() : [];
+        setResults({ users: users.slice(0, 5), posts: posts.slice(0, 5) });
+        setOpen(true);
+      } catch {}
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const go = (path) => { setQuery(''); setOpen(false); navigate(path); };
+
+  return (
+    <div className="navbar-search-wrap" ref={ref}>
+      <input
+        className="navbar-search-input"
+        placeholder="Search users & posts…"
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        onFocus={() => results.users.length + results.posts.length > 0 && setOpen(true)}
+      />
+      {searching && <span className="navbar-search-spinner">…</span>}
+      {open && (results.users.length > 0 || results.posts.length > 0) && (
+        <div className="navbar-search-dropdown">
+          {results.users.length > 0 && (
+            <>
+              <p className="navbar-search-section">People</p>
+              {results.users.map(u => (
+                <div key={u.id} className="navbar-search-result" onClick={() => go(`${BASE_PATH}/${u.username}`)}>
+                  {u.profile_picture
+                    ? <img src={u.profile_picture} alt="" className="navbar-search-avatar" />
+                    : <div className="navbar-search-avatar-placeholder" />}
+                  <span className="navbar-search-name">@{u.username}</span>
+                </div>
+              ))}
+            </>
+          )}
+          {results.posts.length > 0 && (
+            <>
+              <p className="navbar-search-section">Posts</p>
+              {results.posts.map(p => (
+                <div key={p.id} className="navbar-search-result" onClick={() => go(`${BASE_PATH}/post/${p.id}`)}>
+                  <div className="navbar-search-post-icon">📝</div>
+                  <div className="navbar-search-post-info">
+                    <span className="navbar-search-name">{p.tagline || '(untitled)'}</span>
+                    <span className="navbar-search-sub">@{p.username}</span>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Switch Accounts dropdown (shown in Navbar)
 const SwitchAccountsMenu = ({ currentUser, logout, login, loginWithToken }) => {
   const [open, setOpen] = useState(false);
@@ -780,7 +861,7 @@ const Navbar = ({ onLevelUpUpdate }) => {
               {user.username === user.email ? (
                 <Link to={`${BASE_PATH}/complete-profile`} style={{ color: '#e67e22' }}>Choose a username</Link>
               ) : (
-                <Link to={`${BASE_PATH}/${user.username}`} style={{ color: '#333', textDecoration: 'none', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                <Link to={`${BASE_PATH}/${user.username}`} className="navbar-user-link">
                   {user.profile_picture
                     ? <img src={user.profile_picture} alt="" className="navbar-user-avatar" />
                     : <div className="navbar-user-avatar-placeholder" />}
@@ -799,6 +880,12 @@ const Navbar = ({ onLevelUpUpdate }) => {
             <Link to={`${BASE_PATH}/register`}>Register</Link>
           </>
         )}
+      </div>
+      {/* Second navbar row: Feed · Tribes · Search */}
+      <div className="navbar-row2">
+        <Link to={`${BASE_PATH}/feed`} className="navbar-row2-link">Feed</Link>
+        <Link to={`${BASE_PATH}/tribes`} className="navbar-row2-link">Tribes</Link>
+        <NavbarSearch />
       </div>
     </nav>
   );
@@ -3453,9 +3540,21 @@ const FeedPage = () => {
 
   return (
     <div className="container">
-      {/* Post Editor - shown on non-updates tabs for any logged-in user, on updates tab only for @belonging */}
+      {/* Feed Tabs — above composer */}
+      <div className="feed-tabs-row">
+        <button className={`feed-tab${activeTab === 'global' ? ' active' : ''}`} onClick={() => setActiveTab('global')}>Global</button>
+        {currentUser && (
+          <button className={`feed-tab${activeTab === 'personal' ? ' active' : ''}`} onClick={() => setActiveTab('personal')}>Mutuals</button>
+        )}
+        <button className={`feed-tab${activeTab === 'updates' ? ' active' : ''}`} onClick={() => setActiveTab('updates')}>Updates</button>
+        {currentUser && (
+          <button className="feed-tab feed-tab-plus" onClick={() => { setActiveTab('global'); setTimeout(() => document.querySelector('.composer-draft')?.focus(), 100); }} title="Write a post">+</button>
+        )}
+      </div>
+
+      {/* Post Editor */}
       {currentUser && (activeTab !== 'updates' || currentUser.username === 'belonging') && (
-        <div style={{ marginTop: '20px' }}>
+        <div style={{ marginTop: '16px' }}>
           <PostEditor
             onPostCreated={handlePostCreated}
             editPost={editingPost}
@@ -3463,30 +3562,6 @@ const FeedPage = () => {
           />
         </div>
       )}
-
-      {/* Feed Tabs */}
-      <div style={{ display: 'flex', gap: '10px', marginTop: '30px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-        <button
-          className={`feed-tab${activeTab === 'global' ? ' active' : ''}`}
-          onClick={() => setActiveTab('global')}
-        >
-          Global Feed
-        </button>
-        {currentUser && (
-          <button
-            className={`feed-tab${activeTab === 'personal' ? ' active' : ''}`}
-            onClick={() => setActiveTab('personal')}
-          >
-            Personal Feed
-          </button>
-        )}
-        <button
-          className={`feed-tab${activeTab === 'updates' ? ' active' : ''}`}
-          onClick={() => setActiveTab('updates')}
-        >
-          Updates
-        </button>
-      </div>
 
       {/* Posts */}
       <div style={{ marginTop: '20px' }}>
