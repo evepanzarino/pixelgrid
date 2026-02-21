@@ -933,10 +933,10 @@ async function handleMessageDelete(message) {
   }
 }
 
-// Auto-close all threads in the #feed channel
+// Auto-close all threads in the #feed and #updates channels
 async function autoCloseThreadsInFeed() {
   try {
-    console.log('[AUTO-CLOSE] Checking for threads to close in #feed...');
+    console.log('[AUTO-CLOSE] Checking for threads to close...');
 
     const guild = client.guilds.cache.get(CONFIG.GUILD_ID);
     if (!guild) {
@@ -944,17 +944,16 @@ async function autoCloseThreadsInFeed() {
       return;
     }
 
-    // Fetch all active threads in the guild, then filter by parent channel
+    // Fetch all active threads in the guild, filter by #feed and #updates
     const fetchedThreads = await guild.channels.fetchActiveThreads();
-    const feedThreads = fetchedThreads.threads.filter(
-      t => t.parentId === CONFIG.WEBSITE_CHANNEL_ID
-    );
-    console.log(`[AUTO-CLOSE] Found ${feedThreads.size} active threads in #feed`);
+    const channelIds = [CONFIG.WEBSITE_CHANNEL_ID, CONFIG.UPDATES_CHANNEL_ID].filter(Boolean);
+    const targetThreads = fetchedThreads.threads.filter(t => channelIds.includes(t.parentId));
+    console.log(`[AUTO-CLOSE] Found ${targetThreads.size} active threads in #feed/#updates`);
 
     let closedCount = 0;
-    for (const [threadId, thread] of feedThreads) {
+    for (const [threadId, thread] of targetThreads) {
       try {
-        await thread.setArchived(true, 'Auto-closing thread in #feed');
+        await thread.setArchived(true, 'Auto-closing thread');
         console.log(`[AUTO-CLOSE] ✓ Closed thread: ${thread.name} (ID: ${threadId})`);
         closedCount++;
         await new Promise(r => setTimeout(r, 500));
