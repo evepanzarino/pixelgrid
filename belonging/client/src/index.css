@@ -471,12 +471,12 @@ body {
 
   .belonging-logo {
     display: flex;
-    height: 7vw;
+    height: 6vw;
     width: auto;
   }
 
   .logo-belonging {
-    height: 8vw;
+    height: 7vw;
     width: auto;
   }
 }
