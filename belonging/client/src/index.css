@@ -1975,3 +1975,32 @@ body {
     padding: 2vw;
   }
 }
+
+/* ── Trends page ──────────────────────────────── */
+.trends-page { max-width: 700px; margin: 0 auto; padding: 20px; }
+.trends-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+.trends-header h1 { margin: 0; font-size: 1.8rem; }
+.trends-period-btns { display: flex; gap: 8px; }
+.trends-period-btns .btn.active { background: #667eea; color: white; }
+.trends-loading { color: #888; text-align: center; padding: 40px; }
+.trends-section { margin-bottom: 36px; }
+.trends-section-title { font-size: 1.1rem; font-weight: 700; color: #444; margin-bottom: 16px; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+.trends-word-cloud { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: baseline; padding: 16px; background: #f8f9ff; border-radius: 12px; min-height: 80px; }
+.trend-word { color: #667eea; font-weight: 600; cursor: default; transition: color 0.15s; line-height: 1.3; }
+.trend-word:hover { color: #4a5bd4; }
+.trend-post-card { display: block; background: white; border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 12px; text-decoration: none; color: inherit; transition: box-shadow 0.15s; }
+.trend-post-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.trend-post-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.trend-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+.trend-avatar-placeholder { width: 28px; height: 28px; border-radius: 50%; background: #ddd; }
+.trend-post-user { font-size: 0.85rem; color: #667eea; font-weight: 600; }
+.trend-post-tagline { font-weight: 700; margin: 4px 0; font-size: 1rem; color: #222; }
+.trend-post-content { color: #555; font-size: 0.9rem; margin: 4px 0 10px; }
+.trend-post-stats { display: flex; gap: 16px; font-size: 0.82rem; color: #888; }
+@media (max-width: 1024px) {
+  .trends-page { padding: 4vw; }
+  .trends-header h1 { font-size: 6vw; }
+  .trends-word-cloud { gap: 2vw 3vw; padding: 3vw; border-radius: 3vw; }
+  .trend-post-card { padding: 4vw; border-radius: 3vw; }
+  .trend-post-stats { gap: 3vw; font-size: 3vw; }
+}

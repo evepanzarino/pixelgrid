@@ -635,6 +635,7 @@ const Navbar = ({ onLevelUpUpdate }) => {
       </Link>
       <div className="navbar-links" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
         <Link to={`${BASE_PATH}/feed`}>Feed</Link>
+        <Link to={`${BASE_PATH}/trends`}>Trends</Link>
         <Link to={`${BASE_PATH}/users`}>Users</Link>
         <Link to={`${BASE_PATH}/tribes`}>Tribes</Link>
         <Link to={`${BASE_PATH}/search`}>Search</Link>
@@ -5609,6 +5610,86 @@ const XpDrops = () => {
 };
 
 // ============================================
+// TRENDS PAGE
+// ============================================
+const TrendsPage = () => {
+  const [data, setData] = useState(null);
+  const [days, setDays] = useState(7);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${BASE_PATH}/api/trends?days=${days}`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [days]);
+
+  const maxScore = data?.words?.[0]?.score || 1;
+  const wordSize = score => (1 + (score / maxScore) * 2).toFixed(2);
+
+  return (
+    <div className="trends-page">
+      <div className="trends-header">
+        <h1>🔥 Trending</h1>
+        <div className="trends-period-btns">
+          {[[1,'24h'],[7,'7d'],[30,'30d']].map(([d, label]) => (
+            <button key={d} className={`btn${days === d ? ' active' : ''}`} onClick={() => setDays(d)}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      {loading && <p className="trends-loading">Loading trends…</p>}
+
+      {!loading && data && (
+        <>
+          <section className="trends-section">
+            <h2 className="trends-section-title">Trending Words</h2>
+            <div className="trends-word-cloud">
+              {data.words.length === 0
+                ? <p style={{ color: '#888' }}>Not enough posts yet.</p>
+                : data.words.map(({ word, score, count }) => (
+                    <span key={word} className="trend-word"
+                      style={{ fontSize: `${wordSize(score)}rem` }}
+                      title={`${count} post${count !== 1 ? 's' : ''} · score ${score}`}>
+                      {word}
+                    </span>
+                  ))
+              }
+            </div>
+          </section>
+
+          <section className="trends-section">
+            <h2 className="trends-section-title">Hot Posts</h2>
+            {data.posts.length === 0
+              ? <p style={{ color: '#888' }}>No posts in this period.</p>
+              : data.posts.map(post => (
+                  <Link key={post.id} to={`${BASE_PATH}/post/${post.id}`} className="trend-post-card">
+                    <div className="trend-post-meta">
+                      {post.profile_picture
+                        ? <img src={post.profile_picture} alt="" className="trend-avatar" />
+                        : <div className="trend-avatar-placeholder" />}
+                      <span className="trend-post-user">@{post.username}</span>
+                    </div>
+                    {post.tagline && <p className="trend-post-tagline">{post.tagline}</p>}
+                    <p className="trend-post-content">{(post.content || '').replace(/<[^>]*>/g, ' ').slice(0, 120)}…</p>
+                    <div className="trend-post-stats">
+                      <span>❤️ {post.like_count}</span>
+                      <span>💬 {post.comment_count}</span>
+                      <span>🔁 {post.repost_count}</span>
+                      <span>⭐ {post.favorite_count}</span>
+                    </div>
+                  </Link>
+                ))
+            }
+          </section>
+        </>
+      )}
+    </div>
+  );
+};
+
+// ============================================
 // MOBILE BOTTOM NAVIGATION
 // ============================================
 const MobileNav = () => {
@@ -5619,6 +5700,10 @@ const MobileNav = () => {
       <Link to={`${BASE_PATH}/feed`} className="mobile-nav-btn">
         <span className="mobile-nav-icon">🏠</span>
         <span className="mobile-nav-label">Feed</span>
+      </Link>
+      <Link to={`${BASE_PATH}/trends`} className="mobile-nav-btn">
+        <span className="mobile-nav-icon">🔥</span>
+        <span className="mobile-nav-label">Trends</span>
       </Link>
       <Link to={`${BASE_PATH}/skills`} className="mobile-nav-btn">
         <span className="mobile-nav-icon">⚔</span>
@@ -5841,6 +5926,7 @@ function App() {
           <Route path="/tribes/create" element={<CreateTribePage />} />
           <Route path="/tribe/:tag" element={<TribePage />} />
           <Route path="/messages" element={<MessagesPage />} />
+          <Route path="/trends" element={<TrendsPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/:identifier" element={<UserProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

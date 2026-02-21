@@ -1292,6 +1292,58 @@ app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
 });
 
 // ============================================
+// TRENDS ROUTE
+// ============================================
+
+app.get('/api/trends', async (req, res) => {
+  try {
+    const days = Math.min(parseInt(req.query.days) || 7, 30);
+    const [rows] = await pool.query(`
+      SELECT p.id, p.content, p.tagline, p.created_at, p.user_id,
+             u.username, u.profile_picture,
+             (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) AS like_count,
+             (SELECT COUNT(*) FROM post_dislikes WHERE post_id = p.id) AS dislike_count,
+             (SELECT COUNT(*) FROM post_favorites WHERE post_id = p.id) AS favorite_count,
+             (SELECT COUNT(*) FROM post_reposts WHERE post_id = p.id) AS repost_count,
+             (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comment_count
+      FROM posts p JOIN users u ON p.user_id = u.id
+      WHERE p.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+      ORDER BY p.created_at DESC LIMIT 200
+    `, [days]);
+
+    const STOP = new Set(['a','an','the','and','or','but','in','on','at','to','for','of','with','by','from','is','was','are','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','i','you','he','she','it','we','they','me','him','her','us','them','my','your','his','its','our','their','this','that','these','those','what','which','who','when','where','why','how','not','no','so','than','too','very','just','can','about','up','if','as','like','more','all','out','get','got','one','two','im','also','dont','into','then','there','here','said','say','now','new','any','some','use','used','via','per','let','put','see','try','yes','are','was','has']);
+
+    const wordScores = {}, wordCounts = {};
+    for (const post of rows) {
+      const eng = (post.like_count|0) + (post.comment_count|0)*2 + (post.repost_count|0)*3 + (post.favorite_count|0)*2 + 1;
+      const text = ((post.content||'').replace(/<[^>]*>/g,' ') + ' ' + (post.tagline||'')).toLowerCase();
+      const words = [...new Set(text.match(/[a-z']{3,}/g) || [])];
+      for (const w of words) {
+        if (STOP.has(w)) continue;
+        wordScores[w] = (wordScores[w]||0) + eng;
+        wordCounts[w] = (wordCounts[w]||0) + 1;
+      }
+    }
+
+    const words = Object.entries(wordScores)
+      .map(([word, score]) => ({ word, score, count: wordCounts[word] }))
+      .filter(w => w.count >= 2)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 30);
+
+    const posts = [...rows]
+      .map(p => ({ ...p, _eng: (p.like_count|0)+(p.comment_count|0)*2+(p.repost_count|0)*3+(p.favorite_count|0)*2 }))
+      .sort((a, b) => b._eng - a._eng)
+      .slice(0, 5)
+      .map(({ _eng, ...p }) => p);
+
+    res.json({ words, posts, days });
+  } catch (err) {
+    console.error('Trends error:', err);
+    res.status(500).json({ error: 'Failed to load trends' });
+  }
+});
+
 // COMMENT ROUTES
 // ============================================
 
