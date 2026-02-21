@@ -3446,15 +3446,17 @@ const UserProfilePage = () => {
         </h3>
 
         {posts.length > 0 ? (
-          posts.map(post => (
-            <PostCard
-              key={post.id}
-              post={post}
-              isOwner={isOwner}
-              onEdit={handleEditPost}
-              onDelete={handleDeletePost}
-            />
-          ))
+          <div className="profile-posts-grid">
+            {posts.map(post => (
+              <PostCard
+                key={post.id}
+                post={post}
+                isOwner={isOwner}
+                onEdit={handleEditPost}
+                onDelete={handleDeletePost}
+              />
+            ))}
+          </div>
         ) : (
           <div className="card" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
             {isOwner ? 'You haven\'t posted anything yet. Create your first post!' : 'No posts yet.'}

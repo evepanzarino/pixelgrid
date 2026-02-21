@@ -1924,8 +1924,9 @@ body {
 .navbar-search-sub { font-size: 0.75rem; color: #aaa; }
 
 /* Feed grid */
-.feed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 20px; }
-@media (max-width: 1024px) { .feed-grid { grid-template-columns: 1fr; gap: 3vw; margin-top: 3vw; } }
+.feed-grid { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
+.profile-posts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+@media (max-width: 1024px) { .feed-grid { gap: 3vw; margin-top: 3vw; } .profile-posts-grid { grid-template-columns: 1fr; gap: 3vw; } }
 
 /* Feed tabs row */
 .feed-tabs-row { display: flex; gap: 6px; margin-top: 16px; border-bottom: 2px solid #eee; padding-bottom: 0; }
