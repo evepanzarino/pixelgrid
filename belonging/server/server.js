@@ -88,14 +88,14 @@ const authenticateToken = (req, res, next) => {
       req.user = null;
       return next();
     }
-    // Fresh DB lookup to get real-time ban/mute status
+    // Fresh DB lookup to get real-time role/ban/mute status
     try {
       const [rows] = await pool.query(
-        'SELECT is_banned, is_muted, upload_limit_mb FROM users WHERE id = ?',
+        'SELECT role, is_banned, is_muted, upload_limit_mb FROM users WHERE id = ?',
         [decoded.id]
       );
       req.user = rows.length > 0
-        ? { ...decoded, is_banned: !!rows[0].is_banned, is_muted: !!rows[0].is_muted, upload_limit_mb: rows[0].upload_limit_mb }
+        ? { ...decoded, role: rows[0].role, is_banned: !!rows[0].is_banned, is_muted: !!rows[0].is_muted, upload_limit_mb: rows[0].upload_limit_mb }
         : decoded;
     } catch {
       req.user = decoded;
