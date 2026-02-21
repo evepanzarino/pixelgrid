@@ -2046,11 +2046,33 @@ body {
 .trend-post-user { font-size: 0.85rem; color: #667eea; font-weight: 600; }
 .trend-post-tagline { font-weight: 700; margin: 4px 0; font-size: 1rem; color: #222; }
 .trend-post-content { color: #555; font-size: 0.9rem; margin: 4px 0 10px; }
-.trend-post-stats { display: flex; gap: 16px; font-size: 0.82rem; color: #888; }
+.trend-post-stats { display: flex; gap: 8px; font-size: 0.82rem; color: #888; flex-wrap: wrap; }
+
+/* Leaderboard */
+.trend-leaderboard { display: flex; gap: 12px; align-items: stretch; }
+.trend-lb-card { flex: 1; display: flex; flex-direction: column; background: white; border: 1px solid #eee; border-radius: 14px; padding: 16px; text-decoration: none; color: inherit; transition: box-shadow 0.15s; position: relative; overflow: hidden; }
+.trend-lb-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+.trend-lb-rank-1 { border-top: 3px solid #f5c518; }
+.trend-lb-rank-2 { border-top: 3px solid #aaa; }
+.trend-lb-rank-3 { border-top: 3px solid #cd7f32; }
+.trend-lb-medal { font-size: 1.8rem; margin-bottom: 10px; line-height: 1; }
+.trend-lb-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.trend-lb-tagline { font-weight: 700; font-size: 0.95rem; color: #222; margin: 0 0 6px; line-height: 1.3; }
+.trend-lb-content { font-size: 0.82rem; color: #666; margin: 0 0 10px; flex: 1; line-height: 1.4; }
+.trend-lb-score { display: flex; align-items: baseline; gap: 3px; margin-bottom: 10px; }
+.trend-lb-score-num { font-size: 1.5rem; font-weight: 800; color: #667eea; line-height: 1; }
+.trend-lb-score-label { font-size: 0.75rem; color: #aaa; font-weight: 600; }
+
 @media (max-width: 1024px) {
   .trends-page { padding: 4vw; }
   .trends-header h1 { font-size: 6vw; }
   .trends-word-cloud { gap: 2vw 3vw; padding: 3vw; border-radius: 3vw; }
   .trend-post-card { padding: 4vw; border-radius: 3vw; }
-  .trend-post-stats { gap: 3vw; font-size: 3vw; }
+  .trend-post-stats { gap: 2vw; font-size: 3vw; }
+  .trend-leaderboard { flex-direction: column; }
+  .trend-lb-card { padding: 4vw; border-radius: 3vw; }
+  .trend-lb-medal { font-size: 6vw; margin-bottom: 2vw; }
+  .trend-lb-tagline { font-size: 3.5vw; }
+  .trend-lb-content { font-size: 3vw; }
+  .trend-lb-score-num { font-size: 5vw; }
 }

@@ -5624,24 +5624,37 @@ const TrendsPage = () => {
             <h2 className="trends-section-title">Hot Posts</h2>
             {data.posts.length === 0
               ? <p style={{ color: '#888' }}>No posts in this period.</p>
-              : data.posts.map(post => (
-                  <Link key={post.id} to={`${BASE_PATH}/post/${post.id}`} className="trend-post-card">
-                    <div className="trend-post-meta">
-                      {post.profile_picture
-                        ? <img src={post.profile_picture} alt="" className="trend-avatar" />
-                        : <div className="trend-avatar-placeholder" />}
-                      <span className="trend-post-user">@{post.username}</span>
-                    </div>
-                    {post.tagline && <p className="trend-post-tagline">{post.tagline}</p>}
-                    <p className="trend-post-content">{(post.content || '').replace(/<[^>]*>/g, ' ').slice(0, 120)}…</p>
-                    <div className="trend-post-stats">
-                      <span>❤️ {post.like_count}</span>
-                      <span>💬 {post.comment_count}</span>
-                      <span>🔁 {post.repost_count}</span>
-                      <span>⭐ {post.favorite_count}</span>
-                    </div>
-                  </Link>
-                ))
+              : (
+                <div className="trend-leaderboard">
+                  {data.posts.slice(0, 3).map((post, i) => {
+                    const medals = ['🥇','🥈','🥉'];
+                    const eng = (post.like_count|0) + (post.comment_count|0)*2 + (post.repost_count|0)*3 + (post.favorite_count|0)*2;
+                    return (
+                      <Link key={post.id} to={`${BASE_PATH}/post/${post.id}`} className={`trend-lb-card trend-lb-rank-${i+1}`}>
+                        <div className="trend-lb-medal">{medals[i]}</div>
+                        <div className="trend-lb-meta">
+                          {post.profile_picture
+                            ? <img src={post.profile_picture} alt="" className="trend-avatar" />
+                            : <div className="trend-avatar-placeholder" />}
+                          <span className="trend-post-user">@{post.username}</span>
+                        </div>
+                        {post.tagline && <p className="trend-lb-tagline">{post.tagline}</p>}
+                        <p className="trend-lb-content">{(post.content || '').replace(/<[^>]*>/g, ' ').slice(0, 80)}…</p>
+                        <div className="trend-lb-score">
+                          <span className="trend-lb-score-num">{eng}</span>
+                          <span className="trend-lb-score-label">pts</span>
+                        </div>
+                        <div className="trend-post-stats">
+                          <span>❤️ {post.like_count}</span>
+                          <span>💬 {post.comment_count}</span>
+                          <span>🔁 {post.repost_count}</span>
+                          <span>⭐ {post.favorite_count}</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )
             }
           </section>
         </>
