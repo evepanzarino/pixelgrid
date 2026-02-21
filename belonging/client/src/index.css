@@ -224,16 +224,18 @@ body {
 /* Homepage Split Layout */
 .homepage-split {
   display: flex;
+  flex-direction: row-reverse;
   min-height: calc(100vh - 70px);
   background: #1a1a1a;
 }
 
 .homepage-left {
-  width: 65vw;
+  flex: 1;
   padding: 40px;
   display: flex;
   flex-direction: column;
   gap: 0;
+  overflow-y: auto;
 }
 
 .homepage-section {
@@ -322,7 +324,8 @@ body {
 }
 
 .homepage-login {
-  width: 35vw;
+  width: 380px;
+  flex-shrink: 0;
   background: #1a1a1a;
   border-left: 1px solid #444;
   display: flex;
@@ -395,7 +398,7 @@ body {
   text-decoration: underline;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 1024px) {
   .homepage-split {
     flex-direction: column;
   }
@@ -403,13 +406,15 @@ body {
   .homepage-left {
     width: 100%;
     padding: 20px;
+    order: 2;
   }
 
   .homepage-login {
     width: 100%;
     min-height: auto;
     border-left: none;
-    border-top: 1px solid #444;
+    border-bottom: 1px solid #444;
+    order: 1;
   }
 }
 

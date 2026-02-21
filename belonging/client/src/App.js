@@ -1005,9 +1005,9 @@ const HomePage = () => {
   }
 
   return (
-    <div style={{ background: '#1a1a1a', minHeight: '100vh' }}>
-      {/* Login/Register Section at Top */}
-      <div className="homepage-login" style={{ borderBottom: '1px solid #444', borderLeft: 'none' }}>
+    <div className="homepage-split">
+      {/* Login/Register Section */}
+      <div className="homepage-login">
         <div className="login-tabs">
           <button
             className={`login-tab ${activeTab === 'login' ? 'active' : ''}`}
@@ -1096,8 +1096,8 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Content Below */}
-      <div style={{ padding: '40px' }}>
+      {/* Content */}
+      <div className="homepage-left">
         {/* Safespace Section */}
         <div className="homepage-section">
           {/* Coming Soon Section */}
