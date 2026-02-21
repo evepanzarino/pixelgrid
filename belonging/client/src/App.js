@@ -853,9 +853,6 @@ const Navbar = ({ onLevelUpUpdate }) => {
         <Link to={`${BASE_PATH}/messages`} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           Messages{unreadMessages > 0 && <span className="navbar-badge">{unreadMessages}</span>}
         </Link>
-        {user?.role === 'admin' && (
-          <Link to={`${BASE_PATH}/admin`} style={{ color: '#e74c3c', fontWeight: '600' }}>⚙ Admin</Link>
-        )}
       </div>
 
       {/* Row 2: Feed · Tribes · Search fills remaining width */}
