@@ -825,9 +825,11 @@ const Navbar = ({ onLevelUpUpdate }) => {
               <Link to={`${BASE_PATH}/complete-profile`} style={{ color: '#e67e22', fontSize: '0.85rem' }}>Choose a username</Link>
             ) : (
               <Link to={`${BASE_PATH}/${user.username}`} className="navbar-user-link">
-                {user.profile_picture
-                  ? <img src={user.profile_picture} alt="" className="navbar-user-avatar" />
-                  : <div className="navbar-user-avatar-placeholder" />}
+                <img
+                  src={user.profile_picture || `${process.env.PUBLIC_URL}/images/profile.svg`}
+                  alt=""
+                  className="navbar-user-avatar"
+                />
                 @{user.username}
               </Link>
             )}
@@ -2355,9 +2357,7 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
       {/* Avatar + split title/body inputs */}
       <div className="composer-input-row">
         <div className="composer-avatar-wrap">
-          {currentUser?.profile_picture
-            ? <img src={currentUser.profile_picture} alt="" className="composer-avatar" />
-            : <div className="composer-avatar-placeholder" />}
+          <img src={currentUser?.profile_picture || `${process.env.PUBLIC_URL}/images/profile.svg`} alt="" className="composer-avatar" />
         </div>
         <div className="composer-fields">
           <input
@@ -5850,9 +5850,7 @@ const TrendsPage = () => {
                       <Link key={post.id} to={`${BASE_PATH}/post/${post.id}`} className={`trend-lb-card trend-lb-rank-${i+1}`}>
                         <div className="trend-lb-medal">{medals[i]}</div>
                         <div className="trend-lb-meta">
-                          {post.profile_picture
-                            ? <img src={post.profile_picture} alt="" className="trend-avatar" />
-                            : <div className="trend-avatar-placeholder" />}
+                          <img src={post.profile_picture || `${process.env.PUBLIC_URL}/images/profile.svg`} alt="" className="trend-avatar" />
                           <span className="trend-post-user">@{post.username}</span>
                         </div>
                         {post.tagline && <p className="trend-lb-tagline">{post.tagline}</p>}
