@@ -687,8 +687,8 @@ const SwitchAccountsMenu = ({ currentUser, logout, login, loginWithToken }) => {
 
   return (
     <div className="switch-accounts-wrap" ref={ref}>
-      <button className="btn btn-secondary switch-accounts-btn" onClick={() => setOpen(o => !o)}>
-        Switch Accounts
+      <button className="switch-accounts-btn" onClick={() => setOpen(o => !o)}>
+        ⇄
       </button>
       {open && (
         <div className="switch-accounts-dropdown">

@@ -1871,7 +1871,8 @@ body {
 
 /* Switch Accounts */
 .switch-accounts-wrap { position: relative; }
-.switch-accounts-btn { white-space: nowrap; }
+.switch-accounts-btn { background: none; border: 1px solid #ddd; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.95rem; color: #888; padding: 0; transition: border-color 0.15s, color 0.15s; flex-shrink: 0; }
+.switch-accounts-btn:hover { border-color: #667eea; color: #667eea; }
 .switch-accounts-dropdown { position: absolute; top: calc(100% + 8px); right: 0; z-index: 5000; background: white; border: 1px solid #e0e0e0; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.14); min-width: 240px; padding: 12px 0; }
 .switch-accounts-label { font-size: 0.72rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; padding: 0 14px; margin: 6px 0 6px; }
 .switch-account-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 14px; background: none; border: none; cursor: pointer; text-align: left; transition: background 0.12s; }
