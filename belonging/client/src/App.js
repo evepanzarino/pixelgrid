@@ -5921,8 +5921,8 @@ const MobileNav = () => {
         <span className="mobile-nav-icon"><img src={`${process.env.PUBLIC_URL}/images/skills.svg`} alt="Skills" className="mobile-nav-svg" /></span>
         <span className="mobile-nav-label">Skills</span>
       </Link>
-      <Link to={`${BASE_PATH}/create`} className="mobile-nav-btn mobile-nav-create">
-        <span className="mobile-nav-create-icon"><CreateIcon className="mobile-nav-create-svg" /></span>
+      <Link to={`${BASE_PATH}/create`} className="mobile-nav-btn">
+        <span className="mobile-nav-icon"><CreateIcon className="mobile-nav-svg" /></span>
         <span className="mobile-nav-label">Create</span>
       </Link>
       <Link to={`${BASE_PATH}/tribes`} className="mobile-nav-btn">

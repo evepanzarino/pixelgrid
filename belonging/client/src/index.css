@@ -2132,19 +2132,6 @@ body {
 }
 
 
-.mobile-nav-create-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mobile-nav-create-svg {
-  width: 5.5vw;
-  height: 5.5vw;
-  object-fit: contain;
-  display: block;
-}
-
 /* Create Post Page */
 .create-post-page {
   min-height: 100vh;
