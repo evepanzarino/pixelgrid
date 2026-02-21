@@ -445,7 +445,7 @@ const Notifications = ({ unreadCount, setUnreadCount, levelUpCount, setLevelUpCo
     <div className="notifications-container" ref={dropdownRef} style={{ position: 'relative' }}>
       <button
         onClick={toggleDropdown}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', position: 'relative', padding: '5px' }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '28px', position: 'relative', padding: '5px' }}
         title="Notifications"
       >
         🔔

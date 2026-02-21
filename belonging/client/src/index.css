@@ -1895,9 +1895,10 @@ body {
 .switch-accounts-logout { width: 100%; padding: 8px 14px; background: none; border: none; cursor: pointer; text-align: left; font-size: 0.85rem; color: #e74c3c; font-weight: 500; transition: background 0.12s; }
 .switch-accounts-logout:hover { background: #fff0f0; }
 .navbar-user-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
-.navbar-user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #e8e8ff; }
-.navbar-user-avatar-placeholder { width: 32px; height: 32px; border-radius: 50%; background: #ddd; flex-shrink: 0; }
-.navbar-user-link { color: #333; text-decoration: none; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 7px; }
+.navbar-user-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #e8e8ff; }
+.navbar-user-avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: #ddd; flex-shrink: 0; }
+.navbar-user-link { color: #333; text-decoration: none; font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
+.switch-accounts-icon-btn { font-size: 1.6rem !important; width: 42px !important; height: 42px !important; }
 .navbar-user-link:hover { color: #667eea; }
 .navbar-badge { margin-left: 4px; background: #e0245e; color: white; border-radius: 50%; padding: 2px 5px; font-size: 10px; font-weight: bold; min-width: 16px; text-align: center; }
 

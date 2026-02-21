@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "./static/css/main.1eb7a5a3.css",
-    "main.js": "./static/js/main.f532021d.js",
+    "main.css": "./static/css/main.9d81056d.css",
+    "main.js": "./static/js/main.d943366c.js",
     "static/media/transgirl.png": "./static/media/transgirl.dd30a25da44e416ebd38.png",
     "static/media/lesbian.png": "./static/media/lesbian.7788251e3a8ecb797b3b.png",
     "static/media/nonbianary.png": "./static/media/nonbianary.584c2e416e6160075017.png",
@@ -9,11 +9,11 @@
     "static/media/belonging.svg": "./static/media/belonging.6f548d755936a1108dc5a17c4fb63443.svg",
     "static/media/logo-belonging.svg": "./static/media/logo-belonging.c746fef8cca6c39ace22dab66c16aa4f.svg",
     "index.html": "./index.html",
-    "main.1eb7a5a3.css.map": "./static/css/main.1eb7a5a3.css.map",
-    "main.f532021d.js.map": "./static/js/main.f532021d.js.map"
+    "main.9d81056d.css.map": "./static/css/main.9d81056d.css.map",
+    "main.d943366c.js.map": "./static/js/main.d943366c.js.map"
   },
   "entrypoints": [
-    "static/css/main.1eb7a5a3.css",
-    "static/js/main.f532021d.js"
+    "static/css/main.9d81056d.css",
+    "static/js/main.d943366c.js"
   ]
 }
