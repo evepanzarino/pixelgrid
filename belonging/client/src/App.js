@@ -4,6 +4,7 @@ import { login as apiLogin, register as apiRegister, getCurrentUser, getSkills, 
 import { io } from 'socket.io-client';
 import { ReactComponent as BelongingLogo } from './belonging.svg';
 import { ReactComponent as LogoBelonging } from './logo-belonging.svg';
+import { ReactComponent as CreateIcon } from './images/create.svg';
 import comingSoonImg from './images/coming-soon.png';
 import nonbianaryImg from './images/nonbianary.png';
 import transgirlImg from './images/transgirl.png';
@@ -5921,7 +5922,7 @@ const MobileNav = () => {
         <span className="mobile-nav-label">Skills</span>
       </Link>
       <Link to={`${BASE_PATH}/create`} className="mobile-nav-btn mobile-nav-create">
-        <span className="mobile-nav-create-icon"><img src={`${process.env.PUBLIC_URL}/images/create.svg`} alt="Create" className="mobile-nav-create-svg" /></span>
+        <span className="mobile-nav-create-icon"><CreateIcon className="mobile-nav-create-svg" /></span>
         <span className="mobile-nav-label">Create</span>
       </Link>
       <Link to={`${BASE_PATH}/tribes`} className="mobile-nav-btn">

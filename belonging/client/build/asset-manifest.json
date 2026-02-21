@@ -1,19 +1,20 @@
 {
   "files": {
-    "main.css": "./static/css/main.c7df8523.css",
-    "main.js": "./static/js/main.b762bac6.js",
+    "main.css": "./static/css/main.c9c783d7.css",
+    "main.js": "./static/js/main.0d302250.js",
     "static/media/transgirl.png": "./static/media/transgirl.dd30a25da44e416ebd38.png",
     "static/media/lesbian.png": "./static/media/lesbian.7788251e3a8ecb797b3b.png",
     "static/media/nonbianary.png": "./static/media/nonbianary.584c2e416e6160075017.png",
     "static/media/coming-soon.png": "./static/media/coming-soon.5050c8cb239e7aa375a6.png",
+    "static/media/create.svg": "./static/media/create.316c07e5ddbfa2d298568d26b3eace90.svg",
     "static/media/belonging.svg": "./static/media/belonging.6f548d755936a1108dc5a17c4fb63443.svg",
     "static/media/logo-belonging.svg": "./static/media/logo-belonging.c746fef8cca6c39ace22dab66c16aa4f.svg",
     "index.html": "./index.html",
-    "main.c7df8523.css.map": "./static/css/main.c7df8523.css.map",
-    "main.b762bac6.js.map": "./static/js/main.b762bac6.js.map"
+    "main.c9c783d7.css.map": "./static/css/main.c9c783d7.css.map",
+    "main.0d302250.js.map": "./static/js/main.0d302250.js.map"
   },
   "entrypoints": [
-    "static/css/main.c7df8523.css",
-    "static/js/main.b762bac6.js"
+    "static/css/main.c9c783d7.css",
+    "static/js/main.0d302250.js"
   ]
 }
