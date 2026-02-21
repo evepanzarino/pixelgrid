@@ -908,11 +908,9 @@ const HomePage = () => {
     try {
       const result = await login({ username, password });
       saveAccount(username, result.token);
-      setUsername('');
-      setPassword('');
+      window.location.reload();
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
-    } finally {
       setLoading(false);
     }
   };
@@ -933,9 +931,9 @@ const HomePage = () => {
         password
       });
       saveAccount(username, result.token);
+      window.location.reload();
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
-    } finally {
       setLoading(false);
     }
   };
@@ -946,6 +944,7 @@ const HomePage = () => {
       setError('');
       try {
         await loginWithToken(account.token);
+        window.location.reload();
         return; // Auto-login succeeded
       } catch {
         // Token expired — fall through to password form
