@@ -2379,18 +2379,6 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
             onChange={e => setDraft(draft.split('\n')[0] + '\n' + e.target.value)}
             rows={3}
             onClick={() => { if (!draft.split('\n')[0]) titleRef.current?.focus(); }}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                const ta = e.target;
-                const start = ta.selectionStart;
-                const end = ta.selectionEnd;
-                const bodyVal = draft.split('\n').slice(1).join('\n');
-                const newBody = bodyVal.substring(0, start) + '<br/>' + bodyVal.substring(end);
-                setDraft(draft.split('\n')[0] + '\n' + newBody);
-                setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + 5; }, 0);
-              }
-            }}
           />
         </div>
       </div>
