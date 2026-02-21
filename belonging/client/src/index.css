@@ -324,7 +324,7 @@ body {
 }
 
 .homepage-login {
-  width: 380px;
+  width: 35vw;
   flex-shrink: 0;
   background: #1a1a1a;
   border-left: 1px solid #444;
