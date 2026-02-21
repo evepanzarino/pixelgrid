@@ -1,6 +1,6 @@
 {
   "files": {
-    "main.css": "./static/css/main.b149b0ab.css",
+    "main.css": "./static/css/main.0803348e.css",
     "main.js": "./static/js/main.d291fb62.js",
     "static/media/transgirl.png": "./static/media/transgirl.dd30a25da44e416ebd38.png",
     "static/media/lesbian.png": "./static/media/lesbian.7788251e3a8ecb797b3b.png",
@@ -9,11 +9,11 @@
     "static/media/belonging.svg": "./static/media/belonging.6f548d755936a1108dc5a17c4fb63443.svg",
     "static/media/logo-belonging.svg": "./static/media/logo-belonging.c746fef8cca6c39ace22dab66c16aa4f.svg",
     "index.html": "./index.html",
-    "main.b149b0ab.css.map": "./static/css/main.b149b0ab.css.map",
+    "main.0803348e.css.map": "./static/css/main.0803348e.css.map",
     "main.d291fb62.js.map": "./static/js/main.d291fb62.js.map"
   },
   "entrypoints": [
-    "static/css/main.b149b0ab.css",
+    "static/css/main.0803348e.css",
     "static/js/main.d291fb62.js"
   ]
 }
