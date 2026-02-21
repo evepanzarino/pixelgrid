@@ -2205,6 +2205,7 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
   const [showStickers, setShowStickers] = useState(false);
   const fileInputRef = React.useRef(null);
   const bodyRef = React.useRef(null);
+  const titleRef = React.useRef(null);
 
   // Split draft: line 1 = tagline, rest = body
   const getDraftParts = () => {
@@ -2360,6 +2361,7 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
         </div>
         <div className="composer-fields">
           <input
+            ref={titleRef}
             className="composer-title-input"
             placeholder="Title…"
             value={draft.split('\n')[0]}
@@ -2372,6 +2374,7 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
             value={draft.split('\n').slice(1).join('\n')}
             onChange={e => setDraft(draft.split('\n')[0] + '\n' + e.target.value)}
             rows={3}
+            onClick={() => { if (!draft.split('\n')[0]) titleRef.current?.focus(); }}
           />
         </div>
       </div>
