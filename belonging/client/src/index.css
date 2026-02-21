@@ -1979,7 +1979,7 @@ body {
 /* ── Post Composer ──────────────────────────────── */
 .post-composer { background: white; border: 1px solid #e8e8e8; border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
 .composer-error { background: #fee; color: #c00; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 10px; }
-.composer-draft { width: 100%; border: none; outline: none; resize: none; font-size: 1rem; line-height: 1.6; background: transparent; color: #333; min-height: 90px; font-family: inherit; margin-bottom: 8px; }
+.composer-draft { flex: 1; width: 100%; border: none; outline: none; resize: none; font-size: 1rem; line-height: 1.6; background: transparent; color: #333; min-height: 90px; font-family: inherit; margin-bottom: 0; }
 .composer-draft::placeholder { color: #bbb; }
 .composer-actions { display: flex; align-items: center; gap: 8px; }
 .composer-btn { width: 44px; height: 44px; border: none; background: #f4f4f6; border-radius: 10px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
@@ -1994,7 +1994,12 @@ body {
 .composer-tribes-wrap, .composer-location-wrap { display: flex; align-items: center; gap: 4px; background: #f4f4f6; border-radius: 8px; padding: 5px 10px; flex: 1; min-width: 80px; position: relative; }
 .composer-meta-icon { font-size: 0.9rem; color: #888; flex-shrink: 0; }
 .composer-meta-input { border: none; background: none; outline: none; font-size: 0.85rem; width: 60px; min-width: 0; color: #444; }
-.composer-topbar { display: flex; align-items: center; margin-bottom: 6px; }
+.composer-topbar { display: flex; align-items: center; margin-bottom: 10px; }
+.composer-heading { font-size: 1rem; font-weight: 700; color: #333; }
+.composer-input-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+.composer-avatar-wrap { flex-shrink: 0; }
+.composer-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.composer-avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; background: #ddd; }
 .composer-tribe-dropdown { position: absolute; top: 110%; left: 0; z-index: 1000; background: white; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); min-width: 200px; max-height: 220px; overflow-y: auto; }
 .composer-tribe-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; font-size: 0.9rem; }
 .composer-tribe-option:hover { background: #f8f8ff; }
@@ -2024,6 +2029,9 @@ body {
   .composer-location-dropdown, .composer-tribe-dropdown { max-height: 40vw; min-width: 50vw; }
   .composer-location-option, .composer-tribe-option { font-size: 3vw; padding: 2vw 3vw; }
   .sticker-btn { font-size: 5vw; padding: 1vw; }
+  .composer-avatar, .composer-avatar-placeholder { width: 9vw; height: 9vw; }
+  .composer-heading { font-size: 3.5vw; }
+  .composer-input-row { gap: 2vw; }
 }
 
 /* ── Trends page ──────────────────────────────── */

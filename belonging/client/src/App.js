@@ -2181,8 +2181,9 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
     <div className="post-composer">
       {error && <div className="composer-error">{error}</div>}
 
-      {/* Top bar: vibe on the right */}
+      {/* Header: Write a post! + vibe */}
       <div className="composer-topbar">
+        <span className="composer-heading">Write a post!</span>
         <div style={{ flex: 1 }} />
         <select className="composer-vibe-select" value={vibe} onChange={e => setVibe(e.target.value)}>
           <option value="">vibe…</option>
@@ -2192,15 +2193,22 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
         </select>
       </div>
 
-      {/* Unified draft textarea — line 1 = title (h1), rest = body */}
-      <textarea
-        ref={bodyRef}
-        className="composer-draft"
-        placeholder={'Title…\n\nWhat\'s on your mind?'}
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        rows={4}
-      />
+      {/* Avatar + draft textarea side by side */}
+      <div className="composer-input-row">
+        <div className="composer-avatar-wrap">
+          {currentUser?.profile_picture
+            ? <img src={currentUser.profile_picture} alt="" className="composer-avatar" />
+            : <div className="composer-avatar-placeholder" />}
+        </div>
+        <textarea
+          ref={bodyRef}
+          className="composer-draft"
+          placeholder={'Title…\n\nWhat\'s on your mind?'}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          rows={4}
+        />
+      </div>
 
       {/* Action row: upload | sticker | → post */}
       <div className="composer-actions">
@@ -3351,8 +3359,6 @@ const FeedPage = () => {
 
   return (
     <div className="container">
-      <h2>Feed</h2>
-
       {/* Post Editor - shown on non-updates tabs for any logged-in user, on updates tab only for @belonging */}
       {currentUser && (activeTab !== 'updates' || currentUser.username === 'belonging') && (
         <div style={{ marginTop: '20px' }}>
