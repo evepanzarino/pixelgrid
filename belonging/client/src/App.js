@@ -5901,7 +5901,7 @@ const RestrictedBanner = () => {
 // ADMIN PAGE
 // ============================================
 const AdminPage = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
@@ -5909,9 +5909,10 @@ const AdminPage = () => {
   const [saving, setSaving] = useState({});
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user || user.role !== 'admin') { navigate('/'); return; }
     fetchUsers();
-  }, [user]);
+  }, [user, authLoading]);
 
   const fetchUsers = async () => {
     try {
