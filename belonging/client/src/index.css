@@ -1864,6 +1864,30 @@ body {
   }
 }
 
+/* Switch Accounts */
+.switch-accounts-wrap { position: relative; }
+.switch-accounts-btn { white-space: nowrap; }
+.switch-accounts-dropdown { position: absolute; top: calc(100% + 8px); right: 0; z-index: 5000; background: white; border: 1px solid #e0e0e0; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.14); min-width: 240px; padding: 12px 0; }
+.switch-accounts-label { font-size: 0.72rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; padding: 0 14px; margin: 6px 0 6px; }
+.switch-account-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 14px; background: none; border: none; cursor: pointer; text-align: left; transition: background 0.12s; }
+.switch-account-row:hover { background: #f4f4f8; }
+.switch-account-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.switch-account-avatar-placeholder { width: 32px; height: 32px; border-radius: 50%; background: #ddd; flex-shrink: 0; }
+.switch-account-username { flex: 1; font-size: 0.9rem; font-weight: 600; color: #333; }
+.switch-account-hint { font-size: 0.72rem; color: #aaa; }
+.switch-accounts-divider { height: 1px; background: #f0f0f0; margin: 8px 0; }
+.switch-accounts-error { font-size: 0.8rem; color: #c00; padding: 0 14px; margin: 4px 0; }
+.switch-accounts-form { display: flex; flex-direction: column; gap: 6px; padding: 4px 14px 8px; }
+.switch-accounts-input { border: 1px solid #e0e0e0; border-radius: 8px; padding: 7px 10px; font-size: 0.85rem; outline: none; width: 100%; }
+.switch-accounts-input:focus { border-color: #667eea; }
+.switch-accounts-submit { background: #667eea; color: white; border: none; border-radius: 8px; padding: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.15s; }
+.switch-accounts-submit:hover:not(:disabled) { background: #4a5bd4; }
+.switch-accounts-submit:disabled { opacity: 0.5; cursor: default; }
+.switch-accounts-logout { width: 100%; padding: 8px 14px; background: none; border: none; cursor: pointer; text-align: left; font-size: 0.85rem; color: #e74c3c; font-weight: 500; transition: background 0.12s; }
+.switch-accounts-logout:hover { background: #fff0f0; }
+.navbar-user-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.navbar-user-avatar-placeholder { width: 28px; height: 28px; border-radius: 50%; background: #ddd; flex-shrink: 0; }
+
 /* Phase 3: Navbar — hide links on mobile */
 @media (max-width: 1024px) {
   .navbar { padding: 2vw 3vw; }

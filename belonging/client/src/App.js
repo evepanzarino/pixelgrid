@@ -278,6 +278,21 @@ const PRIDE_FLAGS = [
   {file:"xenicflag2.webp",label:"Xenic"},
 ];
 
+// ── Saved-accounts helpers (module-level so Navbar + HomePage can share) ──
+const getSavedAccounts = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem('belonging_saved_accounts') || '[]');
+    return parsed.map(a => typeof a === 'string' ? { username: a, token: null, profile_picture: null } : a);
+  } catch { return []; }
+};
+const upsertSavedAccount = (username, token, profile_picture) => {
+  try {
+    const accounts = getSavedAccounts().filter(a => a.username !== username);
+    accounts.unshift({ username, token: token || null, profile_picture: profile_picture || null });
+    localStorage.setItem('belonging_saved_accounts', JSON.stringify(accounts.slice(0, 8)));
+  } catch {}
+};
+
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -314,6 +329,7 @@ const AuthProvider = ({ children }) => {
     localStorage.setItem('token', res.data.token);
     localStorage.setItem('user', JSON.stringify(res.data.user));
     setUser(res.data.user);
+    upsertSavedAccount(res.data.user.username, res.data.token, res.data.user.profile_picture);
     return res.data;
   };
 
@@ -322,6 +338,7 @@ const AuthProvider = ({ children }) => {
     localStorage.setItem('token', res.data.token);
     localStorage.setItem('user', JSON.stringify(res.data.user));
     setUser(res.data.user);
+    upsertSavedAccount(res.data.user.username, res.data.token, res.data.user.profile_picture);
     return res.data;
   };
 
@@ -331,6 +348,7 @@ const AuthProvider = ({ children }) => {
       const res = await getCurrentUser();
       localStorage.setItem('user', JSON.stringify(res.data));
       setUser(res.data);
+      upsertSavedAccount(res.data.username, token, res.data.profile_picture);
       return res.data;
     } catch {
       localStorage.removeItem('token');
@@ -548,9 +566,84 @@ const LevelUpBanner = ({ notification, onClear }) => {
   );
 };
 
+// Switch Accounts dropdown (shown in Navbar)
+const SwitchAccountsMenu = ({ currentUser, logout, login, loginWithToken }) => {
+  const [open, setOpen] = useState(false);
+  const [switchUser, setSwitchUser] = useState('');
+  const [switchPass, setSwitchPass] = useState('');
+  const [switchLoading, setSwitchLoading] = useState(false);
+  const [switchError, setSwitchError] = useState('');
+  const ref = React.useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const accounts = getSavedAccounts().filter(a => a.username !== currentUser?.username);
+
+  const handleAccountClick = async (account) => {
+    if (!account.token) { setSwitchUser(account.username); setSwitchPass(''); return; }
+    setSwitchLoading(true); setSwitchError('');
+    try { await loginWithToken(account.token); setOpen(false); }
+    catch { setSwitchUser(account.username); setSwitchPass(''); setSwitchError('Session expired — please sign in again.'); }
+    finally { setSwitchLoading(false); }
+  };
+
+  const handleSwitchLogin = async (e) => {
+    e.preventDefault();
+    setSwitchLoading(true); setSwitchError('');
+    try {
+      await login({ username: switchUser, password: switchPass });
+      setSwitchUser(''); setSwitchPass(''); setOpen(false);
+    } catch (err) {
+      setSwitchError(err.response?.data?.error || 'Login failed');
+    } finally { setSwitchLoading(false); }
+  };
+
+  return (
+    <div className="switch-accounts-wrap" ref={ref}>
+      <button className="btn btn-secondary switch-accounts-btn" onClick={() => setOpen(o => !o)}>
+        Switch Accounts
+      </button>
+      {open && (
+        <div className="switch-accounts-dropdown">
+          {accounts.length > 0 && (
+            <>
+              <p className="switch-accounts-label">Saved accounts</p>
+              {accounts.map((a, i) => (
+                <button key={i} className="switch-account-row" onClick={() => handleAccountClick(a)} disabled={switchLoading}>
+                  {a.profile_picture
+                    ? <img src={a.profile_picture} alt="" className="switch-account-avatar" />
+                    : <div className="switch-account-avatar-placeholder" />}
+                  <span className="switch-account-username">@{a.username}</span>
+                  {a.token && <span className="switch-account-hint">tap to switch</span>}
+                </button>
+              ))}
+              <div className="switch-accounts-divider" />
+            </>
+          )}
+          <p className="switch-accounts-label">Add account</p>
+          {switchError && <p className="switch-accounts-error">{switchError}</p>}
+          <form onSubmit={handleSwitchLogin} className="switch-accounts-form">
+            <input className="switch-accounts-input" placeholder="Username" value={switchUser} onChange={e => setSwitchUser(e.target.value)} autoComplete="username" />
+            <input className="switch-accounts-input" type="password" placeholder="Password" value={switchPass} onChange={e => setSwitchPass(e.target.value)} autoComplete="current-password" />
+            <button type="submit" className="btn switch-accounts-submit" disabled={switchLoading || !switchUser || !switchPass}>
+              {switchLoading ? '…' : 'Sign in'}
+            </button>
+          </form>
+          <div className="switch-accounts-divider" />
+          <button className="switch-accounts-logout" onClick={() => { logout(); setOpen(false); }}>Log out @{currentUser?.username}</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Navbar Component
 const Navbar = ({ onLevelUpUpdate }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, login, loginWithToken } = useAuth();
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const [levelUpCount, setLevelUpCount] = useState(0);
@@ -687,7 +780,10 @@ const Navbar = ({ onLevelUpUpdate }) => {
               {user.username === user.email ? (
                 <Link to={`${BASE_PATH}/complete-profile`} style={{ color: '#e67e22' }}>Choose a username</Link>
               ) : (
-                <Link to={`${BASE_PATH}/${user.username}`} style={{ color: '#333', textDecoration: 'none', fontWeight: '500' }}>
+                <Link to={`${BASE_PATH}/${user.username}`} style={{ color: '#333', textDecoration: 'none', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                  {user.profile_picture
+                    ? <img src={user.profile_picture} alt="" className="navbar-user-avatar" />
+                    : <div className="navbar-user-avatar-placeholder" />}
                   @{user.username}
                 </Link>
               )}
@@ -695,9 +791,7 @@ const Navbar = ({ onLevelUpUpdate }) => {
             {user.role === 'admin' && (
               <Link to={`${BASE_PATH}/admin`} style={{ color: '#e74c3c', fontWeight: '600' }}>⚙ Admin</Link>
             )}
-            <button onClick={logout} className="btn btn-secondary">
-              Logout
-            </button>
+            <SwitchAccountsMenu currentUser={user} logout={logout} login={login} loginWithToken={loginWithToken} />
           </>
         ) : (
           <>
