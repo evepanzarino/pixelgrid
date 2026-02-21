@@ -1677,6 +1677,61 @@ body {
   vertical-align: middle;
 }
 
+.sticker-inline-img {
+  width: 2em;
+  height: 2em;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.sticker-pick-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.sticker-upload-area {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding: 8px 4px 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.sticker-shortcode-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 11px;
+  padding: 4px 7px;
+}
+
+.sticker-shortcode-input::placeholder { color: #888; }
+
+.sticker-upload-btn {
+  background: #667eea;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sticker-upload-btn:disabled { opacity: 0.5; cursor: default; }
+
+.sticker-upload-error {
+  width: 100%;
+  font-size: 10px;
+  color: #ff6b6b;
+}
+
 /* ── WebRTC call overlay ───────────────────────────────────────────────────── */
 .call-overlay {
   position: fixed;

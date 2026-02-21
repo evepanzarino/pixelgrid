@@ -118,6 +118,22 @@ const pool = mysql.createPool({
 });
 
 // Initialize admin user with hashed password
+async function initializeStickersTable() {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS stickers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        shortcode VARCHAR(50) NOT NULL UNIQUE,
+        file_url VARCHAR(500) NOT NULL,
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  } catch (error) {
+    console.error('Error creating stickers table:', error);
+  }
+}
+
 async function initializeAdmin() {
   try {
     const [users] = await pool.execute(
@@ -1804,6 +1820,38 @@ app.post('/api/messages/upload', requireAuth, requireNotBanned, messageUpload.si
   }
 });
 
+// GET /api/stickers - fetch all custom stickers
+app.get('/api/stickers', async (req, res) => {
+  try {
+    const [rows] = await pool.execute('SELECT id, shortcode, file_url FROM stickers ORDER BY created_at ASC');
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch stickers' });
+  }
+});
+
+// POST /api/stickers/upload - upload a custom sticker
+app.post('/api/stickers/upload', requireAuth, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    const { shortcode } = req.body;
+    if (!shortcode || !/^[a-z0-9_]+$/.test(shortcode)) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'Shortcode must be lowercase letters, numbers, or underscores' });
+    }
+    const fileUrl = `/uploads/${req.file.filename}`;
+    await pool.execute(
+      'INSERT INTO stickers (shortcode, file_url, created_by) VALUES (?, ?, ?)',
+      [shortcode, fileUrl, req.user.id]
+    );
+    res.json({ shortcode, file_url: fileUrl });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Shortcode already exists' });
+    console.error('Sticker upload error:', error);
+    res.status(500).json({ error: 'Failed to upload sticker' });
+  }
+});
+
 // ============================================
 // EMBED PREVIEW
 // ============================================
@@ -2850,4 +2898,5 @@ io.on('connection', (socket) => {
 httpServer.listen(PORT, '0.0.0.0', async () => {
   console.log(`Belonging API server running on port ${PORT} (0.0.0.0)`);
   await initializeAdmin();
+  await initializeStickersTable();
 });

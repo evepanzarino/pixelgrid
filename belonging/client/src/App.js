@@ -4980,22 +4980,21 @@ const STICKERS = [
   { name: 'wave', label: '👋 wave', shortcode: ':wave:', emoji: '👋' },
 ];
 
-const SHORTCODE_REGEX = /:(\w+):/g;
-
-function renderMessageWithStickers(text) {
+function renderMessageWithStickers(text, customStickers = []) {
   if (!text) return null;
+  const allStickers = [...STICKERS, ...customStickers];
   const parts = [];
   let lastIndex = 0;
   let match;
-  SHORTCODE_REGEX.lastIndex = 0;
-  while ((match = SHORTCODE_REGEX.exec(text)) !== null) {
-    const sticker = STICKERS.find(s => s.name === match[1]);
+  const regex = /:(\w+):/g;
+  while ((match = regex.exec(text)) !== null) {
+    const sticker = allStickers.find(s => s.name === match[1]);
     if (sticker) {
       if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
       parts.push(
-        <span key={match.index} className="sticker-inline" title={sticker.shortcode}>
-          {sticker.emoji}
-        </span>
+        sticker.file_url
+          ? <img key={match.index} src={sticker.file_url} alt={sticker.name} className="sticker-inline-img" title={`:${sticker.name}:`} />
+          : <span key={match.index} className="sticker-inline" title={sticker.shortcode}>{sticker.emoji}</span>
       );
       lastIndex = match.index + match[0].length;
     }
@@ -5004,27 +5003,81 @@ function renderMessageWithStickers(text) {
   return parts.length > 0 ? parts : text;
 }
 
-const StickerPicker = ({ onSelect, onClose }) => (
-  <div className="sticker-picker">
-    <div className="sticker-picker-header">
-      <span>Stickers</span>
-      <button onClick={onClose} className="sticker-picker-close">×</button>
+const StickerPicker = ({ onSelect, onClose, customStickers, onStickerUploaded }) => {
+  const { user } = useAuth();
+  const [uploading, setUploading] = React.useState(false);
+  const [shortcode, setShortcode] = React.useState('');
+  const [error, setError] = React.useState('');
+  const fileRef = React.useRef(null);
+
+  const handleUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setError('');
+    // Validate square
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = async () => {
+      URL.revokeObjectURL(url);
+      if (img.width !== img.height) {
+        setError('Image must be square (equal width and height)');
+        return;
+      }
+      if (!shortcode.trim()) { setError('Enter a shortcode first'); return; }
+      setUploading(true);
+      try {
+        const token = localStorage.getItem('belonging_token');
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('shortcode', shortcode.trim().toLowerCase());
+        const res = await fetch(`${window.location.origin}/api/stickers/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+        const data = await res.json();
+        if (!res.ok) { setError(data.error || 'Upload failed'); }
+        else { setShortcode(''); onStickerUploaded(data); }
+      } catch { setError('Upload failed'); }
+      setUploading(false);
+    };
+    img.src = url;
+  };
+
+  return (
+    <div className="sticker-picker">
+      <div className="sticker-picker-header">
+        <span>Stickers</span>
+        <button onClick={onClose} className="sticker-picker-close">×</button>
+      </div>
+      <div className="sticker-picker-grid">
+        {STICKERS.map(s => (
+          <button key={s.name} className="sticker-pick-btn" title={s.shortcode} onClick={() => { onSelect(s.shortcode); onClose(); }}>
+            <span className="sticker-pick-emoji">{s.emoji}</span>
+            <span className="sticker-pick-label">{s.name}</span>
+          </button>
+        ))}
+        {customStickers.map(s => (
+          <button key={s.name} className="sticker-pick-btn" title={`:${s.name}:`} onClick={() => { onSelect(`:${s.name}:`); onClose(); }}>
+            <img src={s.file_url} alt={s.name} className="sticker-pick-img" />
+            <span className="sticker-pick-label">{s.name}</span>
+          </button>
+        ))}
+      </div>
+      {user && (
+        <div className="sticker-upload-area">
+          <input
+            className="sticker-shortcode-input"
+            placeholder="shortcode (e.g. mycat)"
+            value={shortcode}
+            onChange={e => setShortcode(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+          />
+          <button className="sticker-upload-btn" onClick={() => fileRef.current?.click()} disabled={uploading}>
+            {uploading ? '⏳' : '+ Add'}
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} />
+          {error && <div className="sticker-upload-error">{error}</div>}
+        </div>
+      )}
     </div>
-    <div className="sticker-picker-grid">
-      {STICKERS.map(s => (
-        <button
-          key={s.name}
-          className="sticker-pick-btn"
-          title={s.shortcode}
-          onClick={() => { onSelect(s.shortcode); onClose(); }}
-        >
-          <span className="sticker-pick-emoji">{s.emoji}</span>
-          <span className="sticker-pick-label">{s.name}</span>
-        </button>
-      ))}
-    </div>
-  </div>
-);
+  );
+};
 
 // ── WebRTC CallManager ───────────────────────────────────────────────────────
 const STUN_SERVERS = {
@@ -5295,6 +5348,7 @@ const MessagesPage = () => {
   const [uploading, setUploading] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [customStickers, setCustomStickers] = useState([]);
   const messagesEndRef = React.useRef(null);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -5302,6 +5356,13 @@ const MessagesPage = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  React.useEffect(() => {
+    fetch(`${window.location.origin}/api/stickers`)
+      .then(r => r.json())
+      .then(data => setCustomStickers(data.map(s => ({ name: s.shortcode, file_url: s.file_url }))))
+      .catch(() => {});
+  }, []);
 
   const fetchConversations = async () => {
     try {
@@ -5568,7 +5629,7 @@ const MessagesPage = () => {
                     </div>
                   )}
                   <div className="message-content">
-                    {msg.content && <p>{renderMessageWithStickers(msg.content)}</p>}
+                    {msg.content && <p>{renderMessageWithStickers(msg.content, customStickers)}</p>}
                     {(msg.attachments || []).length > 0 && (
                       <MessageGallery attachments={msg.attachments} layout={msg.gallery_layout} />
                     )}
@@ -5635,6 +5696,8 @@ const MessagesPage = () => {
               <StickerPicker
                 onSelect={(shortcode) => setNewMessage(prev => prev + shortcode)}
                 onClose={() => setShowStickerPicker(false)}
+                customStickers={customStickers}
+                onStickerUploaded={(s) => setCustomStickers(prev => [...prev, { name: s.shortcode, file_url: s.file_url }])}
               />
             )}
             <form onSubmit={handleSendMessage} className="message-input-form">
