@@ -805,85 +805,60 @@ const Navbar = ({ onLevelUpUpdate }) => {
 
   return (
     <nav className="navbar">
-      <Link to={`${BASE_PATH}/feed`} className="navbar-logo-link" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0px' }}>
-        <LogoBelonging className="logo-belonging" />
-        <BelongingLogo className="belonging-logo" />
-      </Link>
-      <div className="navbar-links" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-        <Link to={`${BASE_PATH}/feed`}>Feed</Link>
-        <Link to={`${BASE_PATH}/trends`}>Trends</Link>
-        <Link to={`${BASE_PATH}/users`}>Users</Link>
-        <Link to={`${BASE_PATH}/tribes`}>Tribes</Link>
-        <Link to={`${BASE_PATH}/search`}>Search</Link>
-        <Link to={`${BASE_PATH}/skills`} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          Skills
-          {levelUpCount > 0 && (
-            <span style={{
-              marginLeft: '5px',
-              background: '#e0245e',
-              color: 'white',
-              borderRadius: '50%',
-              padding: '2px 6px',
-              fontSize: '10px',
-              fontWeight: 'bold',
-              minWidth: '18px',
-              textAlign: 'center'
-            }}>
-              {levelUpCount}
-            </span>
-          )}
+      {/* Row 1: Logo · · · Bell · Avatar·@username · Switch Accounts */}
+      <div className="navbar-top">
+        <Link to={`${BASE_PATH}/feed`} className="navbar-logo-link">
+          <LogoBelonging className="logo-belonging" />
+          <BelongingLogo className="belonging-logo" />
         </Link>
+        <div style={{ flex: 1 }} />
         {user ? (
-          <>
-            <Link to={`${BASE_PATH}/messages`} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              Messages
-              {unreadMessages > 0 && (
-                <span style={{
-                  marginLeft: '5px',
-                  background: '#e0245e',
-                  color: 'white',
-                  borderRadius: '50%',
-                  padding: '2px 6px',
-                  fontSize: '10px',
-                  fontWeight: 'bold',
-                  minWidth: '18px',
-                  textAlign: 'center'
-                }}>
-                  {unreadMessages}
-                </span>
-              )}
-            </Link>
+          <div className="navbar-top-user">
             <Notifications
               unreadCount={unreadCount}
               setUnreadCount={setUnreadCount}
               levelUpCount={levelUpCount}
               setLevelUpCount={setLevelUpCount}
             />
-            <span style={{ color: '#333' }}>
-              {user.username === user.email ? (
-                <Link to={`${BASE_PATH}/complete-profile`} style={{ color: '#e67e22' }}>Choose a username</Link>
-              ) : (
-                <Link to={`${BASE_PATH}/${user.username}`} className="navbar-user-link">
-                  {user.profile_picture
-                    ? <img src={user.profile_picture} alt="" className="navbar-user-avatar" />
-                    : <div className="navbar-user-avatar-placeholder" />}
-                  @{user.username}
-                </Link>
-              )}
-            </span>
-            {user.role === 'admin' && (
-              <Link to={`${BASE_PATH}/admin`} style={{ color: '#e74c3c', fontWeight: '600' }}>⚙ Admin</Link>
+            {user.username === user.email ? (
+              <Link to={`${BASE_PATH}/complete-profile`} style={{ color: '#e67e22', fontSize: '0.85rem' }}>Choose a username</Link>
+            ) : (
+              <Link to={`${BASE_PATH}/${user.username}`} className="navbar-user-link">
+                {user.profile_picture
+                  ? <img src={user.profile_picture} alt="" className="navbar-user-avatar" />
+                  : <div className="navbar-user-avatar-placeholder" />}
+                @{user.username}
+              </Link>
             )}
             <SwitchAccountsMenu currentUser={user} logout={logout} login={login} loginWithToken={loginWithToken} />
-          </>
+          </div>
         ) : (
-          <>
+          <div className="navbar-top-user">
             <Link to={`${BASE_PATH}/login`}>Login</Link>
             <Link to={`${BASE_PATH}/register`}>Register</Link>
-          </>
+          </div>
         )}
       </div>
-      {/* Second navbar row: Feed · Tribes · Search */}
+
+      {/* Desktop nav links row (hidden on mobile) */}
+      <div className="navbar-links">
+        <Link to={`${BASE_PATH}/feed`}>Feed</Link>
+        <Link to={`${BASE_PATH}/trends`}>Trends</Link>
+        <Link to={`${BASE_PATH}/users`}>Users</Link>
+        <Link to={`${BASE_PATH}/tribes`}>Tribes</Link>
+        <Link to={`${BASE_PATH}/search`}>Search</Link>
+        <Link to={`${BASE_PATH}/skills`} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          Skills{levelUpCount > 0 && <span className="navbar-badge">{levelUpCount}</span>}
+        </Link>
+        <Link to={`${BASE_PATH}/messages`} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          Messages{unreadMessages > 0 && <span className="navbar-badge">{unreadMessages}</span>}
+        </Link>
+        {user?.role === 'admin' && (
+          <Link to={`${BASE_PATH}/admin`} style={{ color: '#e74c3c', fontWeight: '600' }}>⚙ Admin</Link>
+        )}
+      </div>
+
+      {/* Row 2: Feed · Tribes · Search fills remaining width */}
       <div className="navbar-row2">
         <Link to={`${BASE_PATH}/feed`} className="navbar-row2-link">Feed</Link>
         <Link to={`${BASE_PATH}/tribes`} className="navbar-row2-link">Tribes</Link>
