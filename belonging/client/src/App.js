@@ -2117,7 +2117,7 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
   const addTribe = (tribe) => {
     if (!selectedTribes.find(t => t.id === tribe.id)) setSelectedTribes(prev => [...prev, tribe]);
     setTribeSearch('');
-    setShowTribesDropdown(false);
+    // Keep dropdown open so user can keep adding tribes
   };
 
   const removeTribe = (tribeId) => setSelectedTribes(selectedTribes.filter(t => t.id !== tribeId));
@@ -2249,7 +2249,7 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
           />
           {showTribesDropdown && filteredTribes.length > 0 && (
             <div className="composer-tribe-dropdown">
-              {filteredTribes.slice(0, 15).map(tribe => (
+              {filteredTribes.map(tribe => (
                 <div key={tribe.id} className="composer-tribe-option" onMouseDown={() => addTribe(tribe)}>
                   <TribeIcon icon={tribe.icon} size={18} />
                   <span>{tribe.name}</span>
