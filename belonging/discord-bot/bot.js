@@ -1060,6 +1060,36 @@ client.on('messageCreate', async (message) => {
     }
   }
 
+  // #updates channel — post as @belonging account on the website
+  if (CONFIG.UPDATES_CHANNEL_ID && message.channel.id === CONFIG.UPDATES_CHANNEL_ID) {
+    console.log(`#updates channel message — posting as @belonging`);
+    try {
+      const [belongingAccounts] = await pool.execute(
+        'SELECT id, username, handle, profile_picture FROM users WHERE username = ?',
+        ['belonging']
+      );
+      if (belongingAccounts.length === 0) {
+        console.error('#updates: @belonging account not found in DB');
+        return;
+      }
+      const belongingAccount = belongingAccounts[0];
+      const attachmentUrls = await downloadDiscordAttachments(message);
+      let content = message.content;
+      if (attachmentUrls.length > 0) {
+        content += '\n' + attachmentUrls.map(url => `<img src="${url}" style="max-width:100%;height:auto;" />`).join('\n');
+      }
+      const tagline = content.substring(0, 100).split('\n')[0] || 'Update';
+      const [postResult] = await pool.execute(
+        'INSERT INTO posts (user_id, tagline, content) VALUES (?, ?, ?)',
+        [belongingAccount.id, tagline, content]
+      );
+      console.log(`#updates: Created post ${postResult.insertId} as @belonging`);
+    } catch (err) {
+      console.error('#updates: Error creating post:', err);
+    }
+    return;
+  }
+
   // Regular channel message - only create posts from the #feed channel
   if (message.channel.id !== CONFIG.WEBSITE_CHANNEL_ID) {
     console.log(`Message in channel ${message.channel.id} (not feed channel ${CONFIG.WEBSITE_CHANNEL_ID}) - ignoring`);
