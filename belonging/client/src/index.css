@@ -434,8 +434,8 @@ body {
 
 @media (max-width: 600px) {
   .navbar {
-    padding: 0vw;
-    height: 10vw;
+    padding: 0;
+    height: auto;
   }
 
   .navbar a {
@@ -444,12 +444,12 @@ body {
 
   .belonging-logo {
     display: flex;
-    height: 4.5vw;
+    height: 4.25vw;
     width: auto;
   }
 
   .logo-belonging {
-    height: 6.5vw;
+    height: 6.25vw;
     width: auto;
   }
 
