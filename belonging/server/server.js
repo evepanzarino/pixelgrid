@@ -1334,7 +1334,7 @@ app.get('/api/trends', async (req, res) => {
     const posts = [...rows]
       .map(p => ({ ...p, _eng: (p.like_count|0)+(p.comment_count|0)*2+(p.repost_count|0)*3+(p.favorite_count|0)*2 }))
       .sort((a, b) => b._eng - a._eng)
-      .slice(0, 10)
+      .slice(0, 20)
       .map(({ _eng, ...p }) => p);
 
     res.json({ words, posts, days });

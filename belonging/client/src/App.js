@@ -5639,7 +5639,7 @@ const TrendsPage = () => {
                           <span className="trend-post-user">@{post.username}</span>
                         </div>
                         {post.tagline && <p className="trend-lb-tagline">{post.tagline}</p>}
-                        <p className="trend-lb-content">{(post.content || '').replace(/<[^>]*>/g, ' ').slice(0, 80)}…</p>
+                        <p className="trend-lb-content">{(post.content || '').replace(/<[^>]*>/g, ' ').trim()}</p>
                         <div className="trend-lb-score">
                           <span className="trend-lb-score-num">{eng}</span>
                           <span className="trend-lb-score-label">pts</span>
