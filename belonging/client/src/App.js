@@ -2180,8 +2180,6 @@ const COMPOSER_VIBES = [
   { emoji: '🔥', label: 'fired up' }, { emoji: '🌸', label: 'grateful' },
   { emoji: '😰', label: 'anxious' }, { emoji: '🤗', label: 'excited' },
 ];
-const COMPOSER_STICKERS = ['❤️','🏳️‍🌈','🏳️‍⚧️','✨','🌟','💜','🔥','👀','🎉','💅','🌙','🌺','💫','🦋','🌈','🍀','🫶','😭','💀','🤌','🎭','🌸','🫧','🫠','🪷','🦄','🐾','🌻'];
-
 const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
   const { user: currentUser } = useAuth();
   const [draft, setDraft] = useState(() => {
@@ -2403,13 +2401,10 @@ const PostEditor = ({ onPostCreated, editPost, onCancel }) => {
 
       {/* Sticker panel */}
       {showStickers && (
-        <div className="composer-sticker-panel">
-          {COMPOSER_STICKERS.map(s => (
-            <button key={s} type="button" className="sticker-btn" onClick={() => { insertIntoBody(s); setShowStickers(false); }}>
-              {s}
-            </button>
-          ))}
-        </div>
+        <StickerPicker
+          onSelect={(sc) => insertIntoBody(sc)}
+          onClose={() => setShowStickers(false)}
+        />
       )}
 
       {/* Metadata row: tribes | location */}
@@ -5003,12 +4998,22 @@ function renderMessageWithStickers(text, customStickers = []) {
   return parts.length > 0 ? parts : text;
 }
 
-const StickerPicker = ({ onSelect, onClose, customStickers, onStickerUploaded }) => {
+const StickerPicker = ({ onSelect, onClose, customStickers: initialCustom, onStickerUploaded }) => {
   const { user } = useAuth();
   const [uploading, setUploading] = React.useState(false);
   const [shortcode, setShortcode] = React.useState('');
   const [error, setError] = React.useState('');
   const fileRef = React.useRef(null);
+  const [customStickers, setCustomStickers] = React.useState(initialCustom || []);
+
+  React.useEffect(() => {
+    if (!initialCustom) {
+      fetch(`${window.location.origin}/api/stickers`)
+        .then(r => r.json())
+        .then(data => setCustomStickers(data.map(s => ({ name: s.shortcode, file_url: s.file_url }))))
+        .catch(() => {});
+    }
+  }, [initialCustom]);
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -5033,7 +5038,12 @@ const StickerPicker = ({ onSelect, onClose, customStickers, onStickerUploaded })
         const res = await fetch(`${window.location.origin}/api/stickers/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
         const data = await res.json();
         if (!res.ok) { setError(data.error || 'Upload failed'); }
-        else { setShortcode(''); onStickerUploaded(data); }
+        else {
+          const newS = { name: data.shortcode, file_url: data.file_url };
+          setCustomStickers(prev => [...prev, newS]);
+          setShortcode('');
+          if (onStickerUploaded) onStickerUploaded(data);
+        }
       } catch { setError('Upload failed'); }
       setUploading(false);
     };
